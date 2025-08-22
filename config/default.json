@@ -1,0 +1,68 @@
+{
+  "cpu": {
+    "main_core_freq": 400000000,
+    "lp_core_freq": 40000000,
+    "enable_dual_core": true,
+    "enable_fpu": true,
+    "enable_compressed_instructions": true,
+    "cache_size": 8192
+  },
+  "memory": {
+    "flash_size": 16777216,
+    "psram_size": 33554432,
+    "sram_size": 786432,
+    "enable_cache": true,
+    "enable_mmu": true,
+    "cache_line_size": 32
+  },
+  "display": {
+    "width": 1280,
+    "height": 720,
+    "refresh_rate": 60,
+    "enable_vsync": true,
+    "enable_touch": true,
+    "scale_factor": 1.0,
+    "window_title": "M5Tab5 Emulator"
+  },
+  "audio": {
+    "sample_rate": 44100,
+    "buffer_size": 1024,
+    "channels": 2,
+    "enable_input": true,
+    "enable_output": true,
+    "codec": "ES8388"
+  },
+  "network": {
+    "enable_wifi": true,
+    "enable_bluetooth": true,
+    "wifi_ssid": "",
+    "wifi_password": "",
+    "enable_ethernet": false
+  },
+  "debug": {
+    "enable_debugger": false,
+    "debugger_port": 3333,
+    "enable_profiling": false,
+    "enable_logging": true,
+    "log_level": "INFO",
+    "log_file": ""
+  },
+  "peripherals": {
+    "gpio": {
+      "pin_count": 55,
+      "enable_interrupts": true,
+      "enable_pwm": true,
+      "enable_adc": true
+    },
+    "camera": {
+      "sensor": "SC2356",
+      "resolution": "1920x1080",
+      "enable_mipi_csi": true
+    },
+    "imu": {
+      "sensor": "BMI270",
+      "enable_6dof": true,
+      "sample_rate": 1000
+    }
+  }
+}

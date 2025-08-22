@@ -1,0 +1,68 @@
+{
+  "cpu": {
+    "main_core_freq": 400000000,
+    "lp_core_freq": 40000000,
+    "enable_dual_core": true,
+    "enable_fpu": true,
+    "enable_compressed_instructions": true,
+    "cache_size": 8192
+  },
+  "memory": {
+    "flash_size": 16777216,
+    "psram_size": 33554432,
+    "sram_size": 786432,
+    "enable_cache": true,
+    "enable_mmu": false,
+    "cache_line_size": 32
+  },
+  "display": {
+    "width": 1280,
+    "height": 720,
+    "refresh_rate": 60,
+    "enable_vsync": false,
+    "enable_touch": true,
+    "scale_factor": 0.8,
+    "window_title": "M5Tab5 Emulator - Development"
+  },
+  "audio": {
+    "sample_rate": 22050,
+    "buffer_size": 512,
+    "channels": 2,
+    "enable_input": false,
+    "enable_output": true,
+    "codec": "ES8388"
+  },
+  "network": {
+    "enable_wifi": false,
+    "enable_bluetooth": false,
+    "wifi_ssid": "",
+    "wifi_password": "",
+    "enable_ethernet": false
+  },
+  "debug": {
+    "enable_debugger": true,
+    "debugger_port": 3333,
+    "enable_profiling": true,
+    "enable_logging": true,
+    "log_level": "DEBUG",
+    "log_file": "emulator_dev.log"
+  },
+  "peripherals": {
+    "gpio": {
+      "pin_count": 55,
+      "enable_interrupts": true,
+      "enable_pwm": true,
+      "enable_adc": true
+    },
+    "camera": {
+      "sensor": "SC2356",
+      "resolution": "640x480",
+      "enable_mipi_csi": true
+    },
+    "imu": {
+      "sensor": "BMI270",
+      "enable_6dof": true,
+      "sample_rate": 100
+    }
+  }
+}
