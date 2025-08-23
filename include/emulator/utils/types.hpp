@@ -40,21 +40,13 @@ enum class CoreId : u8 {
     INVALID = 0xFF
 };
 
-enum class InterruptType : u8 {
-    EXTERNAL = 0,
-    TIMER = 1,
-    SOFTWARE = 2,
-    GPIO = 3,
-    DMA = 4,
-    INVALID = 0xFF
-};
+// InterruptType moved to peripherals/interrupt_controller.hpp for comprehensive definitions
 
-enum class MemoryType : u8 {
-    FLASH = 0,
-    PSRAM = 1,
-    SRAM = 2,
-    CACHE = 3,
-    MMIO = 4,
+enum class MemoryAccessType : u8 {
+    READ = 0,
+    WRITE = 1,
+    EXECUTE = 2,
+    READ_WRITE = 3,
     INVALID = 0xFF
 };
 
@@ -69,10 +61,9 @@ enum class GpioMode : u8 {
     INVALID = 0xFF
 };
 
-struct MemoryRegion {
+struct MemoryLayout {
     Address start_address;
     size_t size;
-    MemoryType type;
     bool writable;
     bool executable;
     bool cacheable;
@@ -86,37 +77,33 @@ struct MemoryRegion {
     }
 };
 
-constexpr MemoryRegion FLASH_REGION{
+constexpr MemoryLayout FLASH_LAYOUT{
     .start_address = 0x10000000,
     .size = 16 * 1024 * 1024,  // 16MB
-    .type = MemoryType::FLASH,
     .writable = false,
     .executable = true,
     .cacheable = true
 };
 
-constexpr MemoryRegion PSRAM_REGION{
+constexpr MemoryLayout PSRAM_LAYOUT{
     .start_address = 0x20000000,
     .size = 32 * 1024 * 1024,  // 32MB
-    .type = MemoryType::PSRAM,
     .writable = true,
     .executable = false,
     .cacheable = true
 };
 
-constexpr MemoryRegion SRAM_REGION{
+constexpr MemoryLayout SRAM_LAYOUT{
     .start_address = 0x30000000,
     .size = 768 * 1024,  // 768KB
-    .type = MemoryType::SRAM,
     .writable = true,
     .executable = true,
     .cacheable = true
 };
 
-constexpr MemoryRegion MMIO_REGION{
+constexpr MemoryLayout MMIO_LAYOUT{
     .start_address = 0x40000000,
     .size = 256 * 1024 * 1024,  // 256MB
-    .type = MemoryType::MMIO,
     .writable = true,
     .executable = false,
     .cacheable = false

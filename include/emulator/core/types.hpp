@@ -13,6 +13,16 @@ using RegisterValue = uint32_t;
 using ClockCycle = uint64_t;
 using TimeStamp = std::chrono::high_resolution_clock::time_point;
 
+// Standard integer types
+using u8 = uint8_t;
+using u16 = uint16_t;
+using u32 = uint32_t;
+using u64 = uint64_t;
+using i8 = int8_t;
+using i16 = int16_t;
+using i32 = int32_t;
+using i64 = int64_t;
+
 // Memory layout constants
 constexpr size_t FLASH_SIZE = 16 * 1024 * 1024;    // 16MB
 constexpr size_t PSRAM_SIZE = 32 * 1024 * 1024;    // 32MB
@@ -44,7 +54,10 @@ enum class EmulatorError {
     HardwareFault,
     ConfigurationError,
     ResourceNotAvailable,
-    TimeoutError
+    RESOURCE_BUSY,
+    TimeoutError,
+    NotImplemented,
+    MemoryAccessError
 };
 
 // Forward declarations

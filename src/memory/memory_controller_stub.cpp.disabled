@@ -1,0 +1,63 @@
+#include "emulator/memory/memory_controller.hpp"
+#include "emulator/utils/logging.hpp"
+
+namespace m5tab5::emulator {
+
+DECLARE_LOGGER("MemoryController");
+
+MemoryController::MemoryController(const MemoryConfig& config) {
+    COMPONENT_LOG_DEBUG("MemoryController created");
+}
+
+MemoryController::~MemoryController() = default;
+
+// MemoryInterface implementation - basic functionality for CPU to work
+EmulatorError MemoryController::read8(Address address, uint8_t& value) {
+    // Stub implementation - just return zeros for now
+    value = 0;
+    return EmulatorError::Success;
+}
+
+EmulatorError MemoryController::read16(Address address, uint16_t& value) {
+    // Stub implementation - just return zeros for now
+    value = 0;
+    return EmulatorError::Success;
+}
+
+EmulatorError MemoryController::read32(Address address, uint32_t& value) {
+    // Stub implementation - just return zeros for now
+    value = 0;
+    return EmulatorError::Success;
+}
+
+EmulatorError MemoryController::write8(Address address, uint8_t value) {
+    // Stub implementation - accept all writes
+    return EmulatorError::Success;
+}
+
+EmulatorError MemoryController::write16(Address address, uint16_t value) {
+    // Stub implementation - accept all writes
+    return EmulatorError::Success;
+}
+
+EmulatorError MemoryController::write32(Address address, uint32_t value) {
+    // Stub implementation - accept all writes
+    return EmulatorError::Success;
+}
+
+bool MemoryController::isValidAddress(Address address) const {
+    // Stub implementation - all addresses valid for now
+    return true;
+}
+
+bool MemoryController::isWritableAddress(Address address) const {
+    // Stub implementation - all addresses writable for now
+    return true;
+}
+
+bool MemoryController::isExecutableAddress(Address address) const {
+    // Stub implementation - all addresses executable for now
+    return true;
+}
+
+}  // namespace m5tab5::emulator

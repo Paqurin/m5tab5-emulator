@@ -38,12 +38,12 @@ Result<void> MicrophoneArray::initialize(const Configuration& config, ES8388Code
     std::lock_guard<std::mutex> lock(array_mutex_);
     
     if (initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
+        return unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
             "Microphone array already initialized"));
     }
     
     if (!codec) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Audio codec required"));
     }
     
@@ -104,17 +104,17 @@ Result<void> MicrophoneArray::configure_microphone(u8 mic_id, MicrophoneType typ
     std::lock_guard<std::mutex> lock(array_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Microphone array not initialized"));
     }
     
     if (mic_id >= MAX_MICROPHONES) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid microphone ID"));
     }
     
     if (sensitivity_dbfs > 0.0f || sensitivity_dbfs < -60.0f) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Sensitivity out of range (-60dBFS to 0dBFS)"));
     }
     
@@ -133,17 +133,17 @@ Result<void> MicrophoneArray::set_microphone_gain(u8 mic_id, float gain_db) {
     std::lock_guard<std::mutex> lock(array_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Microphone array not initialized"));
     }
     
     if (mic_id >= MAX_MICROPHONES || mic_id >= microphones_.size()) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid microphone ID"));
     }
     
     if (gain_db < -20.0f || gain_db > 40.0f) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Gain out of range (-20dB to +40dB)"));
     }
     
@@ -157,12 +157,12 @@ Result<void> MicrophoneArray::mute_microphone(u8 mic_id, bool mute) {
     std::lock_guard<std::mutex> lock(array_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Microphone array not initialized"));
     }
     
     if (mic_id >= MAX_MICROPHONES || mic_id >= microphones_.size()) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid microphone ID"));
     }
     
@@ -176,12 +176,12 @@ Result<void> MicrophoneArray::enable_microphone(u8 mic_id, bool enable) {
     std::lock_guard<std::mutex> lock(array_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Microphone array not initialized"));
     }
     
     if (mic_id >= MAX_MICROPHONES || mic_id >= microphones_.size()) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid microphone ID"));
     }
     
@@ -195,12 +195,12 @@ Result<void> MicrophoneArray::add_audio_source(const AudioSource& source) {
     std::lock_guard<std::mutex> lock(array_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Microphone array not initialized"));
     }
     
     if (audio_sources_.size() >= MAX_AUDIO_SOURCES) {
-        return std::unexpected(MAKE_ERROR(BUFFER_OVERFLOW,
+        return unexpected(MAKE_ERROR(BUFFER_OVERFLOW,
             "Maximum audio sources reached"));
     }
     
@@ -217,12 +217,12 @@ Result<void> MicrophoneArray::remove_audio_source(u8 source_id) {
     std::lock_guard<std::mutex> lock(array_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Microphone array not initialized"));
     }
     
     if (source_id >= audio_sources_.size()) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid source ID"));
     }
     
@@ -236,12 +236,12 @@ Result<void> MicrophoneArray::update_audio_source(u8 source_id, const AudioSourc
     std::lock_guard<std::mutex> lock(array_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Microphone array not initialized"));
     }
     
     if (source_id >= audio_sources_.size()) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid source ID"));
     }
     
@@ -255,7 +255,7 @@ Result<std::vector<AudioSource>> MicrophoneArray::get_active_sources() const {
     std::lock_guard<std::mutex> lock(array_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Microphone array not initialized"));
     }
     
@@ -273,7 +273,7 @@ Result<void> MicrophoneArray::configure_beamforming(const BeamformingParameters&
     std::lock_guard<std::mutex> lock(array_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Microphone array not initialized"));
     }
     
@@ -290,7 +290,7 @@ Result<void> MicrophoneArray::set_beam_direction(float azimuth, float elevation)
     std::lock_guard<std::mutex> lock(array_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Microphone array not initialized"));
     }
     
@@ -311,7 +311,7 @@ Result<void> MicrophoneArray::enable_beamforming(bool enable) {
     std::lock_guard<std::mutex> lock(array_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Microphone array not initialized"));
     }
     
@@ -329,7 +329,7 @@ Result<void> MicrophoneArray::calibrate_array() {
     std::lock_guard<std::mutex> lock(array_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Microphone array not initialized"));
     }
     
@@ -347,12 +347,12 @@ Result<void> MicrophoneArray::set_noise_profile(NoiseProfile profile, float leve
     std::lock_guard<std::mutex> lock(array_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Microphone array not initialized"));
     }
     
     if (level_db > -10.0f || level_db < -80.0f) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Noise level out of range (-80dB to -10dB)"));
     }
     
@@ -430,12 +430,12 @@ Result<void> MicrophoneArray::add_custom_noise(const std::vector<float>& noise_s
     std::lock_guard<std::mutex> lock(array_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Microphone array not initialized"));
     }
     
     if (noise_spectrum.size() != FFT_SIZE / 2) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Noise spectrum size must match FFT_SIZE/2"));
     }
     
@@ -450,7 +450,7 @@ Result<void> MicrophoneArray::enable_wind_noise(bool enable, float wind_speed_ms
     std::lock_guard<std::mutex> lock(array_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Microphone array not initialized"));
     }
     
@@ -474,12 +474,12 @@ Result<std::vector<i16>> MicrophoneArray::capture_frame(size_t samples_per_chann
     std::lock_guard<std::mutex> lock(array_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Microphone array not initialized"));
     }
     
     if (samples_per_channel == 0 || samples_per_channel > 4096) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid sample count"));
     }
     
@@ -555,12 +555,12 @@ Result<float> MicrophoneArray::estimate_direction_of_arrival() {
     std::lock_guard<std::mutex> lock(array_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Microphone array not initialized"));
     }
     
     if (left_buffer_.empty() || right_buffer_.empty()) {
-        return std::unexpected(MAKE_ERROR(INSUFFICIENT_DATA,
+        return unexpected(MAKE_ERROR(INSUFFICIENT_DATA,
             "No audio data available"));
     }
     
@@ -582,12 +582,12 @@ Result<float> MicrophoneArray::measure_snr() {
     std::lock_guard<std::mutex> lock(array_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Microphone array not initialized"));
     }
     
     if (left_buffer_.empty()) {
-        return std::unexpected(MAKE_ERROR(INSUFFICIENT_DATA,
+        return unexpected(MAKE_ERROR(INSUFFICIENT_DATA,
             "No audio data available"));
     }
     
@@ -622,7 +622,7 @@ Result<bool> MicrophoneArray::detect_voice_activity() {
     std::lock_guard<std::mutex> lock(array_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Microphone array not initialized"));
     }
     
@@ -676,7 +676,7 @@ Result<float> MicrophoneArray::get_voice_probability() {
     std::lock_guard<std::mutex> lock(array_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Microphone array not initialized"));
     }
     

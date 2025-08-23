@@ -7,6 +7,8 @@
 
 namespace m5tab5::emulator {
 
+DECLARE_LOGGER("SC2356Camera");
+
 SC2356Camera::SC2356Camera() 
     : initialized_(false)
     , capturing_active_(false)
@@ -34,7 +36,7 @@ SC2356Camera::SC2356Camera()
     
     get_resolution_dimensions(config_.resolution, processor_.roi_width, processor_.roi_height);
     
-    LOG_DEBUG("SC2356Camera", "Camera sensor initialized");
+    COMPONENT_LOG_DEBUG("Camera sensor initialized");
 }
 
 SC2356Camera::~SC2356Camera() {
@@ -50,11 +52,11 @@ Result<void> SC2356Camera::initialize(const Configuration& config,
     std::lock_guard<std::mutex> lock(camera_mutex_);
     
     if (initialized_) {
-        return make_error(ErrorCode::ALREADY_INITIALIZED, "SC2356 camera already initialized");
+        return unexpected(make_error(ErrorCode::ALREADY_INITIALIZED, "SC2356 camera already initialized"));
     }
     
     if (!interrupt_controller || !i2c_controller || !gpio_controller) {
-        return make_error(ErrorCode::INVALID_ARGUMENT, "Required controllers cannot be null");
+        return unexpected(make_error(ErrorCode::INVALID_ARGUMENT, "Required controllers cannot be null"));
     }
     
     interrupt_controller_ = interrupt_controller;
@@ -64,11 +66,9 @@ Result<void> SC2356Camera::initialize(const Configuration& config,
     // Initialize camera registers to default values
     registers_ = SC2356Registers{};
     
-    // Configure I2C device
-    auto result = i2c_controller_->register_device(I2C_ADDRESS, "SC2356_Camera");
-    if (!result) {
-        return make_error(ErrorCode::DEVICE_ERROR, "Failed to register I2C device: " + result.error().message);
-    }
+    // Configure I2C device (stub - actual I2C controller doesn't have register_device method)
+    // TODO: Implement proper I2C device registration when interface is available
+    COMPONENT_LOG_DEBUG("I2C device registration skipped (stub implementation)");
     
     // Reset camera sensor
     auto reset_result = reset_sensor();
@@ -103,10 +103,9 @@ Result<void> SC2356Camera::shutdown() {
         frame_buffer_.pop();
     }
     
-    // Unregister I2C device
-    if (i2c_controller_) {
-        i2c_controller_->unregister_device(I2C_ADDRESS);
-    }
+    // Unregister I2C device (stub implementation)
+    // TODO: Implement proper I2C device unregistration when interface is available
+    COMPONENT_LOG_DEBUG("I2C device unregistration skipped (stub implementation)");
     
     interrupt_controller_ = nullptr;
     i2c_controller_ = nullptr;
@@ -122,13 +121,13 @@ Result<void> SC2356Camera::configure_camera(const CameraConfig& config) {
     std::lock_guard<std::mutex> lock(camera_mutex_);
     
     if (!initialized_) {
-        return make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized");
+        return unexpected(make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized"));
     }
     
     // Validate configuration
     if (config.frame_buffer_count < MIN_FRAME_BUFFER_COUNT || 
         config.frame_buffer_count > MAX_FRAME_BUFFER_COUNT) {
-        return make_error(ErrorCode::INVALID_ARGUMENT, "Invalid frame buffer count");
+        return unexpected(make_error(ErrorCode::INVALID_ARGUMENT, "Invalid frame buffer count"));
     }
     
     config_ = config;
@@ -165,7 +164,7 @@ Result<CameraConfig> SC2356Camera::get_camera_config() const {
     std::lock_guard<std::mutex> lock(camera_mutex_);
     
     if (!initialized_) {
-        return make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized");
+        return unexpected(make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized"));
     }
     
     return config_;
@@ -175,7 +174,7 @@ Result<void> SC2356Camera::set_resolution(CameraResolution resolution) {
     std::lock_guard<std::mutex> lock(camera_mutex_);
     
     if (!initialized_) {
-        return make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized");
+        return unexpected(make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized"));
     }
     
     config_.resolution = resolution;
@@ -189,7 +188,7 @@ Result<void> SC2356Camera::set_pixel_format(CameraPixelFormat format) {
     std::lock_guard<std::mutex> lock(camera_mutex_);
     
     if (!initialized_) {
-        return make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized");
+        return unexpected(make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized"));
     }
     
     config_.format = format;
@@ -202,7 +201,7 @@ Result<void> SC2356Camera::start_preview() {
     std::lock_guard<std::mutex> lock(camera_mutex_);
     
     if (!initialized_) {
-        return make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized");
+        return unexpected(make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized"));
     }
     
     preview_active_ = true;
@@ -216,7 +215,7 @@ Result<void> SC2356Camera::stop_preview() {
     std::lock_guard<std::mutex> lock(camera_mutex_);
     
     if (!initialized_) {
-        return make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized");
+        return unexpected(make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized"));
     }
     
     preview_active_ = false;
@@ -232,7 +231,7 @@ Result<void> SC2356Camera::capture_frame() {
     std::lock_guard<std::mutex> lock(camera_mutex_);
     
     if (!initialized_) {
-        return make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized");
+        return unexpected(make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized"));
     }
     
     simulate_camera_capture();
@@ -247,7 +246,7 @@ Result<void> SC2356Camera::start_continuous_capture() {
     std::lock_guard<std::mutex> lock(camera_mutex_);
     
     if (!initialized_) {
-        return make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized");
+        return unexpected(make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized"));
     }
     
     capturing_active_ = true;
@@ -262,7 +261,7 @@ Result<void> SC2356Camera::stop_continuous_capture() {
     std::lock_guard<std::mutex> lock(camera_mutex_);
     
     if (!initialized_) {
-        return make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized");
+        return unexpected(make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized"));
     }
     
     capturing_active_ = false;
@@ -279,11 +278,11 @@ Result<CameraFrame> SC2356Camera::get_latest_frame() {
     std::lock_guard<std::mutex> lock(camera_mutex_);
     
     if (!initialized_) {
-        return make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized");
+        return unexpected(make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized"));
     }
     
     if (frame_buffer_.empty()) {
-        return make_error(ErrorCode::NO_DATA_AVAILABLE, "No frames available");
+        return unexpected(make_error(ErrorCode::NO_DATA_AVAILABLE, "No frames available"));
     }
     
     CameraFrame frame = frame_buffer_.back();
@@ -294,7 +293,7 @@ Result<void> SC2356Camera::enable_motion_detection(bool enable, u8 threshold) {
     std::lock_guard<std::mutex> lock(camera_mutex_);
     
     if (!initialized_) {
-        return make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized");
+        return unexpected(make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized"));
     }
     
     config_.motion_detection = enable;
@@ -317,7 +316,7 @@ Result<void> SC2356Camera::set_exposure_mode(CameraExposureMode mode) {
     std::lock_guard<std::mutex> lock(camera_mutex_);
     
     if (!initialized_) {
-        return make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized");
+        return unexpected(make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized"));
     }
     
     config_.exposure_mode = mode;
@@ -341,7 +340,7 @@ Result<void> SC2356Camera::enable_auto_focus(bool enable) {
     std::lock_guard<std::mutex> lock(camera_mutex_);
     
     if (!initialized_) {
-        return make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized");
+        return unexpected(make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized"));
     }
     
     config_.auto_focus = enable;
@@ -355,7 +354,7 @@ Result<void> SC2356Camera::write_register(u16 reg_addr, u8 value) {
     std::lock_guard<std::mutex> lock(camera_mutex_);
     
     if (!initialized_) {
-        return make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized");
+        return unexpected(make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized"));
     }
     
     return write_reg_i2c(reg_addr, value);
@@ -365,7 +364,7 @@ Result<u8> SC2356Camera::read_register(u16 reg_addr) {
     std::lock_guard<std::mutex> lock(camera_mutex_);
     
     if (!initialized_) {
-        return make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized");
+        return unexpected(make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized"));
     }
     
     return read_reg_i2c(reg_addr);
@@ -375,7 +374,7 @@ Result<bool> SC2356Camera::perform_self_test() {
     std::lock_guard<std::mutex> lock(camera_mutex_);
     
     if (!initialized_) {
-        return make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized");
+        return unexpected(make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized"));
     }
     
     // Simulate self-test procedure
@@ -397,7 +396,7 @@ Result<void> SC2356Camera::reset_sensor() {
     std::lock_guard<std::mutex> lock(camera_mutex_);
     
     if (!initialized_) {
-        return make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized");
+        return unexpected(make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized"));
     }
     
     // Reset all registers to default values
@@ -432,7 +431,7 @@ Result<u16> SC2356Camera::get_chip_id() {
     std::lock_guard<std::mutex> lock(camera_mutex_);
     
     if (!initialized_) {
-        return make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized");
+        return unexpected(make_error(ErrorCode::NOT_INITIALIZED, "Camera not initialized"));
     }
     
     return registers_.chip_id;
@@ -503,7 +502,7 @@ void SC2356Camera::update() {
 }
 
 void SC2356Camera::simulate_camera_capture() {
-    u32 width, height;
+    u16 width, height;
     get_resolution_dimensions(config_.resolution, width, height);
     
     CameraFrame frame;
@@ -614,10 +613,10 @@ void SC2356Camera::update_auto_exposure(const CameraFrame& frame) {
     if (std::abs(brightness_error) > 0.02f) {
         if (brightness_error > 0) {
             // Image too dark, increase exposure
-            processor_.current_exposure_ms = std::min(processor_.current_exposure_ms + 1, u16(1000));
+            processor_.current_exposure_ms = std::min(static_cast<u16>(processor_.current_exposure_ms + 1), static_cast<u16>(1000));
         } else {
             // Image too bright, decrease exposure
-            processor_.current_exposure_ms = std::max(processor_.current_exposure_ms - 1, u16(1));
+            processor_.current_exposure_ms = std::max(static_cast<u16>(processor_.current_exposure_ms - 1), static_cast<u16>(1));
         }
         
         // Update registers
@@ -685,7 +684,7 @@ void SC2356Camera::trigger_interrupt(CameraInterruptType interrupt_type) {
         registers_.interrupt_status = interrupt_status_;
         
         if (interrupt_controller_) {
-            interrupt_controller_->trigger_interrupt(42); // Camera interrupt line
+            interrupt_controller_->trigger_interrupt(InterruptType::GPIO_BANK2); // Camera interrupt via GPIO
         }
     }
 }
@@ -873,7 +872,7 @@ void SC2356Camera::calculate_white_balance_gains(const std::vector<u8>& data,
     }
 }
 
-void SC2356Camera::get_resolution_dimensions(CameraResolution resolution, u32& width, u32& height) {
+void SC2356Camera::get_resolution_dimensions(CameraResolution resolution, u16& width, u16& height) {
     switch (resolution) {
         case CameraResolution::QVGA_320x240:   width = 320;  height = 240;  break;
         case CameraResolution::VGA_640x480:   width = 640;  height = 480;  break;
@@ -980,11 +979,11 @@ std::vector<u8> SC2356Camera::generate_test_pattern(u32 width, u32 height, Camer
 
 Result<void> SC2356Camera::write_reg_i2c(u16 reg_addr, u8 value) {
     if (!i2c_controller_) {
-        return make_error(ErrorCode::DEVICE_ERROR, "I2C controller not available");
+        return unexpected(make_error(ErrorCode::DEVICE_ERROR, "I2C controller not available"));
     }
     
     std::vector<u8> data = {static_cast<u8>(reg_addr >> 8), static_cast<u8>(reg_addr & 0xFF), value};
-    auto result = i2c_controller_->write_data(I2C_ADDRESS, data);
+    auto result = i2c_controller_->write_data(data);
     if (!result) {
         return result;
     }
@@ -1007,7 +1006,7 @@ Result<void> SC2356Camera::write_reg_i2c(u16 reg_addr, u8 value) {
 
 Result<u8> SC2356Camera::read_reg_i2c(u16 reg_addr) {
     if (!i2c_controller_) {
-        return make_error(ErrorCode::DEVICE_ERROR, "I2C controller not available");
+        return unexpected(make_error(ErrorCode::DEVICE_ERROR, "I2C controller not available"));
     }
     
     // Return register value based on address

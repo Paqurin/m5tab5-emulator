@@ -44,7 +44,7 @@ Result<void> ADCController::initialize(const Configuration& config, InterruptCon
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
+        return unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
             "ADC controller already initialized"));
     }
     
@@ -123,12 +123,12 @@ Result<void> ADCController::configure(ADCResolution resolution, ADCMode mode, AD
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ADC controller not initialized"));
     }
     
     if (converting_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_BUSY,
+        return unexpected(MAKE_ERROR(SYSTEM_BUSY,
             "Cannot configure ADC while converting"));
     }
     
@@ -160,12 +160,12 @@ Result<void> ADCController::set_clock_rate(u32 clock_rate_hz) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ADC controller not initialized"));
     }
     
     if (clock_rate_hz < MIN_CLOCK_RATE || clock_rate_hz > MAX_CLOCK_RATE) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Clock rate out of range"));
     }
     
@@ -179,7 +179,7 @@ Result<void> ADCController::set_trigger(ADCTrigger trigger) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ADC controller not initialized"));
     }
     
@@ -194,12 +194,12 @@ Result<void> ADCController::enable_channel(u8 channel, bool enable) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ADC controller not initialized"));
     }
     
     if (channel >= MAX_CHANNELS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid channel number"));
     }
     
@@ -215,17 +215,17 @@ Result<void> ADCController::set_channel_sampling_time(u8 channel, u32 sampling_c
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ADC controller not initialized"));
     }
     
     if (channel >= MAX_CHANNELS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid channel number"));
     }
     
     if (sampling_cycles == 0 || sampling_cycles > 255) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid sampling time"));
     }
     
@@ -250,17 +250,17 @@ Result<void> ADCController::set_channel_offset(u8 channel, u32 offset) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ADC controller not initialized"));
     }
     
     if (channel >= MAX_CHANNELS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid channel number"));
     }
     
     if (offset > get_max_value()) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Offset value too large"));
     }
     
@@ -280,17 +280,17 @@ Result<void> ADCController::set_channel_gain(u8 channel, float gain) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ADC controller not initialized"));
     }
     
     if (channel >= MAX_CHANNELS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid channel number"));
     }
     
     if (gain <= 0.0f || gain > 10.0f) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid gain value"));
     }
     
@@ -306,18 +306,18 @@ Result<void> ADCController::configure_sequence(const std::vector<u8>& channels) 
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ADC controller not initialized"));
     }
     
     if (channels.empty() || channels.size() > MAX_SEQUENCE_LENGTH) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid sequence length"));
     }
     
     for (u8 channel : channels) {
         if (channel >= MAX_CHANNELS) {
-            return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+            return unexpected(MAKE_ERROR(INVALID_PARAMETER,
                 "Invalid channel in sequence"));
         }
     }
@@ -340,18 +340,18 @@ Result<void> ADCController::configure_injected_sequence(const std::vector<u8>& c
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ADC controller not initialized"));
     }
     
     if (channels.size() > 4) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Injected sequence too long (max 4 channels)"));
     }
     
     for (u8 channel : channels) {
         if (channel >= MAX_CHANNELS) {
-            return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+            return unexpected(MAKE_ERROR(INVALID_PARAMETER,
                 "Invalid channel in injected sequence"));
         }
     }
@@ -374,18 +374,18 @@ Result<void> ADCController::enable_analog_watchdog(u8 channel, u32 low_threshold
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ADC controller not initialized"));
     }
     
     if (channel >= MAX_CHANNELS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid channel number"));
     }
     
     u32 max_value = get_max_value();
     if (low_threshold > max_value || high_threshold > max_value || low_threshold >= high_threshold) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid threshold values"));
     }
     
@@ -406,12 +406,12 @@ Result<void> ADCController::disable_analog_watchdog(u8 channel) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ADC controller not initialized"));
     }
     
     if (channel >= MAX_CHANNELS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid channel number"));
     }
     
@@ -425,17 +425,17 @@ Result<void> ADCController::start_conversion() {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ADC controller not initialized"));
     }
     
     if (converting_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_BUSY,
+        return unexpected(MAKE_ERROR(SYSTEM_BUSY,
             "ADC already converting"));
     }
     
     if (regular_sequence_.empty()) {
-        return std::unexpected(MAKE_ERROR(INVALID_OPERATION,
+        return unexpected(MAKE_ERROR(INVALID_OPERATION,
             "No conversion sequence configured"));
     }
     
@@ -454,7 +454,7 @@ Result<void> ADCController::stop_conversion() {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ADC controller not initialized"));
     }
     
@@ -469,7 +469,7 @@ Result<u32> ADCController::read_conversion_result(u8 channel) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ADC controller not initialized"));
     }
     
@@ -479,7 +479,7 @@ Result<u32> ADCController::read_conversion_result(u8 channel) {
     }
     
     if (channel >= MAX_CHANNELS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid channel number"));
     }
     
@@ -490,7 +490,7 @@ Result<std::vector<ADCConversion>> ADCController::read_fifo_data(size_t max_coun
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ADC controller not initialized"));
     }
     
@@ -513,12 +513,12 @@ Result<void> ADCController::calibrate() {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ADC controller not initialized"));
     }
     
     if (converting_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_BUSY,
+        return unexpected(MAKE_ERROR(SYSTEM_BUSY,
             "Cannot calibrate while converting"));
     }
     
@@ -534,7 +534,7 @@ Result<bool> ADCController::is_calibration_complete() const {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ADC controller not initialized"));
     }
     
@@ -552,7 +552,7 @@ Result<void> ADCController::enable_interrupt(ADCInterruptType interrupt_type) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ADC controller not initialized"));
     }
     
@@ -568,7 +568,7 @@ Result<void> ADCController::disable_interrupt(ADCInterruptType interrupt_type) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ADC controller not initialized"));
     }
     
@@ -584,7 +584,7 @@ Result<void> ADCController::handle_mmio_write(Address address, u32 value) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ADC controller not initialized"));
     }
     
@@ -664,7 +664,7 @@ Result<void> ADCController::handle_mmio_write(Address address, u32 value) {
                     registers_.sampling_time2 = value;
                 }
             } else {
-                return std::unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
+                return unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
                     "Invalid ADC register offset: 0x" + std::to_string(offset)));
             }
             break;
@@ -677,7 +677,7 @@ Result<u32> ADCController::handle_mmio_read(Address address) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ADC controller not initialized"));
     }
     
@@ -722,7 +722,7 @@ Result<u32> ADCController::handle_mmio_read(Address address) {
             return registers_.sampling_time2;
             
         default:
-            return std::unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
+            return unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
                 "Invalid ADC register offset: 0x" + std::to_string(offset)));
     }
 }

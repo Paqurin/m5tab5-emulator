@@ -3,7 +3,9 @@
 #include "emulator/core/types.hpp"
 #include "emulator/memory/memory_interface.hpp"
 #include "emulator/memory/memory_region.hpp"
-#include "emulator/memory/cache_controller.hpp"
+#include "emulator/config/configuration.hpp"
+#include "emulator/utils/error.hpp"
+#include "emulator/utils/types.hpp"
 
 #include <vector>
 #include <memory>
@@ -12,8 +14,24 @@
 #include <unordered_map>
 #include <thread>
 #include <queue>
+#include <map>
 
 namespace m5tab5::emulator {
+
+// Forward declaration
+class MemoryMappingUnit;
+
+// Cache statistics structure
+struct CacheStatistics {
+    u64 hits = 0;
+    u64 misses = 0;
+    u64 evictions = 0;
+    
+    double hit_rate() const {
+        auto total = hits + misses;
+        return total > 0 ? static_cast<double>(hits) / total : 0.0;
+    }
+};
 
 /**
  * @brief Memory controller managing all memory regions and caching
@@ -28,130 +46,82 @@ namespace m5tab5::emulator {
  */
 class MemoryController : public MemoryInterface {
 public:
-    struct MemoryConfig {
-        bool enable_cache = true;
-        bool enable_mmu = true;
-        bool strict_alignment = false;
-        uint32_t cache_line_size = 32;
-        uint32_t cache_associativity = 4;
-    };
-
-    explicit MemoryController(const MemoryConfig& config);
+    // Construction and lifecycle
+    MemoryController();
     ~MemoryController();
 
-    // MemoryInterface implementation
+    // Initialize and manage memory controller
+    Result<void> initialize(const Configuration& config);
+    Result<void> shutdown();
+    Result<void> reset();
+
+    // Primary memory access interface
+    Result<u8> read_u8(Address address);
+    Result<u16> read_u16(Address address);
+    Result<u32> read_u32(Address address);
+    Result<std::vector<u8>> read_bytes(Address address, size_t count);
+    
+    Result<void> write_u8(Address address, u8 value);
+    Result<void> write_u16(Address address, u16 value);
+    Result<void> write_u32(Address address, u32 value);
+    Result<void> write_bytes(Address address, const u8* data, size_t count);
+
+    // Address validation and information
+    Result<bool> is_valid_address(Address address) const;
+    Result<MemoryType> get_memory_type(Address address) const;
+
+    // Cache statistics and management
+    const CacheStatistics& get_cache_statistics() const;
+    void clear_cache_statistics();
+
+    // MemoryInterface implementation (adapter methods)
     EmulatorError read8(Address address, uint8_t& value) override;
     EmulatorError read16(Address address, uint16_t& value) override;
     EmulatorError read32(Address address, uint32_t& value) override;
     EmulatorError write8(Address address, uint8_t value) override;
     EmulatorError write16(Address address, uint16_t value) override;
     EmulatorError write32(Address address, uint32_t value) override;
-
-    // Bulk operations
-    EmulatorError readBlock(Address address, void* buffer, size_t size) override;
-    EmulatorError writeBlock(Address address, const void* buffer, size_t size) override;
-
-    // Memory region management
-    EmulatorError addRegion(std::unique_ptr<MemoryRegion> region);
-    EmulatorError removeRegion(Address base_address);
-    MemoryRegion* findRegion(Address address);
-
-    // Cache operations
-    EmulatorError flushCache();
-    EmulatorError invalidateCache(Address address, size_t size);
-    CacheController& getCacheController() { return *cache_; }
-
-    // Memory mapping and protection
-    EmulatorError mapMemory(Address virtual_addr, Address physical_addr, 
-                           size_t size, uint32_t permissions);
-    EmulatorError unmapMemory(Address virtual_addr, size_t size);
-    EmulatorError setMemoryProtection(Address address, size_t size, uint32_t permissions);
-
-    // DMA operations
-    EmulatorError dmaTransfer(Address src, Address dst, size_t size, 
-                             uint32_t channel_id = 0);
-    bool isDMABusy(uint32_t channel_id = 0) const;
-
-    // Memory statistics
-    struct MemoryStatistics {
-        uint64_t read_operations = 0;
-        uint64_t write_operations = 0;
-        uint64_t cache_hits = 0;
-        uint64_t cache_misses = 0;
-        uint64_t dma_transfers = 0;
-        uint64_t page_faults = 0;
-        size_t allocated_memory = 0;
-    };
-
-    const MemoryStatistics& getStatistics() const { return stats_; }
-    void resetStatistics();
-
-    // Debug and inspection
-    std::vector<MemoryRegion*> getAllRegions() const;
-    EmulatorError dumpMemory(Address address, size_t size, std::vector<uint8_t>& output);
-    EmulatorError loadMemoryFromFile(Address address, const std::string& filename);
-    EmulatorError saveMemoryToFile(Address address, size_t size, const std::string& filename);
+    
+    bool isValidAddress(Address address) const override;
+    bool isWritableAddress(Address address) const override;
+    bool isExecutableAddress(Address address) const override;
+    
+    // Bulk operations inherited from MemoryInterface
 
 private:
-    // Memory region lookup optimization
-    struct RegionEntry {
-        Address base;
-        Address end;
-        MemoryRegion* region;
-    };
-
-    // Internal operations
-    EmulatorError validateAccess(Address address, size_t size, bool is_write);
-    EmulatorError translateAddress(Address virtual_addr, Address& physical_addr);
-    MemoryRegion* findRegionFast(Address address);
+    // Internal helper methods
+    Result<SharedPtr<MemoryRegion>> find_memory_region(Address address) const;
+    Result<void> initialize_flash_region(size_t size);
+    Result<void> initialize_psram_region(size_t size);
+    Result<void> initialize_sram_region(size_t size);
+    Result<void> initialize_mmio_region();
+    Result<void> initialize_cache();
+    Result<void> setup_memory_mappings();
     
-    // DMA implementation
-    struct DMAChannel {
-        bool busy = false;
-        Address src = 0;
-        Address dst = 0;
-        size_t remaining = 0;
-        std::thread transfer_thread;
-    };
-
-    void dmaTransferWorker(uint32_t channel_id);
-
-    // Configuration
-    MemoryConfig config_;
-
-    // Memory regions
-    std::vector<std::unique_ptr<MemoryRegion>> regions_;
-    std::vector<RegionEntry> region_lookup_; // Sorted for binary search
-    mutable std::shared_mutex regions_mutex_;
-
-    // Forward declarations to avoid circular dependencies
-    class MemoryRegion;
-    class CacheController;
+    // Cache management
+    Result<std::vector<u8>> try_cache_read(Address address, size_t count);
+    void update_cache(Address address, const std::vector<u8>& data);
+    void invalidate_cache_range(Address address, size_t count);
     
-    // Cache controller
-    std::unique_ptr<CacheController> cache_;
-
-    // Memory Management Unit (MMU)
-    struct MMUEntry {
-        Address virtual_base;
-        Address physical_base;
-        size_t size;
-        uint32_t permissions;
+    // Cache data structures
+    struct CacheLine {
+        std::vector<u8> data;
+        bool valid = false;
     };
-    std::vector<MMUEntry> mmu_table_;
-    mutable std::shared_mutex mmu_mutex_;
-
-    // DMA channels
-    static constexpr uint32_t MAX_DMA_CHANNELS = 8;
-    std::array<DMAChannel, MAX_DMA_CHANNELS> dma_channels_;
-
-    // Statistics and monitoring
-    mutable std::mutex stats_mutex_;
-    MemoryStatistics stats_;
-
-    // Performance optimization
-    mutable Address last_access_address_ = 0;
-    mutable MemoryRegion* last_access_region_ = nullptr;
+    
+    // State tracking
+    bool initialized_;
+    
+    // Memory regions storage
+    std::map<std::string, SharedPtr<MemoryRegion>> memory_regions_;
+    
+    // Cache management
+    std::unordered_map<Address, CacheLine> cache_lines_;
+    size_t cache_line_size_ = 32;
+    CacheStatistics cache_stats_;
+    
+    // Memory Management Unit (TODO: Implement MemoryMappingUnit)
+    // std::unique_ptr<MemoryMappingUnit> mmu_;
 };
 
 } // namespace m5tab5::emulator

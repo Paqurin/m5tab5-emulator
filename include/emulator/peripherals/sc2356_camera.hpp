@@ -353,7 +353,7 @@ private:
                                      float& r_gain, float& g_gain, float& b_gain);
     
     // Utility functions
-    void get_resolution_dimensions(CameraResolution resolution, u32& width, u32& height);
+    void get_resolution_dimensions(CameraResolution resolution, u16& width, u16& height);
     u32 get_bytes_per_pixel(CameraPixelFormat format);
     u32 calculate_frame_rate_delay_ms(CameraFrameRate frame_rate);
     std::vector<u8> generate_test_pattern(u32 width, u32 height, CameraPixelFormat format);

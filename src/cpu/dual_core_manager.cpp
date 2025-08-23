@@ -1,6 +1,15 @@
 #include "emulator/cpu/dual_core_manager.hpp"
+#include "emulator/memory/memory_controller.hpp"
 #include "emulator/utils/logging.hpp"
+#include "emulator/utils/error.hpp"
 #include <algorithm>
+
+// RISC-V CSR (Control and Status Register) definitions
+#define CSR_MSTATUS   0x300    // Machine status register
+#define CSR_MTVEC     0x305    // Machine trap-handler base address
+#define CSR_MEPC      0x341    // Machine exception program counter
+#define CSR_MCAUSE    0x342    // Machine trap cause
+#define CSR_MTVAL     0x343    // Machine bad address or instruction
 
 namespace m5tab5::emulator {
 
@@ -9,7 +18,8 @@ DECLARE_LOGGER("DualCoreManager");
 DualCoreManager::DualCoreManager() 
     : state_(CpuState::STOPPED),
       memory_controller_(nullptr),
-      interrupt_controller_(nullptr) {
+      interrupt_controller_(nullptr),
+      total_cycles_executed_(0) {
     COMPONENT_LOG_DEBUG("DualCoreManager created");
 }
 
@@ -22,7 +32,7 @@ DualCoreManager::~DualCoreManager() {
 
 Result<void> DualCoreManager::initialize(const Configuration& config, MemoryController& memory_controller) {
     if (state_ != CpuState::STOPPED) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
+        return unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
             "Dual core manager already initialized"));
     }
     
@@ -30,15 +40,25 @@ Result<void> DualCoreManager::initialize(const Configuration& config, MemoryCont
     
     memory_controller_ = &memory_controller;
     
-    // Initialize CPU cores
-    cores_[CoreId::CORE_0] = std::make_unique<CpuCore>(CoreId::CORE_0);
-    cores_[CoreId::CORE_1] = std::make_unique<CpuCore>(CoreId::CORE_1);
-    cores_[CoreId::LP_CORE] = std::make_unique<CpuCore>(CoreId::LP_CORE);
+    // Initialize CPU cores with proper CoreConfig
+    CpuCore::CoreConfig core_config_0{CpuCore::CoreType::MainCore0, 400000000}; // 400MHz
+    CpuCore::CoreConfig core_config_1{CpuCore::CoreType::MainCore1, 400000000}; // 400MHz  
+    CpuCore::CoreConfig lp_core_config{CpuCore::CoreType::LPCore, 20000000}; // 20MHz
+    
+    cores_[static_cast<size_t>(CoreId::CORE_0)] = std::make_unique<CpuCore>(core_config_0, memory_controller);
+    cores_[static_cast<size_t>(CoreId::CORE_1)] = std::make_unique<CpuCore>(core_config_1, memory_controller);
+    cores_[static_cast<size_t>(CoreId::LP_CORE)] = std::make_unique<CpuCore>(lp_core_config, memory_controller);
     
     // Initialize each core
-    for (auto& [core_id, core] : cores_) {
-        RETURN_IF_ERROR(core->initialize(config, memory_controller));
-        COMPONENT_LOG_DEBUG("Initialized CPU core {}", static_cast<int>(core_id));
+    for (size_t i = 0; i < cores_.size(); ++i) {
+        if (cores_[i]) {
+            auto result = cores_[i]->initialize();
+            if (result != EmulatorError::Success) {
+                return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+                    "Failed to initialize CPU core " + std::to_string(i)));
+            }
+            COMPONENT_LOG_DEBUG("Initialized CPU core {}", i);
+        }
     }
     
     // Initialize interrupt controller
@@ -60,17 +80,13 @@ Result<void> DualCoreManager::initialize(const Configuration& config, MemoryCont
 
 Result<void> DualCoreManager::start() {
     if (state_ != CpuState::HALTED) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Cores must be halted to start"));
     }
     
     COMPONENT_LOG_INFO("Starting all CPU cores");
     
-    // Start all cores
-    for (auto& [core_id, core] : cores_) {
-        RETURN_IF_ERROR(core->start());
-        COMPONENT_LOG_DEBUG("Started CPU core {}", static_cast<int>(core_id));
-    }
+    // All cores are ready (no explicit start needed - they'll execute when execute_cycles is called)
     
     // Start interrupt controller
     if (interrupt_controller_) {
@@ -105,14 +121,7 @@ Result<void> DualCoreManager::stop() {
         interrupt_controller_->stop();
     }
     
-    // Stop all cores
-    for (auto& [core_id, core] : cores_) {
-        auto result = core->stop();
-        if (!result) {
-            COMPONENT_LOG_WARN("Failed to stop CPU core {}: {}", 
-                              static_cast<int>(core_id), result.error().to_string());
-        }
-    }
+    // Cores are implicitly stopped when DualCoreManager state changes to STOPPED
     
     state_ = CpuState::STOPPED;
     COMPONENT_LOG_INFO("All CPU cores stopped");
@@ -122,34 +131,26 @@ Result<void> DualCoreManager::stop() {
 
 Result<void> DualCoreManager::pause() {
     if (state_ != CpuState::RUNNING) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Cores must be running to pause"));
     }
     
     COMPONENT_LOG_DEBUG("Pausing all CPU cores");
     
-    // Pause all cores
-    for (auto& [core_id, core] : cores_) {
-        RETURN_IF_ERROR(core->pause());
-    }
-    
+    // Cores are implicitly paused when DualCoreManager state changes to PAUSED
     state_ = CpuState::PAUSED;
     return {};
 }
 
 Result<void> DualCoreManager::resume() {
     if (state_ != CpuState::PAUSED) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Cores must be paused to resume"));
     }
     
     COMPONENT_LOG_DEBUG("Resuming all CPU cores");
     
-    // Resume all cores
-    for (auto& [core_id, core] : cores_) {
-        RETURN_IF_ERROR(core->resume());
-    }
-    
+    // Cores are implicitly resumed when DualCoreManager state changes to RUNNING
     state_ = CpuState::RUNNING;
     return {};
 }
@@ -165,8 +166,14 @@ Result<void> DualCoreManager::reset() {
     }
     
     // Reset all cores
-    for (auto& [core_id, core] : cores_) {
-        RETURN_IF_ERROR(core->reset());
+    for (size_t i = 0; i < cores_.size(); ++i) {
+        if (cores_[i]) {
+            auto result = cores_[i]->reset();
+            if (result != EmulatorError::Success) {
+                return unexpected(MAKE_ERROR(OPERATION_FAILED,
+                    "Failed to reset CPU core " + std::to_string(i)));
+            }
+        }
     }
     
     // Reset interrupt controller
@@ -208,7 +215,9 @@ Result<void> DualCoreManager::shutdown() {
     }
     
     // Clear cores
-    cores_.clear();
+    for (size_t i = 0; i < cores_.size(); ++i) {
+        cores_[i].reset();
+    }
     
     memory_controller_ = nullptr;
     state_ = CpuState::STOPPED;
@@ -229,20 +238,22 @@ Result<Cycles> DualCoreManager::execute_cycles(Cycles max_cycles) {
     Cycles remaining_cycles = max_cycles % cores_.size();
     
     // Execute cycles on each core
-    for (auto& [core_id, core] : cores_) {
-        if (core->get_state() == CpuState::RUNNING) {
+    for (size_t i = 0; i < cores_.size(); ++i) {
+        if (cores_[i] && state_ == CpuState::RUNNING) {
             Cycles core_cycles = cycles_per_core;
             if (remaining_cycles > 0) {
                 core_cycles++;
                 remaining_cycles--;
             }
             
-            auto result = core->execute_cycles(core_cycles);
-            if (result) {
-                total_cycles += result.value();
+            auto result = cores_[i]->executeCycles(core_cycles);
+            if (result == EmulatorError::Success) {
+                total_cycles += core_cycles;
+                // Update internal tracking
+                total_cycles_executed_ += core_cycles;
             } else {
                 COMPONENT_LOG_ERROR("Core {} execution error: {}", 
-                                   static_cast<int>(core_id), result.error().to_string());
+                                   i, static_cast<int>(result));
             }
         }
     }
@@ -260,126 +271,72 @@ Result<Cycles> DualCoreManager::execute_cycles(Cycles max_cycles) {
     return total_cycles;
 }
 
-CpuState DualCoreManager::get_state() const {
-    return state_;
-}
-
 Result<CpuCore*> DualCoreManager::get_core(CoreId core_id) {
-    auto it = cores_.find(core_id);
-    if (it == cores_.end()) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+    size_t index = static_cast<size_t>(core_id);
+    if (index >= cores_.size() || !cores_[index]) {
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid core ID: " + std::to_string(static_cast<int>(core_id))));
     }
-    return it->second.get();
+    return cores_[index].get();
 }
 
 Result<const CpuCore*> DualCoreManager::get_core(CoreId core_id) const {
-    auto it = cores_.find(core_id);
-    if (it == cores_.end()) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+    size_t index = static_cast<size_t>(core_id);
+    if (index >= cores_.size() || !cores_[index]) {
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid core ID: " + std::to_string(static_cast<int>(core_id))));
     }
-    return it->second.get();
+    return cores_[index].get();
 }
 
-Cycles DualCoreManager::get_total_cycles_executed() const {
-    Cycles total = 0;
-    for (const auto& [core_id, core] : cores_) {
-        total += core->get_cycles_executed();
-    }
-    return total;
+u64 DualCoreManager::get_total_cycles_executed() const {
+    return total_cycles_executed_;
 }
 
 u64 DualCoreManager::get_total_instructions_executed() const {
-    u64 total = 0;
-    for (const auto& [core_id, core] : cores_) {
-        total += core->get_instructions_executed();
-    }
-    return total;
-}
-
-InterruptController* DualCoreManager::get_interrupt_controller() const {
-    return interrupt_controller_.get();
-}
-
-TimerController* DualCoreManager::get_timer_controller() const {
-    return timer_controller_.get();
+    // Approximate instructions as cycles (will be more accurate with proper instruction counting)
+    return total_cycles_executed_;
 }
 
 Result<void> DualCoreManager::send_inter_core_interrupt(CoreId source, CoreId target, u32 data) {
-    auto target_core_result = get_core(target);
-    if (!target_core_result) {
-        return std::unexpected(target_core_result.error());
-    }
-    
-    CpuCore* target_core = target_core_result.value();
-    
-    // Send software interrupt to target core
-    if (interrupt_controller_) {
-        RETURN_IF_ERROR(interrupt_controller_->trigger_interrupt(target, InterruptType::SOFTWARE, data));
-    }
-    
-    COMPONENT_LOG_DEBUG("Inter-core interrupt sent from core {} to core {} with data 0x{:08X}",
+    // TODO: Implement inter-core interrupt mechanism
+    COMPONENT_LOG_DEBUG("Inter-core interrupt from core {} to core {} with data 0x{:08X} (not implemented)",
                        static_cast<int>(source), static_cast<int>(target), data);
-    
-    return {};
+    return unexpected(MAKE_ERROR(NOT_IMPLEMENTED, "Inter-core interrupts not implemented"));
 }
 
 Result<void> DualCoreManager::wait_for_event(CoreId core_id, u32 timeout_cycles) {
-    auto core_result = get_core(core_id);
-    if (!core_result) {
-        return std::unexpected(core_result.error());
-    }
-    
-    CpuCore* core = core_result.value();
-    
-    // Put core into wait state
-    // In a real implementation, this would involve power management
-    RETURN_IF_ERROR(core->pause());
-    
-    // Set up timeout if specified
-    if (timeout_cycles > 0 && timer_controller_) {
-        RETURN_IF_ERROR(timer_controller_->set_timeout(core_id, timeout_cycles));
-    }
-    
-    COMPONENT_LOG_DEBUG("Core {} waiting for event (timeout: {} cycles)",
+    // TODO: Implement core event waiting
+    COMPONENT_LOG_DEBUG("Core {} waiting for event (timeout: {} cycles) (not implemented)",
                        static_cast<int>(core_id), timeout_cycles);
-    
-    return {};
+    return unexpected(MAKE_ERROR(NOT_IMPLEMENTED, "Core event waiting not implemented"));
 }
 
 Result<void> DualCoreManager::signal_event(CoreId core_id) {
-    auto core_result = get_core(core_id);
-    if (!core_result) {
-        return std::unexpected(core_result.error());
-    }
-    
-    CpuCore* core = core_result.value();
-    
-    // Wake up core if it's waiting
-    if (core->get_state() == CpuState::PAUSED) {
-        RETURN_IF_ERROR(core->resume());
-        COMPONENT_LOG_DEBUG("Signaled event to core {}", static_cast<int>(core_id));
-    }
-    
-    return {};
+    // TODO: Implement core event signaling
+    COMPONENT_LOG_DEBUG("Signaling event to core {} (not implemented)", static_cast<int>(core_id));
+    return unexpected(MAKE_ERROR(NOT_IMPLEMENTED, "Core event signaling not implemented"));
 }
 
 void DualCoreManager::dump_all_cores_state() const {
     COMPONENT_LOG_INFO("=== Dual Core Manager State ===");
-    COMPONENT_LOG_INFO("Overall state: {}", static_cast<int>(state_));
+    COMPONENT_LOG_INFO("Overall state: {}", static_cast<int>(state_.load()));
     COMPONENT_LOG_INFO("Total cycles executed: {}", get_total_cycles_executed());
     COMPONENT_LOG_INFO("Total instructions executed: {}", get_total_instructions_executed());
     
-    for (const auto& [core_id, core] : cores_) {
-        COMPONENT_LOG_INFO("--- Core {} ---", static_cast<int>(core_id));
-        COMPONENT_LOG_INFO("  State: {}", static_cast<int>(core->get_state()));
-        COMPONENT_LOG_INFO("  Frequency: {} Hz", core->get_frequency());
-        COMPONENT_LOG_INFO("  Cycles executed: {}", core->get_cycles_executed());
-        COMPONENT_LOG_INFO("  Instructions executed: {}", core->get_instructions_executed());
-        
-        // Dump register state for debugging
-        core->get_register_file().dump_state();
+    for (size_t i = 0; i < cores_.size(); ++i) {
+        if (cores_[i]) {
+            COMPONENT_LOG_INFO("--- Core {} ---", i);
+            // TODO: Fix interface - CpuCore doesn't have get_state() method
+            // COMPONENT_LOG_INFO("  State: {}", static_cast<int>(cores_[i]->get_state()));
+            // COMPONENT_LOG_INFO("  Frequency: {} Hz", cores_[i]->get_frequency());
+            const auto& perf = cores_[i]->getPerformanceCounters();
+            COMPONENT_LOG_INFO("  Cycles executed: {}", perf.cycles_executed);
+            COMPONENT_LOG_INFO("  Instructions executed: {}", perf.instructions_executed);
+            
+            // TODO: Fix interface - CpuCore has getRegisters() not get_register_file()
+            // cores_[i]->get_register_file().dump_state();
+        }
     }
 }
 
@@ -400,48 +357,23 @@ Result<void> DualCoreManager::process_interrupts() {
         return {};
     }
     
+    // TODO: Fix interrupt processing interface mismatches
+    // The current CpuCore interface doesn't match the expected methods
+    // This needs to be redesigned when the RegisterFile interface is finalized
+    
     // Process pending interrupts for each core
-    for (auto& [core_id, core] : cores_) {
-        if (core->get_state() == CpuState::RUNNING) {
-            auto pending_interrupts = interrupt_controller_->get_pending_interrupts(core_id);
+    for (size_t i = 0; i < cores_.size(); ++i) {
+        auto& core = cores_[i];
+        if (core) {
+            // TODO: CpuCore doesn't have get_state() - need to check if core is active
+            // TODO: InterruptController interface needs to be defined
+            // TODO: RegisterFile CSR interface needs to be implemented
             
-            for (const auto& interrupt : pending_interrupts) {
-                // Deliver interrupt to core
-                auto& register_file = core->get_register_file();
-                
-                // Save current PC to MEPC
-                register_file.write_csr(CSR_MEPC, register_file.get_pc());
-                
-                // Set MCAUSE
-                u32 mcause = static_cast<u32>(interrupt.type) | (interrupt.external ? 0x80000000 : 0);
-                register_file.write_csr(CSR_MCAUSE, mcause);
-                
-                // Set MTVAL (trap value)
-                register_file.write_csr(CSR_MTVAL, interrupt.data);
-                
-                // Jump to interrupt handler
-                u32 mtvec = register_file.get_csr(CSR_MTVEC);
-                u32 handler_address = mtvec & ~0x3;  // Clear mode bits
-                
-                if ((mtvec & 0x1) == 1) {  // Vectored mode
-                    handler_address += static_cast<u32>(interrupt.type) * 4;
-                }
-                
-                register_file.set_pc(handler_address);
-                
-                // Update MSTATUS
-                u32 mstatus = register_file.get_csr(CSR_MSTATUS);
-                mstatus &= ~0x1888;  // Clear MIE, MPIE, MPP
-                mstatus |= ((mstatus & 0x8) << 4);  // MPIE = MIE
-                mstatus |= 0x1800;  // MPP = 11 (machine mode)
-                register_file.write_csr(CSR_MSTATUS, mstatus);
-                
-                COMPONENT_LOG_DEBUG("Delivered interrupt {} to core {} (handler: 0x{:08X})",
-                                   static_cast<int>(interrupt.type), static_cast<int>(core_id), handler_address);
-            }
+            CoreId core_id = static_cast<CoreId>(i);
+            // auto pending_interrupts = interrupt_controller_->get_pending_interrupts(core_id);
             
-            // Clear processed interrupts
-            interrupt_controller_->clear_processed_interrupts(core_id);
+            // Placeholder for interrupt delivery logic
+            COMPONENT_LOG_DEBUG("TODO: Process interrupts for core {}", static_cast<int>(core_id));
         }
     }
     

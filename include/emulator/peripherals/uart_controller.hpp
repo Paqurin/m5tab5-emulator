@@ -63,6 +63,20 @@ enum class UARTLineStatus : u8 {
     RX_FIFO_ERROR = 0x80
 };
 
+// Bitwise operators for UARTLineStatus
+inline UARTLineStatus operator|(UARTLineStatus a, UARTLineStatus b) {
+    return static_cast<UARTLineStatus>(static_cast<u8>(a) | static_cast<u8>(b));
+}
+
+inline UARTLineStatus operator&(UARTLineStatus a, UARTLineStatus b) {
+    return static_cast<UARTLineStatus>(static_cast<u8>(a) & static_cast<u8>(b));
+}
+
+inline UARTLineStatus& operator|=(UARTLineStatus& a, UARTLineStatus b) {
+    a = a | b;
+    return a;
+}
+
 struct UARTStatistics {
     u64 bytes_transmitted = 0;
     u64 bytes_received = 0;

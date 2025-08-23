@@ -21,7 +21,7 @@ MemoryController::~MemoryController() {
 
 Result<void> MemoryController::initialize(const Configuration& config) {
     if (initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
+        return unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
             "Memory controller already initialized"));
     }
     
@@ -29,18 +29,19 @@ Result<void> MemoryController::initialize(const Configuration& config) {
     
     try {
         // Initialize memory regions based on configuration
-        RETURN_IF_ERROR(initialize_flash_region(config.get_flash_size()));
-        RETURN_IF_ERROR(initialize_psram_region(config.get_psram_size()));
-        RETURN_IF_ERROR(initialize_sram_region(config.get_sram_size()));
+        auto memory_config = config.getMemoryConfig();
+        RETURN_IF_ERROR(initialize_flash_region(memory_config.flash_size));
+        RETURN_IF_ERROR(initialize_psram_region(memory_config.psram_size));
+        RETURN_IF_ERROR(initialize_sram_region(memory_config.sram_size));
         RETURN_IF_ERROR(initialize_mmio_region());
         
         // Initialize cache
-        cache_line_size_ = config.get_cache_line_size();
+        cache_line_size_ = memory_config.cache_line_size;
         RETURN_IF_ERROR(initialize_cache());
         
-        // Initialize MMU
-        mmu_ = std::make_unique<MemoryMappingUnit>();
-        RETURN_IF_ERROR(mmu_->initialize(config));
+        // Initialize MMU (TODO: Implement MemoryMappingUnit)
+        // mmu_ = std::make_unique<MemoryMappingUnit>();
+        // RETURN_IF_ERROR(mmu_->initialize(config));
         
         // Set up memory region mappings
         RETURN_IF_ERROR(setup_memory_mappings());
@@ -51,7 +52,7 @@ Result<void> MemoryController::initialize(const Configuration& config) {
         return {};
         
     } catch (const std::exception& e) {
-        return std::unexpected(MAKE_ERROR(OPERATION_FAILED,
+        return unexpected(MAKE_ERROR(OPERATION_FAILED,
             "Exception during memory controller initialization: " + std::string(e.what())));
     }
 }
@@ -63,11 +64,11 @@ Result<void> MemoryController::shutdown() {
     
     COMPONENT_LOG_INFO("Shutting down memory controller");
     
-    // Shutdown MMU
-    if (mmu_) {
-        mmu_->shutdown();
-        mmu_.reset();
-    }
+    // Shutdown MMU (TODO: Implement MemoryMappingUnit)
+    // if (mmu_) {
+    //     mmu_->shutdown();
+    //     mmu_.reset();
+    // }
     
     // Clear memory regions
     memory_regions_.clear();
@@ -88,16 +89,20 @@ Result<void> MemoryController::reset() {
     cache_lines_.clear();
     cache_stats_ = {};
     
-    // Reset MMU
-    if (mmu_) {
-        RETURN_IF_ERROR(mmu_->reset());
-    }
+    // Reset MMU (TODO: Implement MemoryMappingUnit)
+    // if (mmu_) {
+    //     RETURN_IF_ERROR(mmu_->reset());
+    // }
     
     // Reset memory regions (keep data but reset state)
     for (auto& [name, region] : memory_regions_) {
         if (region->is_writable()) {
             // Clear writable memory
-            std::memset(region->get_data(), 0, region->get_size());
+            // Clear writable memory by getting direct access to data
+            const auto* data_ptr = region->get_data_ptr();
+            if (data_ptr) {
+                std::memset(const_cast<u8*>(data_ptr), 0, region->get_size());
+            }
         }
     }
     
@@ -108,7 +113,7 @@ Result<void> MemoryController::reset() {
 Result<u8> MemoryController::read_u8(Address address) {
     auto data = read_bytes(address, 1);
     if (!data) {
-        return std::unexpected(data.error());
+        return unexpected(data.error());
     }
     return data.value()[0];
 }
@@ -116,7 +121,7 @@ Result<u8> MemoryController::read_u8(Address address) {
 Result<u16> MemoryController::read_u16(Address address) {
     auto data = read_bytes(address, 2);
     if (!data) {
-        return std::unexpected(data.error());
+        return unexpected(data.error());
     }
     
     // Little-endian conversion
@@ -128,7 +133,7 @@ Result<u16> MemoryController::read_u16(Address address) {
 Result<u32> MemoryController::read_u32(Address address) {
     auto data = read_bytes(address, 4);
     if (!data) {
-        return std::unexpected(data.error());
+        return unexpected(data.error());
     }
     
     // Little-endian conversion
@@ -146,14 +151,14 @@ Result<std::vector<u8>> MemoryController::read_bytes(Address address, size_t cou
     
     // Check for address alignment if required
     if (address % 4 != 0 && count >= 4) {
-        return std::unexpected(MAKE_ERROR(MEMORY_ALIGNMENT_ERROR,
+        return unexpected(MAKE_ERROR(MEMORY_ALIGNMENT_ERROR,
             "Unaligned memory access at address 0x" + std::to_string(address)));
     }
     
     // Try cache first for cacheable regions
     auto region = find_memory_region(address);
     if (!region) {
-        return std::unexpected(region.error());
+        return unexpected(region.error());
     }
     
     if (region.value()->is_cacheable()) {
@@ -167,7 +172,8 @@ Result<std::vector<u8>> MemoryController::read_bytes(Address address, size_t cou
     
     // Read from memory region
     std::vector<u8> data(count);
-    RETURN_IF_ERROR(region.value()->read_bytes(address, data.data(), count));
+    Address region_offset = region.value()->translate_address(address);
+    RETURN_IF_ERROR(region.value()->read(region_offset, data.data(), count));
     
     // Update cache if region is cacheable
     if (region.value()->is_cacheable()) {
@@ -208,22 +214,23 @@ Result<void> MemoryController::write_bytes(Address address, const u8* data, size
     
     // Check for address alignment if required
     if (address % 4 != 0 && count >= 4) {
-        return std::unexpected(MAKE_ERROR(MEMORY_ALIGNMENT_ERROR,
+        return unexpected(MAKE_ERROR(MEMORY_ALIGNMENT_ERROR,
             "Unaligned memory access at address 0x" + std::to_string(address)));
     }
     
     auto region = find_memory_region(address);
     if (!region) {
-        return std::unexpected(region.error());
+        return unexpected(region.error());
     }
     
     if (!region.value()->is_writable()) {
-        return std::unexpected(MAKE_ERROR(MEMORY_ACCESS_VIOLATION,
+        return unexpected(MAKE_ERROR(MEMORY_ACCESS_VIOLATION,
             "Attempt to write to read-only memory at address 0x" + std::to_string(address)));
     }
     
     // Write to memory region
-    RETURN_IF_ERROR(region.value()->write_bytes(address, data, count));
+    Address region_offset = region.value()->translate_address(address);
+    RETURN_IF_ERROR(region.value()->write(region_offset, data, count));
     
     // Invalidate cache entries for this address range
     if (region.value()->is_cacheable()) {
@@ -241,7 +248,7 @@ Result<bool> MemoryController::is_valid_address(Address address) const {
 Result<MemoryType> MemoryController::get_memory_type(Address address) const {
     auto region = find_memory_region(address);
     if (!region) {
-        return std::unexpected(region.error());
+        return unexpected(region.error());
     }
     return region.value()->get_type();
 }
@@ -261,7 +268,7 @@ Result<SharedPtr<MemoryRegion>> MemoryController::find_memory_region(Address add
         }
     }
     
-    return std::unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
+    return unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
         "Invalid memory address: 0x" + std::to_string(address)));
 }
 
@@ -269,8 +276,8 @@ Result<void> MemoryController::initialize_flash_region(size_t size) {
     COMPONENT_LOG_DEBUG("Initializing Flash region: {} bytes", size);
     
     auto flash_region = std::make_shared<MemoryRegion>(
-        "Flash", FLASH_REGION.start_address, size, FLASH_REGION.type,
-        FLASH_REGION.writable, FLASH_REGION.executable, FLASH_REGION.cacheable
+        "Flash", FLASH_LAYOUT.start_address, size, MemoryType::Flash,
+        FLASH_LAYOUT.writable, FLASH_LAYOUT.executable, FLASH_LAYOUT.cacheable
     );
     
     RETURN_IF_ERROR(flash_region->initialize());
@@ -283,8 +290,8 @@ Result<void> MemoryController::initialize_psram_region(size_t size) {
     COMPONENT_LOG_DEBUG("Initializing PSRAM region: {} bytes", size);
     
     auto psram_region = std::make_shared<MemoryRegion>(
-        "PSRAM", PSRAM_REGION.start_address, size, PSRAM_REGION.type,
-        PSRAM_REGION.writable, PSRAM_REGION.executable, PSRAM_REGION.cacheable
+        "PSRAM", PSRAM_LAYOUT.start_address, size, MemoryType::PSRAM,
+        PSRAM_LAYOUT.writable, PSRAM_LAYOUT.executable, PSRAM_LAYOUT.cacheable
     );
     
     RETURN_IF_ERROR(psram_region->initialize());
@@ -297,8 +304,8 @@ Result<void> MemoryController::initialize_sram_region(size_t size) {
     COMPONENT_LOG_DEBUG("Initializing SRAM region: {} bytes", size);
     
     auto sram_region = std::make_shared<MemoryRegion>(
-        "SRAM", SRAM_REGION.start_address, size, SRAM_REGION.type,
-        SRAM_REGION.writable, SRAM_REGION.executable, SRAM_REGION.cacheable
+        "SRAM", SRAM_LAYOUT.start_address, size, MemoryType::SRAM,
+        SRAM_LAYOUT.writable, SRAM_LAYOUT.executable, SRAM_LAYOUT.cacheable
     );
     
     RETURN_IF_ERROR(sram_region->initialize());
@@ -311,8 +318,8 @@ Result<void> MemoryController::initialize_mmio_region() {
     COMPONENT_LOG_DEBUG("Initializing MMIO region");
     
     auto mmio_region = std::make_shared<MemoryRegion>(
-        "MMIO", MMIO_REGION.start_address, MMIO_REGION.size, MMIO_REGION.type,
-        MMIO_REGION.writable, MMIO_REGION.executable, MMIO_REGION.cacheable
+        "MMIO", MMIO_LAYOUT.start_address, MMIO_LAYOUT.size, MemoryType::MMIO,
+        MMIO_LAYOUT.writable, MMIO_LAYOUT.executable, MMIO_LAYOUT.cacheable
     );
     
     RETURN_IF_ERROR(mmio_region->initialize());
@@ -348,14 +355,14 @@ Result<std::vector<u8>> MemoryController::try_cache_read(Address address, size_t
     
     auto it = cache_lines_.find(cache_line_addr);
     if (it == cache_lines_.end()) {
-        return std::unexpected(MAKE_ERROR(OPERATION_FAILED, "Cache miss"));
+        return unexpected(MAKE_ERROR(OPERATION_FAILED, "Cache miss"));
     }
     
     const auto& cache_line = it->second;
     size_t offset = address - cache_line_addr;
     
     if (offset + count > cache_line.data.size()) {
-        return std::unexpected(MAKE_ERROR(OPERATION_FAILED, "Cache read overflow"));
+        return unexpected(MAKE_ERROR(OPERATION_FAILED, "Cache read overflow"));
     }
     
     std::vector<u8> data(count);
@@ -389,6 +396,66 @@ void MemoryController::invalidate_cache_range(Address address, size_t count) {
             cache_lines_.erase(it);
         }
     }
+}
+
+// MemoryInterface implementation (adapter methods)
+EmulatorError MemoryController::read8(Address address, uint8_t& value) {
+    auto result = read_u8(address);
+    if (result.has_value()) {
+        value = result.value();
+        return EmulatorError::Success;
+    }
+    return EmulatorError::InvalidAddress;
+}
+
+EmulatorError MemoryController::read16(Address address, uint16_t& value) {
+    auto result = read_u16(address);
+    if (result.has_value()) {
+        value = result.value();
+        return EmulatorError::Success;
+    }
+    return EmulatorError::InvalidAddress;
+}
+
+EmulatorError MemoryController::read32(Address address, uint32_t& value) {
+    auto result = read_u32(address);
+    if (result.has_value()) {
+        value = result.value();
+        return EmulatorError::Success;
+    }
+    return EmulatorError::InvalidAddress;
+}
+
+EmulatorError MemoryController::write8(Address address, uint8_t value) {
+    auto result = write_u8(address, value);
+    return result.has_value() ? EmulatorError::Success : EmulatorError::MemoryAccessError;
+}
+
+EmulatorError MemoryController::write16(Address address, uint16_t value) {
+    auto result = write_u16(address, value);
+    return result.has_value() ? EmulatorError::Success : EmulatorError::MemoryAccessError;
+}
+
+EmulatorError MemoryController::write32(Address address, uint32_t value) {
+    auto result = write_u32(address, value);
+    return result.has_value() ? EmulatorError::Success : EmulatorError::MemoryAccessError;
+}
+
+bool MemoryController::isValidAddress(Address address) const {
+    auto result = is_valid_address(address);
+    return result.has_value() && result.value();
+}
+
+bool MemoryController::isWritableAddress(Address address) const {
+    // Check if address is in a writable region
+    auto region = find_memory_region(address);
+    return region.has_value() && region.value()->is_writable();
+}
+
+bool MemoryController::isExecutableAddress(Address address) const {
+    // Check if address is in an executable region
+    auto region = find_memory_region(address);
+    return region.has_value() && region.value()->is_executable();
 }
 
 }  // namespace m5tab5::emulator

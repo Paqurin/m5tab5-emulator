@@ -27,7 +27,7 @@ Result<void> PinMuxController::initialize(const Configuration& config) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
+        return unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
             "Pin mux controller already initialized"));
     }
     
@@ -70,30 +70,30 @@ Result<void> PinMuxController::configure_pin(u8 pin_number, PinFunction function
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Pin mux controller not initialized"));
     }
     
     if (pin_number >= MAX_PINS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid pin number"));
     }
     
     if (!validate_pin_function(pin_number, function)) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Function not available for this pin"));
     }
     
     // Check for conflicts
     auto conflict_check = is_function_conflict(pin_number, function, peripheral_instance);
     if (!conflict_check) {
-        return std::unexpected(conflict_check.error());
+        return unexpected(conflict_check.error());
     }
     
     if (conflict_check.value()) {
         auto resolve_result = resolve_conflicts(pin_number, function);
         if (!resolve_result) {
-            return std::unexpected(resolve_result.error());
+            return unexpected(resolve_result.error());
         }
     }
     
@@ -119,12 +119,12 @@ Result<void> PinMuxController::set_pin_properties(u8 pin_number, PinDriveStrengt
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Pin mux controller not initialized"));
     }
     
     if (pin_number >= MAX_PINS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid pin number"));
     }
     
@@ -144,17 +144,17 @@ Result<void> PinMuxController::set_pin_pull(u8 pin_number, bool pull_up, bool pu
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Pin mux controller not initialized"));
     }
     
     if (pin_number >= MAX_PINS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid pin number"));
     }
     
     if (pull_up && pull_down) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Cannot enable both pull-up and pull-down"));
     }
     
@@ -169,12 +169,12 @@ Result<void> PinMuxController::enable_pin_input(u8 pin_number, bool enable) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Pin mux controller not initialized"));
     }
     
     if (pin_number >= MAX_PINS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid pin number"));
     }
     
@@ -188,12 +188,12 @@ Result<void> PinMuxController::enable_pin_output(u8 pin_number, bool enable) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Pin mux controller not initialized"));
     }
     
     if (pin_number >= MAX_PINS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid pin number"));
     }
     
@@ -207,12 +207,12 @@ Result<PinConfiguration> PinMuxController::get_pin_configuration(u8 pin_number) 
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Pin mux controller not initialized"));
     }
     
     if (pin_number >= MAX_PINS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid pin number"));
     }
     
@@ -224,7 +224,7 @@ Result<std::vector<u8>> PinMuxController::get_pins_for_function(PinFunction func
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Pin mux controller not initialized"));
     }
     
@@ -244,12 +244,12 @@ Result<std::vector<PinFunction>> PinMuxController::get_available_functions(u8 pi
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Pin mux controller not initialized"));
     }
     
     if (pin_number >= MAX_PINS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid pin number"));
     }
     
@@ -305,7 +305,7 @@ Result<void> PinMuxController::load_default_configuration() {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Pin mux controller not initialized"));
     }
     
@@ -319,13 +319,13 @@ Result<void> PinMuxController::save_configuration_to_file(const std::string& fil
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Pin mux controller not initialized"));
     }
     
     std::ofstream file(filename);
     if (!file.is_open()) {
-        return std::unexpected(MAKE_ERROR(FILE_ERROR,
+        return unexpected(MAKE_ERROR(FILE_ERROR,
             "Cannot open file for writing"));
     }
     
@@ -357,13 +357,13 @@ Result<void> PinMuxController::load_configuration_from_file(const std::string& f
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Pin mux controller not initialized"));
     }
     
     std::ifstream file(filename);
     if (!file.is_open()) {
-        return std::unexpected(MAKE_ERROR(FILE_ERROR,
+        return unexpected(MAKE_ERROR(FILE_ERROR,
             "Cannot open file for reading"));
     }
     
@@ -421,14 +421,14 @@ Result<void> PinMuxController::handle_mmio_write(Address address, u32 value) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Pin mux controller not initialized"));
     }
     
     Address offset = address - PIN_MUX_BASE_ADDR;
     
     if (offset >= MAX_PINS * 4) {
-        return std::unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
+        return unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
             "Invalid pin mux register address"));
     }
     
@@ -461,14 +461,14 @@ Result<u32> PinMuxController::handle_mmio_read(Address address) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Pin mux controller not initialized"));
     }
     
     Address offset = address - PIN_MUX_BASE_ADDR;
     
     if (offset >= MAX_PINS * 4) {
-        return std::unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
+        return unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
             "Invalid pin mux register address"));
     }
     

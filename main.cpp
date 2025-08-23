@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
         // Initialize logging first
         LogLevel log_level_enum = LogLevel::INFO;
         if (log_level == "trace") log_level_enum = LogLevel::TRACE;
-        else if (log_level == "debug") log_level_enum = LogLevel::DEBUG;
+        else if (log_level == "debug") log_level_enum = LogLevel::DEBUG_LEVEL;
         else if (log_level == "info") log_level_enum = LogLevel::INFO;
         else if (log_level == "warn") log_level_enum = LogLevel::WARN;
         else if (log_level == "error") log_level_enum = LogLevel::ERROR;
@@ -134,19 +134,19 @@ int main(int argc, char* argv[]) {
         
         LOG_INFO("M5Stack Tab5 Emulator starting...");
         LOG_INFO("Version: 1.0.0");
-        LOG_INFO("Build: {} {}", __DATE__, __TIME__);
+        LOG_INFO(std::string("Build: ") + __DATE__ + " " + __TIME__);
         
         // Load configuration
         Configuration config;
         
         // Try to load config file if it exists
         if (std::filesystem::exists(config_file)) {
-            auto config_result = config.load_from_file(config_file);
-            if (!config_result) {
-                LOG_ERROR("Failed to load configuration: {}", config_result.error().to_string());
+            bool config_loaded = config.loadFromFile(config_file);
+            if (!config_loaded) {
+                LOG_ERROR("Failed to load configuration from: " + config_file);
                 return 1;
             }
-            LOG_INFO("Loaded configuration from: {}", config_file);
+            LOG_INFO("Loaded configuration from: " + config_file);
         } else {
             LOG_INFO("Configuration file not found, using defaults");
         }
@@ -158,7 +158,7 @@ int main(int argc, char* argv[]) {
         }
         
         if (gdb_port > 0) {
-            LOG_INFO("GDB server will be started on port {}", gdb_port);
+            LOG_INFO("GDB server will be started on port " + std::to_string(gdb_port));
         }
         
         if (enable_profiling) {
@@ -166,11 +166,11 @@ int main(int argc, char* argv[]) {
         }
         
         // Create and initialize emulator
-        emulator = std::make_unique<EmulatorCore>();
+        emulator = std::make_unique<EmulatorCore>(config);
         
         auto init_result = emulator->initialize(config);
         if (!init_result) {
-            LOG_ERROR("Failed to initialize emulator: {}", init_result.error().to_string());
+            LOG_ERROR("Failed to initialize emulator: " + init_result.error().to_string());
             return 1;
         }
         
@@ -179,7 +179,7 @@ int main(int argc, char* argv[]) {
         // Start emulator
         auto start_result = emulator->start();
         if (!start_result) {
-            LOG_ERROR("Failed to start emulator: {}", start_result.error().to_string());
+            LOG_ERROR("Failed to start emulator: " + start_result.error().to_string());
             return 1;
         }
         
@@ -192,9 +192,8 @@ int main(int argc, char* argv[]) {
             // Print periodic status
             static int status_counter = 0;
             if (++status_counter % 100 == 0) {  // Every 10 seconds
-                LOG_INFO("Status: {} cycles executed, {:.2f}x speed", 
-                         emulator->get_cycles_executed(),
-                         emulator->get_execution_speed());
+                LOG_INFO("Status: " + std::to_string(emulator->get_cycles_executed()) + 
+                         " cycles executed, " + std::to_string(emulator->get_execution_speed()) + "x speed");
             }
         }
         
@@ -202,7 +201,7 @@ int main(int argc, char* argv[]) {
         LOG_INFO("Shutting down emulator...");
         auto shutdown_result = emulator->shutdown();
         if (!shutdown_result) {
-            LOG_ERROR("Failed to shutdown emulator cleanly: {}", shutdown_result.error().to_string());
+            LOG_ERROR("Failed to shutdown emulator cleanly: " + shutdown_result.error().to_string());
             return 1;
         }
         

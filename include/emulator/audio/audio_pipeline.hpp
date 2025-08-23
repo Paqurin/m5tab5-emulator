@@ -12,7 +12,9 @@
 #include <thread>
 #include <atomic>
 #include <condition_variable>
+#ifndef NO_GRAPHICS
 #include <SDL2/SDL.h>
+#endif
 
 namespace m5tab5::emulator {
 
@@ -141,21 +143,38 @@ public:
 
 private:
     struct SDL_AudioState {
+#ifndef NO_GRAPHICS
         SDL_AudioDeviceID playback_device;
         SDL_AudioDeviceID recording_device;
         SDL_AudioSpec playback_spec;
         SDL_AudioSpec recording_spec;
+#else
+        u32 playback_device;
+        u32 recording_device;
+        u32 playback_spec;
+        u32 recording_spec;
+#endif
         bool playback_active;
         bool recording_active;
     };
 
     // SDL audio callbacks
+#ifndef NO_GRAPHICS
     static void sdl_playback_callback(void* userdata, Uint8* stream, int len);
     static void sdl_recording_callback(void* userdata, Uint8* stream, int len);
+#else
+    static void sdl_playback_callback(void* userdata, u8* stream, int len);
+    static void sdl_recording_callback(void* userdata, u8* stream, int len);
+#endif
     
     // Internal processing methods
+#ifndef NO_GRAPHICS
     void process_playback_callback(Uint8* stream, int len);
     void process_recording_callback(Uint8* stream, int len);
+#else
+    void process_playback_callback(u8* stream, int len);
+    void process_recording_callback(u8* stream, int len);
+#endif
     
     void audio_processing_thread();
     void update_statistics();
@@ -164,10 +183,17 @@ private:
     void handle_buffer_overrun();
     
     // Format conversion helpers
+#ifndef NO_GRAPHICS
     void convert_samples_to_sdl_format(const std::vector<i16>& input, 
                                       Uint8* output, const SDL_AudioSpec& spec);
     void convert_samples_from_sdl_format(const Uint8* input, 
                                         std::vector<i16>& output, const SDL_AudioSpec& spec);
+#else
+    void convert_samples_to_sdl_format(const std::vector<i16>& input, 
+                                      u8* output, u32 spec);
+    void convert_samples_from_sdl_format(const u8* input, 
+                                        std::vector<i16>& output, u32 spec);
+#endif
     
     bool initialized_;
     AudioStreamConfig stream_config_;

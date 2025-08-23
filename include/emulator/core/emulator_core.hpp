@@ -1,19 +1,38 @@
 #pragma once
 
 #include "types.hpp"
-#include "emulator/cpu/cpu_core.hpp"
+#include "emulator/utils/types.hpp"
+#include "emulator/utils/error.hpp"
+#include "emulator/cpu/dual_core_manager.hpp"
 #include "emulator/memory/memory_controller.hpp"
 #include "emulator/peripherals/peripheral_manager.hpp"
-#include "emulator/config/configuration.hpp"
+#include "emulator/graphics/graphics_engine.hpp"
+#include "emulator/plugin/plugin_manager.hpp"
 #include "emulator/debug/debugger.hpp"
+#include "emulator/config/configuration.hpp"
 
 #include <memory>
 #include <thread>
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
+#include <chrono>
+#include <unordered_map>
+#include <typeindex>
 
 namespace m5tab5::emulator {
+
+// EmulatorState enum for tracking emulator lifecycle
+enum class EmulatorState {
+    UNINITIALIZED,
+    INITIALIZED,
+    RUNNING,
+    PAUSED,
+    STOPPING,
+    STOPPED,
+    SHUTDOWN,
+    ERROR
+};
 
 /**
  * @brief Core emulator engine that orchestrates all components
@@ -26,80 +45,143 @@ public:
     explicit EmulatorCore(const Configuration& config);
     ~EmulatorCore();
 
-    // Core lifecycle
-    EmulatorError initialize();
-    EmulatorError start();
-    EmulatorError pause();
-    EmulatorError resume();
-    EmulatorError stop();
-    EmulatorError reset();
+    // Core lifecycle  
+    Result<void> initialize(const Configuration& config);
+    Result<void> start();
+    Result<void> pause();
+    Result<void> resume();
+    Result<void> stop();
+    Result<void> shutdown();
+    Result<void> reset();
 
     // State management
-    bool isRunning() const { return running_.load(); }
-    bool isPaused() const { return paused_.load(); }
-    ClockCycle getCurrentCycle() const { return current_cycle_.load(); }
+    EmulatorState get_state() const;
+    Cycles get_cycles_executed() const;
+    double get_execution_speed() const;
 
-    // Component access
-    CPUCore& getCPU() { return *cpu_; }
-    MemoryController& getMemory() { return *memory_; }
-    PeripheralManager& getPeripherals() { return *peripherals_; }
-    Debugger& getDebugger() { return *debugger_; }
-
-    // Configuration
-    const Configuration& getConfig() const { return config_; }
-    EmulatorError updateConfig(const Configuration& new_config);
-
-    // Performance monitoring
-    struct Statistics {
-        uint64_t cycles_executed = 0;
-        uint64_t instructions_executed = 0;
-        double cpu_utilization = 0.0;
-        double real_time_factor = 0.0; // How fast compared to real hardware
-    };
+    // Component access - Public interface for plugins and external systems
+    std::shared_ptr<MemoryController> getMemoryController() const;
     
-    Statistics getStatistics() const;
-    void resetStatistics();
+    // Template-based component access using registry pattern
+    template<typename T>
+    std::shared_ptr<T> getComponent(const std::string& name) const;
+    
+    // Non-template version returning void* for generic access (plugins)
+    std::shared_ptr<void> getComponent(const std::string& name) const;
+    
+    // Overloaded version for type-based lookup (no name required)
+    template<typename T>
+    std::shared_ptr<T> getComponent() const;
+    
+    // Performance monitoring and timing
+    Cycles getCurrentCycle() const;
 
 private:
-    // Main execution loop
-    void executionLoop();
-    void updateTiming();
-
-    // Component initialization
-    EmulatorError initializeCPU();
-    EmulatorError initializeMemory();
-    EmulatorError initializePeripherals();
+    // Main execution loops
+    void execution_loop();
+    void graphics_loop();
 
     // Configuration and state
     Configuration config_;
-    
-    // Core components
-    std::unique_ptr<CPUCore> cpu_;
-    std::unique_ptr<MemoryController> memory_;
-    std::unique_ptr<PeripheralManager> peripherals_;
-    std::unique_ptr<Debugger> debugger_;
-
-    // Execution control
+    EmulatorState state_;
     std::atomic<bool> running_{false};
-    std::atomic<bool> paused_{false};
-    std::atomic<bool> should_stop_{false};
-    std::unique_ptr<std::thread> execution_thread_;
     
-    // Synchronization
-    mutable std::mutex state_mutex_;
-    std::condition_variable pause_cv_;
-    std::condition_variable resume_cv_;
-
-    // Timing and performance
-    std::atomic<ClockCycle> current_cycle_{0};
-    TimeStamp start_time_;
-    TimeStamp last_stats_update_;
-    mutable std::mutex stats_mutex_;
-    Statistics current_stats_;
-
-    // Execution control parameters
-    static constexpr auto EXECUTION_QUANTUM = std::chrono::microseconds(100);
-    static constexpr uint32_t CYCLES_PER_QUANTUM = CPU_FREQ_HZ / 10000; // 100µs worth
+    // Target frequency and performance tracking
+    uint32_t target_frequency_;
+    Cycles cycles_executed_;
+    std::chrono::steady_clock::time_point start_time_;
+    
+    // Core components (to match implementation)
+    std::unique_ptr<MemoryController> memory_controller_;
+    std::unique_ptr<DualCoreManager> cpu_manager_; 
+    std::unique_ptr<PeripheralManager> peripheral_manager_;
+    std::unique_ptr<GraphicsEngine> graphics_engine_;
+    std::unique_ptr<PluginManager> plugin_manager_;
+    std::unique_ptr<Debugger> debugger_;
+    
+    // Execution threads
+    std::thread execution_thread_;
+    std::thread graphics_thread_;
+    
+    // Component registry for type-safe access
+    mutable std::mutex component_registry_mutex_;
+    std::unordered_map<std::string, std::shared_ptr<void>> component_registry_;
+    std::unordered_map<std::type_index, std::shared_ptr<void>> type_registry_;
+    
+    // Component registration helpers (internal use)
+    template<typename T>
+    void registerComponent(const std::string& name, std::shared_ptr<T> component);
+    
+    template<typename T>
+    void registerComponent(std::shared_ptr<T> component);
+    
+    // Initialize all components and populate registry
+    Result<void> initializeComponents();
+    void shutdownComponents();
 };
+
+//
+// Template method implementations (must be in header for templates)
+//
+
+template<typename T>
+std::shared_ptr<T> EmulatorCore::getComponent(const std::string& name) const {
+    std::lock_guard<std::mutex> lock(component_registry_mutex_);
+    
+    auto it = component_registry_.find(name);
+    if (it == component_registry_.end()) {
+        return nullptr;
+    }
+    
+    // Use dynamic_pointer_cast for safe type conversion
+    return std::dynamic_pointer_cast<T>(
+        std::static_pointer_cast<T>(it->second)
+    );
+}
+
+template<typename T>
+std::shared_ptr<T> EmulatorCore::getComponent() const {
+    std::lock_guard<std::mutex> lock(component_registry_mutex_);
+    
+    std::type_index type_key = std::type_index(typeid(T));
+    auto it = type_registry_.find(type_key);
+    if (it == type_registry_.end()) {
+        return nullptr;
+    }
+    
+    // Use dynamic_pointer_cast for safe type conversion
+    return std::dynamic_pointer_cast<T>(
+        std::static_pointer_cast<T>(it->second)
+    );
+}
+
+template<typename T>
+void EmulatorCore::registerComponent(const std::string& name, std::shared_ptr<T> component) {
+    if (!component) {
+        return;
+    }
+    
+    std::lock_guard<std::mutex> lock(component_registry_mutex_);
+    
+    // Store in name registry
+    component_registry_[name] = std::static_pointer_cast<void>(component);
+    
+    // Store in type registry
+    std::type_index type_key = std::type_index(typeid(T));
+    type_registry_[type_key] = std::static_pointer_cast<void>(component);
+}
+
+template<typename T>
+void EmulatorCore::registerComponent(std::shared_ptr<T> component) {
+    if (!component) {
+        return;
+    }
+    
+    std::lock_guard<std::mutex> lock(component_registry_mutex_);
+    
+    // Store only in type registry (no name)
+    std::type_index type_key = std::type_index(typeid(T));
+    type_registry_[type_key] = std::static_pointer_cast<void>(component);
+}
 
 } // namespace m5tab5::emulator

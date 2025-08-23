@@ -36,7 +36,7 @@ Result<void> PWMController::initialize(const Configuration& config, InterruptCon
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
+        return unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
             "PWM controller already initialized"));
     }
     
@@ -97,12 +97,12 @@ Result<void> PWMController::configure(u32 frequency_hz, PWMMode mode) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "PWM controller not initialized"));
     }
     
     if (frequency_hz < MIN_FREQUENCY || frequency_hz > MAX_FREQUENCY) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Frequency out of range"));
     }
     
@@ -132,12 +132,12 @@ Result<void> PWMController::set_period(u32 period_us) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "PWM controller not initialized"));
     }
     
     if (period_us == 0) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Period cannot be zero"));
     }
     
@@ -161,7 +161,7 @@ Result<u32> PWMController::get_period() const {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "PWM controller not initialized"));
     }
     
@@ -172,12 +172,12 @@ Result<void> PWMController::enable_channel(u8 channel, bool enable) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "PWM controller not initialized"));
     }
     
     if (channel >= MAX_CHANNELS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid channel number"));
     }
     
@@ -200,17 +200,17 @@ Result<void> PWMController::set_duty_cycle(u8 channel, u32 duty_cycle_percent_x1
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "PWM controller not initialized"));
     }
     
     if (channel >= MAX_CHANNELS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid channel number"));
     }
     
     if (duty_cycle_percent_x100 > DUTY_CYCLE_MAX) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Duty cycle out of range"));
     }
     
@@ -232,17 +232,17 @@ Result<void> PWMController::set_compare_value(u8 channel, u32 compare_value) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "PWM controller not initialized"));
     }
     
     if (channel >= MAX_CHANNELS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid channel number"));
     }
     
     if (compare_value > counter_period_) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Compare value exceeds period"));
     }
     
@@ -260,12 +260,12 @@ Result<void> PWMController::set_polarity(u8 channel, PWMPolarity polarity) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "PWM controller not initialized"));
     }
     
     if (channel >= MAX_CHANNELS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid channel number"));
     }
     
@@ -288,12 +288,12 @@ Result<void> PWMController::set_dead_time(u8 channel, u32 dead_time_ns) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "PWM controller not initialized"));
     }
     
     if (channel >= MAX_CHANNELS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid channel number"));
     }
     
@@ -310,12 +310,12 @@ Result<void> PWMController::enable_complementary(u8 channel, bool enable) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "PWM controller not initialized"));
     }
     
     if (channel >= MAX_CHANNELS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid channel number"));
     }
     
@@ -338,7 +338,7 @@ Result<void> PWMController::start() {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "PWM controller not initialized"));
     }
     
@@ -363,7 +363,7 @@ Result<void> PWMController::stop() {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "PWM controller not initialized"));
     }
     
@@ -387,7 +387,7 @@ Result<void> PWMController::reset() {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "PWM controller not initialized"));
     }
     
@@ -412,12 +412,12 @@ Result<void> PWMController::enable_interrupt(u8 channel, PWMInterruptType interr
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "PWM controller not initialized"));
     }
     
     if (channel >= MAX_CHANNELS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid channel number"));
     }
     
@@ -434,12 +434,12 @@ Result<void> PWMController::disable_interrupt(u8 channel, PWMInterruptType inter
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "PWM controller not initialized"));
     }
     
     if (channel >= MAX_CHANNELS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid channel number"));
     }
     
@@ -459,7 +459,7 @@ Result<void> PWMController::handle_mmio_write(Address address, u32 value) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "PWM controller not initialized"));
     }
     
@@ -513,7 +513,7 @@ Result<void> PWMController::handle_mmio_write(Address address, u32 value) {
                 set_compare_value(channel, value);
                 
             } else {
-                return std::unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
+                return unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
                     "Invalid PWM register offset: 0x" + std::to_string(offset)));
             }
             break;
@@ -526,7 +526,7 @@ Result<u32> PWMController::handle_mmio_read(Address address) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "PWM controller not initialized"));
     }
     
@@ -567,7 +567,7 @@ Result<u32> PWMController::handle_mmio_read(Address address) {
                 return registers_.compare[channel];
                 
             } else {
-                return std::unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
+                return unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
                     "Invalid PWM register offset: 0x" + std::to_string(offset)));
             }
     }

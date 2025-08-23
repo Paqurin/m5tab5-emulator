@@ -1,5 +1,4 @@
 #include "emulator/config/configuration.hpp"
-#include "emulator/utils/error.hpp"
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <filesystem>
@@ -9,308 +8,335 @@ namespace m5tab5::emulator {
 using json = nlohmann::json;
 
 Configuration::Configuration() {
-    set_defaults();
+    setDefaults();
+}
+
+Configuration::Configuration(DeviceVariant variant) : device_variant_(variant) {
+    setDefaults();
 }
 
 Configuration::~Configuration() = default;
 
-Result<void> Configuration::load_from_file(const std::string& config_path) {
-    if (!std::filesystem::exists(config_path)) {
-        return std::unexpected(MAKE_ERROR(CONFIG_FILE_NOT_FOUND, 
-            "Configuration file not found: " + config_path));
+bool Configuration::loadFromFile(const std::string& filename) {
+    if (!std::filesystem::exists(filename)) {
+        return false;
     }
     
     try {
-        std::ifstream file(config_path);
+        std::ifstream file(filename);
         if (!file.is_open()) {
-            return std::unexpected(MAKE_ERROR(CONFIG_FILE_NOT_FOUND,
-                "Failed to open configuration file: " + config_path));
+            return false;
         }
         
-        json config_json;
-        file >> config_json;
-        
-        return load_from_json(config_json);
-    } catch (const json::exception& e) {
-        return std::unexpected(MAKE_ERROR(CONFIG_INVALID_FORMAT,
-            "JSON parsing error: " + std::string(e.what())));
-    } catch (const std::exception& e) {
-        return std::unexpected(MAKE_ERROR(OPERATION_FAILED,
-            "Failed to load configuration: " + std::string(e.what())));
+        std::string content((std::istreambuf_iterator<char>(file)),
+                           std::istreambuf_iterator<char>());
+        return loadFromString(content);
+    } catch (const std::exception&) {
+        return false;
     }
 }
 
-Result<void> Configuration::load_from_json(const nlohmann::json& config_json) {
+bool Configuration::saveToFile(const std::string& filename) const {
     try {
-        // Device configuration
+        std::ofstream file(filename);
+        if (!file.is_open()) {
+            return false;
+        }
+        
+        file << saveToString();
+        return true;
+    } catch (const std::exception&) {
+        return false;
+    }
+}
+
+bool Configuration::loadFromString(const std::string& config_data) {
+    try {
+        json config_json = json::parse(config_data);
+        
+        // Basic stub implementation - just validate JSON structure
         if (config_json.contains("device")) {
             const auto& device = config_json["device"];
-            
             if (device.contains("variant")) {
                 auto variant_str = device["variant"].get<std::string>();
                 if (variant_str == "standard") {
-                    device_variant_ = DeviceVariant::STANDARD;
+                    device_variant_ = DeviceVariant::Standard;
                 } else if (variant_str == "industrial") {
-                    device_variant_ = DeviceVariant::INDUSTRIAL;
+                    device_variant_ = DeviceVariant::Industrial;
                 } else if (variant_str == "custom") {
-                    device_variant_ = DeviceVariant::CUSTOM;
-                } else {
-                    return std::unexpected(MAKE_ERROR(CONFIG_INVALID_VALUE,
-                        "Invalid device variant: " + variant_str));
-                }
-            }
-            
-            if (device.contains("model_name")) {
-                model_name_ = device["model_name"].get<std::string>();
-            }
-        }
-        
-        // CPU configuration
-        if (config_json.contains("cpu")) {
-            const auto& cpu = config_json["cpu"];
-            
-            if (cpu.contains("main_frequency")) {
-                main_cpu_frequency_ = cpu["main_frequency"].get<u32>();
-            }
-            
-            if (cpu.contains("lp_frequency")) {
-                lp_cpu_frequency_ = cpu["lp_frequency"].get<u32>();
-            }
-            
-            if (cpu.contains("enable_debugging")) {
-                enable_cpu_debugging_ = cpu["enable_debugging"].get<bool>();
-            }
-        }
-        
-        // Memory configuration
-        if (config_json.contains("memory")) {
-            const auto& memory = config_json["memory"];
-            
-            if (memory.contains("flash_size")) {
-                flash_size_ = memory["flash_size"].get<size_t>();
-            }
-            
-            if (memory.contains("psram_size")) {
-                psram_size_ = memory["psram_size"].get<size_t>();
-            }
-            
-            if (memory.contains("sram_size")) {
-                sram_size_ = memory["sram_size"].get<size_t>();
-            }
-            
-            if (memory.contains("cache_line_size")) {
-                cache_line_size_ = memory["cache_line_size"].get<size_t>();
-            }
-        }
-        
-        // Display configuration
-        if (config_json.contains("display")) {
-            const auto& display = config_json["display"];
-            
-            if (display.contains("width")) {
-                display_width_ = display["width"].get<u32>();
-            }
-            
-            if (display.contains("height")) {
-                display_height_ = display["height"].get<u32>();
-            }
-            
-            if (display.contains("refresh_rate")) {
-                display_refresh_rate_ = display["refresh_rate"].get<u32>();
-            }
-            
-            if (display.contains("enable_vsync")) {
-                enable_vsync_ = display["enable_vsync"].get<bool>();
-            }
-        }
-        
-        // Audio configuration
-        if (config_json.contains("audio")) {
-            const auto& audio = config_json["audio"];
-            
-            if (audio.contains("sample_rate")) {
-                audio_sample_rate_ = audio["sample_rate"].get<u32>();
-            }
-            
-            if (audio.contains("buffer_size")) {
-                audio_buffer_size_ = audio["buffer_size"].get<u32>();
-            }
-            
-            if (audio.contains("enable_input")) {
-                enable_audio_input_ = audio["enable_input"].get<bool>();
-            }
-            
-            if (audio.contains("enable_output")) {
-                enable_audio_output_ = audio["enable_output"].get<bool>();
-            }
-        }
-        
-        // Logging configuration
-        if (config_json.contains("logging")) {
-            const auto& logging = config_json["logging"];
-            
-            if (logging.contains("level")) {
-                auto level_str = logging["level"].get<std::string>();
-                if (level_str == "trace") {
-                    log_level_ = LogLevel::TRACE;
-                } else if (level_str == "debug") {
-                    log_level_ = LogLevel::DEBUG;
-                } else if (level_str == "info") {
-                    log_level_ = LogLevel::INFO;
-                } else if (level_str == "warn") {
-                    log_level_ = LogLevel::WARN;
-                } else if (level_str == "error") {
-                    log_level_ = LogLevel::ERROR;
-                } else {
-                    return std::unexpected(MAKE_ERROR(CONFIG_INVALID_VALUE,
-                        "Invalid log level: " + level_str));
-                }
-            }
-            
-            if (logging.contains("file_path")) {
-                log_file_path_ = logging["file_path"].get<std::string>();
-            }
-            
-            if (logging.contains("enable_console")) {
-                enable_console_logging_ = logging["enable_console"].get<bool>();
-            }
-        }
-        
-        // Plugins configuration
-        if (config_json.contains("plugins")) {
-            const auto& plugins = config_json["plugins"];
-            
-            if (plugins.contains("search_paths")) {
-                plugin_search_paths_.clear();
-                for (const auto& path : plugins["search_paths"]) {
-                    plugin_search_paths_.push_back(path.get<std::string>());
-                }
-            }
-            
-            if (plugins.contains("enabled_plugins")) {
-                enabled_plugins_.clear();
-                for (const auto& plugin : plugins["enabled_plugins"]) {
-                    enabled_plugins_.push_back(plugin.get<std::string>());
+                    device_variant_ = DeviceVariant::Custom;
                 }
             }
         }
         
-        return {};
-    } catch (const json::exception& e) {
-        return std::unexpected(MAKE_ERROR(CONFIG_INVALID_FORMAT,
-            "JSON processing error: " + std::string(e.what())));
+        return true;
+    } catch (const json::exception&) {
+        return false;
     }
 }
 
-Result<void> Configuration::save_to_file(const std::string& config_path) const {
-    try {
-        json config_json = to_json();
-        
-        std::ofstream file(config_path);
-        if (!file.is_open()) {
-            return std::unexpected(MAKE_ERROR(IO_WRITE_FAILED,
-                "Failed to open file for writing: " + config_path));
-        }
-        
-        file << config_json.dump(2);
-        return {};
-    } catch (const std::exception& e) {
-        return std::unexpected(MAKE_ERROR(OPERATION_FAILED,
-            "Failed to save configuration: " + std::string(e.what())));
-    }
-}
-
-nlohmann::json Configuration::to_json() const {
+std::string Configuration::saveToString() const {
     json config;
     
-    // Device configuration
-    config["device"]["variant"] = device_variant_to_string(device_variant_);
-    config["device"]["model_name"] = model_name_;
+    // Basic configuration structure
+    config["device"]["variant"] = device_variant_ == DeviceVariant::Standard ? "standard" :
+                                   device_variant_ == DeviceVariant::Industrial ? "industrial" : "custom";
     
-    // CPU configuration
-    config["cpu"]["main_frequency"] = main_cpu_frequency_;
-    config["cpu"]["lp_frequency"] = lp_cpu_frequency_;
-    config["cpu"]["enable_debugging"] = enable_cpu_debugging_;
-    
-    // Memory configuration
-    config["memory"]["flash_size"] = flash_size_;
-    config["memory"]["psram_size"] = psram_size_;
-    config["memory"]["sram_size"] = sram_size_;
-    config["memory"]["cache_line_size"] = cache_line_size_;
-    
-    // Display configuration
-    config["display"]["width"] = display_width_;
-    config["display"]["height"] = display_height_;
-    config["display"]["refresh_rate"] = display_refresh_rate_;
-    config["display"]["enable_vsync"] = enable_vsync_;
-    
-    // Audio configuration
-    config["audio"]["sample_rate"] = audio_sample_rate_;
-    config["audio"]["buffer_size"] = audio_buffer_size_;
-    config["audio"]["enable_input"] = enable_audio_input_;
-    config["audio"]["enable_output"] = enable_audio_output_;
-    
-    // Logging configuration
-    config["logging"]["level"] = log_level_to_string(log_level_);
-    config["logging"]["file_path"] = log_file_path_;
-    config["logging"]["enable_console"] = enable_console_logging_;
-    
-    // Plugins configuration
-    config["plugins"]["search_paths"] = plugin_search_paths_;
-    config["plugins"]["enabled_plugins"] = enabled_plugins_;
-    
+    return config.dump(2);
+}
+
+bool Configuration::hasSection(const std::string& section) const {
+    return config_tree_.find(section) != config_tree_.end();
+}
+
+bool Configuration::hasKey(const std::string& section, const std::string& key) const {
+    auto section_it = config_tree_.find(section);
+    if (section_it == config_tree_.end()) {
+        return false;
+    }
+    return section_it->second.find(key) != section_it->second.end();
+}
+
+Configuration::ConfigSection Configuration::getSection(const std::string& section) const {
+    auto section_it = config_tree_.find(section);
+    if (section_it != config_tree_.end()) {
+        return section_it->second;
+    }
+    return ConfigSection{};
+}
+
+void Configuration::setSection(const std::string& section, const ConfigSection& values) {
+    config_tree_[section] = values;
+}
+
+void Configuration::removeSection(const std::string& section) {
+    config_tree_.erase(section);
+}
+
+std::vector<std::string> Configuration::getSectionNames() const {
+    std::vector<std::string> names;
+    names.reserve(config_tree_.size());
+    for (const auto& pair : config_tree_) {
+        names.push_back(pair.first);
+    }
+    return names;
+}
+
+void Configuration::applyDeviceVariant(DeviceVariant variant) {
+    device_variant_ = variant;
+    // Apply variant-specific defaults
+    setDefaults();
+}
+
+void Configuration::addValidationRule(const ValidationRule& rule) {
+    validation_rules_.push_back(rule);
+}
+
+bool Configuration::validate(std::vector<std::string>& errors) const {
+    errors.clear();
+    // Basic validation stub
+    return true;
+}
+
+Configuration Configuration::createDevelopmentConfig() {
+    Configuration config(DeviceVariant::Standard);
     return config;
 }
 
-void Configuration::set_defaults() {
-    device_variant_ = DeviceVariant::STANDARD;
-    model_name_ = "M5Stack Tab5";
-    
-    main_cpu_frequency_ = 400000000;  // 400MHz
-    lp_cpu_frequency_ = 40000000;     // 40MHz
-    enable_cpu_debugging_ = false;
-    
-    flash_size_ = 16 * 1024 * 1024;   // 16MB
-    psram_size_ = 32 * 1024 * 1024;   // 32MB
-    sram_size_ = 768 * 1024;          // 768KB
-    cache_line_size_ = 32;            // 32 bytes
-    
-    display_width_ = 1280;
-    display_height_ = 720;
-    display_refresh_rate_ = 60;
-    enable_vsync_ = true;
-    
-    audio_sample_rate_ = 44100;
-    audio_buffer_size_ = 1024;
-    enable_audio_input_ = true;
-    enable_audio_output_ = true;
-    
-    log_level_ = LogLevel::INFO;
-    log_file_path_ = "emulator.log";
-    enable_console_logging_ = true;
-    
-    plugin_search_paths_ = {"./plugins", "/usr/local/lib/m5tab5-emulator/plugins"};
-    enabled_plugins_.clear();
+Configuration Configuration::createProductionConfig() {
+    Configuration config(DeviceVariant::Standard);
+    return config;
 }
 
-const char* Configuration::device_variant_to_string(DeviceVariant variant) {
-    switch (variant) {
-        case DeviceVariant::STANDARD: return "standard";
-        case DeviceVariant::INDUSTRIAL: return "industrial";
-        case DeviceVariant::CUSTOM: return "custom";
-        default: return "unknown";
-    }
+Configuration Configuration::createDebugConfig() {
+    Configuration config(DeviceVariant::Standard);
+    return config;
 }
 
-const char* Configuration::log_level_to_string(LogLevel level) {
-    switch (level) {
-        case LogLevel::TRACE: return "trace";
-        case LogLevel::DEBUG: return "debug";
-        case LogLevel::INFO: return "info";
-        case LogLevel::WARN: return "warn";
-        case LogLevel::ERROR: return "error";
-        default: return "unknown";
-    }
+Configuration Configuration::createPerformanceConfig() {
+    Configuration config(DeviceVariant::Standard);
+    return config;
 }
 
-}  // namespace m5tab5::emulator
+void Configuration::setDefaults() {
+    config_tree_.clear();
+    
+    // Basic default configuration
+    setValue("device", "variant", device_variant_ == DeviceVariant::Standard ? "standard" :
+                                   device_variant_ == DeviceVariant::Industrial ? "industrial" : "custom");
+    setValue("device", "model_name", std::string("M5Stack Tab5"));
+    
+    setValue("cpu", "main_frequency", static_cast<int64_t>(400000000));  // 400MHz
+    setValue("cpu", "lp_frequency", static_cast<int64_t>(40000000));     // 40MHz
+    setValue("cpu", "enable_dual_core", true);
+    setValue("cpu", "enable_fpu", true);
+    
+    setValue("memory", "flash_size", static_cast<int64_t>(16 * 1024 * 1024));  // 16MB
+    setValue("memory", "psram_size", static_cast<int64_t>(32 * 1024 * 1024));  // 32MB
+    setValue("memory", "sram_size", static_cast<int64_t>(768 * 1024));         // 768KB
+    
+    setValue("display", "width", static_cast<int64_t>(1280));
+    setValue("display", "height", static_cast<int64_t>(720));
+    setValue("display", "refresh_rate", static_cast<int64_t>(60));
+    setValue("display", "enable_vsync", true);
+    
+    setValue("audio", "sample_rate", static_cast<int64_t>(44100));
+    setValue("audio", "buffer_size", static_cast<int64_t>(1024));
+    setValue("audio", "channels", static_cast<int64_t>(2));
+    
+    setValue("debug", "enable_debugger", false);
+    setValue("debug", "debugger_port", static_cast<int64_t>(3333));
+    setValue("debug", "enable_profiling", false);
+    setValue("debug", "log_level", std::string("INFO"));
+}
+
+// Typed configuration accessors - stub implementations
+Configuration::CPUConfig Configuration::getCPUConfig() const {
+    CPUConfig config;
+    config.main_core_freq = static_cast<uint32_t>(getValue<int64_t>("cpu", "main_frequency", 400000000));
+    config.lp_core_freq = static_cast<uint32_t>(getValue<int64_t>("cpu", "lp_frequency", 40000000));
+    config.enable_dual_core = getValue<bool>("cpu", "enable_dual_core", true);
+    config.enable_fpu = getValue<bool>("cpu", "enable_fpu", true);
+    return config;
+}
+
+Configuration::MemoryConfig Configuration::getMemoryConfig() const {
+    MemoryConfig config;
+    config.flash_size = static_cast<size_t>(getValue<int64_t>("memory", "flash_size", 16 * 1024 * 1024));
+    config.psram_size = static_cast<size_t>(getValue<int64_t>("memory", "psram_size", 32 * 1024 * 1024));
+    config.sram_size = static_cast<size_t>(getValue<int64_t>("memory", "sram_size", 768 * 1024));
+    return config;
+}
+
+Configuration::DisplayConfig Configuration::getDisplayConfig() const {
+    DisplayConfig config;
+    config.width = static_cast<uint32_t>(getValue<int64_t>("display", "width", 1280));
+    config.height = static_cast<uint32_t>(getValue<int64_t>("display", "height", 720));
+    config.refresh_rate = static_cast<uint32_t>(getValue<int64_t>("display", "refresh_rate", 60));
+    config.enable_vsync = getValue<bool>("display", "enable_vsync", true);
+    return config;
+}
+
+Configuration::AudioConfig Configuration::getAudioConfig() const {
+    AudioConfig config;
+    config.sample_rate = static_cast<uint32_t>(getValue<int64_t>("audio", "sample_rate", 44100));
+    config.buffer_size = static_cast<uint32_t>(getValue<int64_t>("audio", "buffer_size", 1024));
+    config.channels = static_cast<uint8_t>(getValue<int64_t>("audio", "channels", 2));
+    return config;
+}
+
+Configuration::NetworkConfig Configuration::getNetworkConfig() const {
+    NetworkConfig config;
+    return config;
+}
+
+Configuration::DebugConfig Configuration::getDebugConfig() const {
+    DebugConfig config;
+    config.enable_debugger = getValue<bool>("debug", "enable_debugger", false);
+    config.debugger_port = static_cast<uint16_t>(getValue<int64_t>("debug", "debugger_port", 3333));
+    config.enable_profiling = getValue<bool>("debug", "enable_profiling", false);
+    config.log_level = getValue<std::string>("debug", "log_level", "INFO");
+    return config;
+}
+
+void Configuration::setCPUConfig(const CPUConfig& config) {
+    setValue("cpu", "main_frequency", static_cast<int64_t>(config.main_core_freq));
+    setValue("cpu", "lp_frequency", static_cast<int64_t>(config.lp_core_freq));
+    setValue("cpu", "enable_dual_core", config.enable_dual_core);
+    setValue("cpu", "enable_fpu", config.enable_fpu);
+}
+
+void Configuration::setMemoryConfig(const MemoryConfig& config) {
+    setValue("memory", "flash_size", static_cast<int64_t>(config.flash_size));
+    setValue("memory", "psram_size", static_cast<int64_t>(config.psram_size));
+    setValue("memory", "sram_size", static_cast<int64_t>(config.sram_size));
+}
+
+void Configuration::setDisplayConfig(const DisplayConfig& config) {
+    setValue("display", "width", static_cast<int64_t>(config.width));
+    setValue("display", "height", static_cast<int64_t>(config.height));
+    setValue("display", "refresh_rate", static_cast<int64_t>(config.refresh_rate));
+    setValue("display", "enable_vsync", config.enable_vsync);
+}
+
+void Configuration::setAudioConfig(const AudioConfig& config) {
+    setValue("audio", "sample_rate", static_cast<int64_t>(config.sample_rate));
+    setValue("audio", "buffer_size", static_cast<int64_t>(config.buffer_size));
+    setValue("audio", "channels", static_cast<int64_t>(config.channels));
+}
+
+void Configuration::setNetworkConfig(const NetworkConfig& config) {
+    // Stub implementation
+}
+
+void Configuration::setDebugConfig(const DebugConfig& config) {
+    setValue("debug", "enable_debugger", config.enable_debugger);
+    setValue("debug", "debugger_port", static_cast<int64_t>(config.debugger_port));
+    setValue("debug", "enable_profiling", config.enable_profiling);
+    setValue("debug", "log_level", config.log_level);
+}
+
+// Template method specializations
+template<>
+std::string Configuration::convertValue<std::string>(const ConfigValue& value) const {
+    return std::visit([](auto&& arg) -> std::string {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, std::string>) {
+            return arg;
+        } else if constexpr (std::is_same_v<T, bool>) {
+            return arg ? "true" : "false";
+        } else if constexpr (std::is_same_v<T, int64_t>) {
+            return std::to_string(arg);
+        } else if constexpr (std::is_same_v<T, double>) {
+            return std::to_string(arg);
+        } else {
+            return "";
+        }
+    }, value);
+}
+
+template<>
+bool Configuration::convertValue<bool>(const ConfigValue& value) const {
+    return std::visit([](auto&& arg) -> bool {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, bool>) {
+            return arg;
+        } else if constexpr (std::is_same_v<T, std::string>) {
+            std::string lower = arg;
+            std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+            return lower == "true" || lower == "1" || lower == "yes" || lower == "on";
+        } else if constexpr (std::is_same_v<T, int64_t>) {
+            return arg != 0;
+        } else if constexpr (std::is_same_v<T, double>) {
+            return arg != 0.0;
+        } else {
+            return false;
+        }
+    }, value);
+}
+
+template<>
+int64_t Configuration::convertValue<int64_t>(const ConfigValue& value) const {
+    return std::visit([](auto&& arg) -> int64_t {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, int64_t>) {
+            return arg;
+        } else if constexpr (std::is_same_v<T, double>) {
+            return static_cast<int64_t>(arg);
+        } else if constexpr (std::is_same_v<T, bool>) {
+            return arg ? 1 : 0;
+        } else if constexpr (std::is_same_v<T, std::string>) {
+            try {
+                return std::stoll(arg);
+            } catch (...) {
+                return 0;
+            }
+        } else {
+            return 0;
+        }
+    }, value);
+}
+
+// Note: long and int64_t are the same type on this platform, so we don't need separate specialization
+
+} // namespace m5tab5::emulator

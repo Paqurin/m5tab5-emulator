@@ -12,6 +12,7 @@
 #include <chrono>
 #include <array>
 #include <functional>
+#include <cmath>
 
 namespace m5tab5::emulator {
 

@@ -2,6 +2,7 @@
 
 #include "emulator/utils/types.hpp"
 #include "emulator/utils/error.hpp"
+#include "emulator/config/configuration.hpp"
 #include <vector>
 #include <functional>
 #include <mutex>
@@ -19,6 +20,9 @@ enum class InterruptType : u8 {
     TIMER1 = 17,
     TIMER2 = 18,
     TIMER3 = 19,
+    
+    // Clock interrupts
+    CLOCK = 20,
     
     // Communication interrupts
     I2C0 = 32,
@@ -58,6 +62,9 @@ enum class InterruptType : u8 {
     MEMORY_ERROR = 160,
     CACHE_ERROR = 161,
     
+    // Power management interrupts
+    PMU = 176,
+    
     MAX_INTERRUPT = 255
 };
 
@@ -78,13 +85,17 @@ public:
     InterruptController();
     ~InterruptController();
 
-    Result<void> initialize();
+    Result<void> initialize(const Configuration& config);
+    Result<void> start();
+    Result<void> stop();
+    Result<void> reset();
     Result<void> shutdown();
 
     Result<void> register_handler(InterruptType type, InterruptHandler handler);
     Result<void> unregister_handler(InterruptType type);
     
     Result<void> trigger_interrupt(InterruptType type);
+    Result<void> trigger_interrupt(u32 core_id, InterruptType type, u32 data);
     Result<void> clear_interrupt(InterruptType type);
     
     Result<void> enable_interrupt(InterruptType type);
@@ -97,6 +108,8 @@ public:
     bool is_interrupt_pending(InterruptType type) const;
     
     void process_interrupts();
+    Result<void> clear_processed_interrupts(u32 core_id);
+    std::vector<InterruptType> get_pending_interrupts(u32 core_id) const;
     
     void dump_status() const;
 

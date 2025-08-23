@@ -32,7 +32,7 @@ Result<void> SPIController::initialize(const Configuration& config, InterruptCon
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
+        return unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
             "SPI controller already initialized"));
     }
     
@@ -72,7 +72,7 @@ Result<void> SPIController::shutdown() {
     
     // Complete any pending transfer
     if (current_transfer_) {
-        complete_transfer(std::unexpected(MAKE_ERROR(SYSTEM_SHUTDOWN,
+        complete_transfer(unexpected(MAKE_ERROR(SYSTEM_SHUTDOWN,
             "SPI controller shutting down")));
     }
     
@@ -95,17 +95,17 @@ Result<void> SPIController::configure(SPIMode mode, u32 clock_rate, SPIClockPola
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "SPI controller not initialized"));
     }
     
     if (current_transfer_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_BUSY,
+        return unexpected(MAKE_ERROR(SYSTEM_BUSY,
             "Cannot configure SPI controller while transfer in progress"));
     }
     
     if (clock_rate < MIN_CLOCK_RATE || clock_rate > MAX_CLOCK_RATE) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Clock rate out of range"));
     }
     
@@ -135,17 +135,17 @@ Result<void> SPIController::set_chip_select(u8 cs_pin, bool active) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "SPI controller not initialized"));
     }
     
     if (cs_pin > 7) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid chip select pin"));
     }
     
     if (active && cs_active_ && active_cs_pin_ != cs_pin) {
-        return std::unexpected(MAKE_ERROR(INVALID_OPERATION,
+        return unexpected(MAKE_ERROR(INVALID_OPERATION,
             "Another chip select already active"));
     }
     
@@ -169,27 +169,27 @@ Result<void> SPIController::start_transfer(const std::vector<u8>& tx_data) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "SPI controller not initialized"));
     }
     
     if (mode_ != SPIMode::MASTER) {
-        return std::unexpected(MAKE_ERROR(INVALID_OPERATION,
+        return unexpected(MAKE_ERROR(INVALID_OPERATION,
             "Can only start transfers in master mode"));
     }
     
     if (current_transfer_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_BUSY,
+        return unexpected(MAKE_ERROR(SYSTEM_BUSY,
             "SPI controller busy with another transfer"));
     }
     
     if (!cs_active_) {
-        return std::unexpected(MAKE_ERROR(INVALID_OPERATION,
+        return unexpected(MAKE_ERROR(INVALID_OPERATION,
             "No chip select active"));
     }
     
     if (tx_data.empty()) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Transfer data cannot be empty"));
     }
     
@@ -220,12 +220,12 @@ Result<std::vector<u8>> SPIController::get_received_data() {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "SPI controller not initialized"));
     }
     
     if (!current_transfer_ || !current_transfer_->is_complete) {
-        return std::unexpected(MAKE_ERROR(INVALID_OPERATION,
+        return unexpected(MAKE_ERROR(INVALID_OPERATION,
             "No completed transfer available"));
     }
     
@@ -236,16 +236,16 @@ Result<void> SPIController::abort_transfer() {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "SPI controller not initialized"));
     }
     
     if (!current_transfer_) {
-        return std::unexpected(MAKE_ERROR(INVALID_OPERATION,
+        return unexpected(MAKE_ERROR(INVALID_OPERATION,
             "No active transfer to abort"));
     }
     
-    complete_transfer(std::unexpected(MAKE_ERROR(OPERATION_ABORTED,
+    complete_transfer(unexpected(MAKE_ERROR(OPERATION_ABORTED,
         "Transfer aborted by user")));
     
     COMPONENT_LOG_DEBUG("SPI controller {} transfer aborted", controller_id_);
@@ -256,7 +256,7 @@ Result<void> SPIController::handle_mmio_write(Address address, u32 value) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "SPI controller not initialized"));
     }
     
@@ -338,7 +338,7 @@ Result<void> SPIController::handle_mmio_write(Address address, u32 value) {
             break;
             
         default:
-            return std::unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
+            return unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
                 "Invalid SPI register offset: 0x" + std::to_string(offset)));
     }
     
@@ -349,7 +349,7 @@ Result<u32> SPIController::handle_mmio_read(Address address) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "SPI controller not initialized"));
     }
     
@@ -403,7 +403,7 @@ Result<u32> SPIController::handle_mmio_read(Address address) {
             return registers_.timing_control;
             
         default:
-            return std::unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
+            return unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
                 "Invalid SPI register offset: 0x" + std::to_string(offset)));
     }
 }

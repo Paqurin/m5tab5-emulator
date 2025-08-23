@@ -37,7 +37,7 @@ Result<void> UARTController::initialize(const Configuration& config, InterruptCo
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
+        return unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
             "UART controller already initialized"));
     }
     
@@ -110,12 +110,12 @@ Result<void> UARTController::configure(u32 baud_rate, UARTDataBits data_bits, UA
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "UART controller not initialized"));
     }
     
     if (baud_rate < MIN_BAUD_RATE || baud_rate > MAX_BAUD_RATE) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Baud rate out of range"));
     }
     
@@ -147,7 +147,7 @@ Result<void> UARTController::set_timeout(u32 timeout_ms) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "UART controller not initialized"));
     }
     
@@ -160,7 +160,7 @@ Result<void> UARTController::send_data(const std::vector<u8>& data) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "UART controller not initialized"));
     }
     
@@ -170,7 +170,7 @@ Result<void> UARTController::send_data(const std::vector<u8>& data) {
     
     // Check flow control
     if (flow_control_ == UARTFlowControl::RTS_CTS && !cts_state_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_BUSY,
+        return unexpected(MAKE_ERROR(SYSTEM_BUSY,
             "CTS not asserted - cannot send data"));
     }
     
@@ -178,7 +178,7 @@ Result<void> UARTController::send_data(const std::vector<u8>& data) {
     for (u8 byte : data) {
         if (tx_fifo_.size() >= TX_FIFO_SIZE) {
             statistics_.fifo_overflows++;
-            return std::unexpected(MAKE_ERROR(BUFFER_OVERFLOW,
+            return unexpected(MAKE_ERROR(BUFFER_OVERFLOW,
                 "TX FIFO overflow"));
         }
         
@@ -208,7 +208,7 @@ Result<std::vector<u8>> UARTController::receive_data(size_t max_bytes) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "UART controller not initialized"));
     }
     
@@ -237,7 +237,7 @@ Result<std::vector<u8>> UARTController::receive_data(size_t max_bytes) {
 Result<std::string> UARTController::receive_string() {
     auto data_result = receive_data();
     if (!data_result) {
-        return std::unexpected(data_result.error());
+        return unexpected(data_result.error());
     }
     
     auto data = data_result.value();
@@ -248,7 +248,7 @@ Result<void> UARTController::send_break(u32 duration_ms) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "UART controller not initialized"));
     }
     
@@ -260,7 +260,7 @@ Result<void> UARTController::send_break(u32 duration_ms) {
     
     if (tx_fifo_.size() >= TX_FIFO_SIZE) {
         statistics_.fifo_overflows++;
-        return std::unexpected(MAKE_ERROR(BUFFER_OVERFLOW,
+        return unexpected(MAKE_ERROR(BUFFER_OVERFLOW,
             "TX FIFO overflow"));
     }
     
@@ -277,7 +277,7 @@ Result<void> UARTController::set_rts(bool state) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "UART controller not initialized"));
     }
     
@@ -298,7 +298,7 @@ Result<void> UARTController::set_dtr(bool state) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "UART controller not initialized"));
     }
     
@@ -339,7 +339,7 @@ Result<void> UARTController::handle_mmio_write(Address address, u32 value) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "UART controller not initialized"));
     }
     
@@ -412,7 +412,7 @@ Result<void> UARTController::handle_mmio_write(Address address, u32 value) {
             break;
             
         default:
-            return std::unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
+            return unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
                 "Invalid UART register offset: 0x" + std::to_string(offset)));
     }
     
@@ -423,7 +423,7 @@ Result<u32> UARTController::handle_mmio_read(Address address) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "UART controller not initialized"));
     }
     
@@ -479,7 +479,7 @@ Result<u32> UARTController::handle_mmio_read(Address address) {
             return registers_.scratch;
             
         default:
-            return std::unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
+            return unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
                 "Invalid UART register offset: 0x" + std::to_string(offset)));
     }
 }

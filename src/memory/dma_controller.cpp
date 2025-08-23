@@ -1,4 +1,6 @@
 #include "emulator/memory/dma_controller.hpp"
+#include "emulator/memory/memory_controller.hpp"
+#include "emulator/peripherals/interrupt_controller.hpp"
 #include "emulator/utils/logging.hpp"
 #include <algorithm>
 #include <cstring>
@@ -25,7 +27,7 @@ Result<void> DmaController::initialize(const Configuration& config,
                                        MemoryController& memory_controller,
                                        InterruptController* interrupt_controller) {
     if (initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
+        return unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
             "DMA controller already initialized"));
     }
     
@@ -35,8 +37,8 @@ Result<void> DmaController::initialize(const Configuration& config,
     interrupt_controller_ = interrupt_controller;
     
     // Initialize DMA channels
-    for (int i = 0; i < MAX_DMA_CHANNELS; ++i) {
-        channels_[i] = std::make_unique<DmaChannel>(i);
+    for (u32 i = 0; i < MAX_DMA_CHANNELS; ++i) {
+        channels_[i] = std::make_unique<DmaChannel>(static_cast<u8>(i));
         channels_[i]->reset();
     }
     
@@ -90,7 +92,7 @@ Result<void> DmaController::reset() {
 
 Result<u8> DmaController::allocate_channel(DmaPriority priority) {
     // Find first available channel
-    for (int i = 0; i < MAX_DMA_CHANNELS; ++i) {
+    for (u32 i = 0; i < MAX_DMA_CHANNELS; ++i) {
         if (channels_[i] && !channels_[i]->is_allocated()) {
             channels_[i]->allocate(priority);
             COMPONENT_LOG_DEBUG("Allocated DMA channel {} with priority {}", 
@@ -99,19 +101,19 @@ Result<u8> DmaController::allocate_channel(DmaPriority priority) {
         }
     }
     
-    return std::unexpected(MAKE_ERROR(SYSTEM_RESOURCE_EXHAUSTED,
+    return unexpected(MAKE_ERROR(SYSTEM_RESOURCE_EXHAUSTED,
         "No DMA channels available"));
 }
 
 Result<void> DmaController::free_channel(u8 channel_id) {
     if (channel_id >= MAX_DMA_CHANNELS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid DMA channel ID: " + std::to_string(channel_id)));
     }
     
     auto& channel = channels_[channel_id];
     if (!channel || !channel->is_allocated()) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "DMA channel not allocated: " + std::to_string(channel_id)));
     }
     
@@ -128,18 +130,18 @@ Result<void> DmaController::free_channel(u8 channel_id) {
 
 Result<void> DmaController::configure_transfer(u8 channel_id, const DmaTransferConfig& config) {
     if (channel_id >= MAX_DMA_CHANNELS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid DMA channel ID: " + std::to_string(channel_id)));
     }
     
     auto& channel = channels_[channel_id];
     if (!channel || !channel->is_allocated()) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "DMA channel not allocated: " + std::to_string(channel_id)));
     }
     
     if (channel->is_active()) {
-        return std::unexpected(MAKE_ERROR(PERIPHERAL_BUSY,
+        return unexpected(MAKE_ERROR(PERIPHERAL_BUSY,
             "DMA channel is active: " + std::to_string(channel_id)));
     }
     
@@ -157,18 +159,18 @@ Result<void> DmaController::configure_transfer(u8 channel_id, const DmaTransferC
 
 Result<void> DmaController::start_transfer(u8 channel_id) {
     if (channel_id >= MAX_DMA_CHANNELS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid DMA channel ID: " + std::to_string(channel_id)));
     }
     
     auto& channel = channels_[channel_id];
     if (!channel || !channel->is_allocated()) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "DMA channel not allocated: " + std::to_string(channel_id)));
     }
     
     if (!channel->is_configured()) {
-        return std::unexpected(MAKE_ERROR(PERIPHERAL_INVALID_CONFIG,
+        return unexpected(MAKE_ERROR(PERIPHERAL_INVALID_CONFIG,
             "DMA channel not configured: " + std::to_string(channel_id)));
     }
     
@@ -182,13 +184,13 @@ Result<void> DmaController::start_transfer(u8 channel_id) {
 
 Result<void> DmaController::abort_transfer(u8 channel_id) {
     if (channel_id >= MAX_DMA_CHANNELS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid DMA channel ID: " + std::to_string(channel_id)));
     }
     
     auto& channel = channels_[channel_id];
     if (!channel || !channel->is_allocated()) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "DMA channel not allocated: " + std::to_string(channel_id)));
     }
     
@@ -205,13 +207,13 @@ Result<void> DmaController::abort_transfer(u8 channel_id) {
 
 Result<DmaChannelStatus> DmaController::get_channel_status(u8 channel_id) const {
     if (channel_id >= MAX_DMA_CHANNELS) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid DMA channel ID: " + std::to_string(channel_id)));
     }
     
     const auto& channel = channels_[channel_id];
     if (!channel) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid DMA channel: " + std::to_string(channel_id)));
     }
     
@@ -224,10 +226,10 @@ Result<void> DmaController::update() {
     }
     
     // Process active DMA transfers
-    for (int i = 0; i < MAX_DMA_CHANNELS; ++i) {
+    for (u32 i = 0; i < MAX_DMA_CHANNELS; ++i) {
         auto& channel = channels_[i];
         if (channel && channel->is_active()) {
-            RETURN_IF_ERROR(process_channel_transfer(i));
+            RETURN_IF_ERROR(process_channel_transfer(static_cast<u8>(i)));
         }
     }
     
@@ -244,36 +246,38 @@ void DmaController::clear_statistics() {
 
 Result<void> DmaController::validate_transfer_config(const DmaTransferConfig& config) const {
     // Validate addresses
-    if (!memory_controller_->is_valid_address(config.source_address).value_or(false)) {
-        return std::unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
+    auto src_valid = memory_controller_->is_valid_address(config.source_address);
+    if (!src_valid.has_value() || !src_valid.value()) {
+        return unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
             "Invalid source address: 0x" + std::to_string(config.source_address)));
     }
     
-    if (!memory_controller_->is_valid_address(config.destination_address).value_or(false)) {
-        return std::unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
+    auto dst_valid = memory_controller_->is_valid_address(config.destination_address);
+    if (!dst_valid.has_value() || !dst_valid.value()) {
+        return unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
             "Invalid destination address: 0x" + std::to_string(config.destination_address)));
     }
     
     // Validate transfer size
     if (config.transfer_size == 0) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Transfer size cannot be zero"));
     }
     
     if (config.transfer_size > MAX_TRANSFER_SIZE) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Transfer size too large: " + std::to_string(config.transfer_size)));
     }
     
     // Validate alignment based on transfer width
     u32 alignment = static_cast<u32>(config.transfer_width);
     if (config.source_address % alignment != 0) {
-        return std::unexpected(MAKE_ERROR(MEMORY_ALIGNMENT_ERROR,
+        return unexpected(MAKE_ERROR(MEMORY_ALIGNMENT_ERROR,
             "Source address not aligned for transfer width"));
     }
     
     if (config.destination_address % alignment != 0) {
-        return std::unexpected(MAKE_ERROR(MEMORY_ALIGNMENT_ERROR,
+        return unexpected(MAKE_ERROR(MEMORY_ALIGNMENT_ERROR,
             "Destination address not aligned for transfer width"));
     }
     
@@ -287,29 +291,27 @@ Result<void> DmaController::process_channel_transfer(u8 channel_id) {
     
     // Calculate how much to transfer this cycle
     size_t chunk_size = std::min(static_cast<size_t>(config.transfer_width), 
-                                status.remaining_bytes);
-    chunk_size = std::min(chunk_size, MAX_BYTES_PER_CYCLE);
+                                static_cast<size_t>(status.remaining_bytes));
+    chunk_size = std::min(chunk_size, static_cast<size_t>(MAX_BYTES_PER_CYCLE));
     
     // Perform the transfer
     std::vector<u8> buffer(chunk_size);
     
     // Read from source
     auto read_result = memory_controller_->read_bytes(status.current_source_address, chunk_size);
-    if (!read_result) {
+    if (!read_result.has_value()) {
         channel->set_error("Memory read failed");
         statistics_.transfer_errors++;
-        return std::unexpected(read_result.error());
+        return unexpected(MAKE_ERROR(MEMORY_ACCESS_ERROR, "DMA read failed"));
     }
-    
-    buffer = read_result.value();
     
     // Write to destination
     auto write_result = memory_controller_->write_bytes(status.current_destination_address, 
-                                                       buffer.data(), chunk_size);
-    if (!write_result) {
+                                                       read_result.value().data(), chunk_size);
+    if (!write_result.has_value()) {
         channel->set_error("Memory write failed");
         statistics_.transfer_errors++;
-        return std::unexpected(write_result.error());
+        return unexpected(MAKE_ERROR(MEMORY_ACCESS_ERROR, "DMA write failed"));
     }
     
     // Update transfer state
@@ -354,7 +356,7 @@ Result<void> DmaController::process_channel_transfer(u8 channel_id) {
         // Trigger interrupt if enabled
         if (config.interrupt_on_complete && interrupt_controller_) {
             auto interrupt_result = interrupt_controller_->trigger_interrupt(
-                CoreId::CORE_0, InterruptType::DMA, channel_id);
+                static_cast<u32>(CoreId::CORE_0), static_cast<InterruptType>(static_cast<u8>(InterruptType::DMA_CH0) + channel_id), 0);
             if (!interrupt_result) {
                 COMPONENT_LOG_WARN("Failed to trigger DMA completion interrupt: {}",
                                   interrupt_result.error().to_string());
@@ -403,12 +405,12 @@ void DmaChannel::free() {
 
 Result<void> DmaChannel::configure(const DmaTransferConfig& config) {
     if (!allocated_) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Channel not allocated"));
     }
     
     if (active_) {
-        return std::unexpected(MAKE_ERROR(PERIPHERAL_BUSY,
+        return unexpected(MAKE_ERROR(PERIPHERAL_BUSY,
             "Channel is active"));
     }
     
@@ -429,12 +431,12 @@ Result<void> DmaChannel::configure(const DmaTransferConfig& config) {
 
 Result<void> DmaChannel::start() {
     if (!allocated_ || !configured_) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Channel not properly configured"));
     }
     
     if (active_) {
-        return std::unexpected(MAKE_ERROR(PERIPHERAL_BUSY,
+        return unexpected(MAKE_ERROR(PERIPHERAL_BUSY,
             "Channel already active"));
     }
     

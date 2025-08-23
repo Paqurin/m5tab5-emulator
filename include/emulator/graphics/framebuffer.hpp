@@ -1,6 +1,7 @@
 #pragma once
 
 #include "emulator/core/types.hpp"
+#include "emulator/utils/error.hpp"
 #include <vector>
 #include <memory>
 #include <mutex>
@@ -97,6 +98,10 @@ public:
     Rectangle getDirtyRegion() const { return dirty_region_; }
     bool isDirty() const { return !dirty_region_.isEmpty(); }
 
+    // Additional methods used by implementation
+    EmulatorError copyRegion(uint32_t src_x, uint32_t src_y, uint32_t dest_x, uint32_t dest_y,
+                            uint32_t width, uint32_t height);
+    
     // DMA operations
     EmulatorError startDMATransfer(Address src_address, const Rectangle& region);
     bool isDMAActive() const { return dma_active_; }
@@ -165,6 +170,9 @@ private:
 
     // Statistics
     mutable FramebufferStatistics stats_;
+    
+    // Missing member for implementation
+    std::atomic<bool> initialized_{false};
     mutable std::mutex stats_mutex_;
 };
 

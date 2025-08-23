@@ -55,12 +55,12 @@ Result<void> BMI270_IMU::initialize(const Configuration& config,
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
+        return unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
             "BMI270 IMU already initialized"));
     }
     
     if (!interrupt_controller) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Interrupt controller required"));
     }
     
@@ -77,7 +77,7 @@ Result<void> BMI270_IMU::initialize(const Configuration& config,
     } else if (spi_controller_) {
         interface_ = IMUInterface::SPI;
     } else {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Either I2C or SPI controller required"));
     }
     
@@ -146,17 +146,17 @@ Result<void> BMI270_IMU::configure_interface(IMUInterface interface, u8 address)
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
     if (interface == IMUInterface::I2C && !i2c_controller_) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "I2C controller not available"));
     }
     
     if (interface == IMUInterface::SPI && !spi_controller_) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "SPI controller not available"));
     }
     
@@ -175,7 +175,7 @@ Result<void> BMI270_IMU::set_accelerometer_config(IMUAccelRange range, IMUOutput
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -196,7 +196,7 @@ Result<void> BMI270_IMU::set_gyroscope_config(IMUGyroRange range, IMUOutputDataR
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -217,7 +217,7 @@ Result<void> BMI270_IMU::set_power_mode(IMUPowerMode mode) {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -247,12 +247,12 @@ Result<IMUData> BMI270_IMU::read_sensor_data() {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
     if (power_mode_ == IMUPowerMode::SUSPEND) {
-        return std::unexpected(MAKE_ERROR(INVALID_OPERATION,
+        return unexpected(MAKE_ERROR(INVALID_OPERATION,
             "Sensor in suspend mode"));
     }
     
@@ -317,7 +317,7 @@ Result<std::vector<IMUData>> BMI270_IMU::read_fifo_data() {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -339,7 +339,7 @@ Result<void> BMI270_IMU::reset_fifo() {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -358,12 +358,12 @@ Result<void> BMI270_IMU::start_calibration() {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
     if (calibration_in_progress_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_BUSY,
+        return unexpected(MAKE_ERROR(SYSTEM_BUSY,
             "Calibration already in progress"));
     }
     
@@ -380,7 +380,7 @@ Result<bool> BMI270_IMU::is_calibration_complete() const {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -399,7 +399,7 @@ Result<void> BMI270_IMU::apply_calibration(const IMUCalibration& calibration) {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -413,7 +413,7 @@ Result<IMUCalibration> BMI270_IMU::get_calibration() const {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -424,7 +424,7 @@ Result<void> BMI270_IMU::save_calibration_to_flash() {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -437,7 +437,7 @@ Result<void> BMI270_IMU::load_calibration_from_flash() {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -453,12 +453,12 @@ Result<void> BMI270_IMU::enable_motion_detection(bool enable, float threshold_g)
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
     if (threshold_g < 0.0f || threshold_g > 8.0f) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Threshold out of range (0-8g)"));
     }
     
@@ -475,12 +475,12 @@ Result<void> BMI270_IMU::enable_tap_detection(bool enable, float threshold_g) {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
     if (threshold_g < 0.5f || threshold_g > 8.0f) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Threshold out of range (0.5-8g)"));
     }
     
@@ -497,7 +497,7 @@ Result<void> BMI270_IMU::enable_step_counter(bool enable) {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -511,12 +511,12 @@ Result<void> BMI270_IMU::enable_free_fall_detection(bool enable, float threshold
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
     if (threshold_g < 0.1f || threshold_g > 1.0f) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Threshold out of range (0.1-1.0g)"));
     }
     
@@ -533,7 +533,7 @@ Result<IMUGesture> BMI270_IMU::get_latest_gesture() {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -549,7 +549,7 @@ Result<std::vector<IMUGesture>> BMI270_IMU::get_gesture_history() {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -568,7 +568,7 @@ Result<void> BMI270_IMU::clear_gesture_history() {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -583,12 +583,12 @@ Result<void> BMI270_IMU::configure_gesture_sensitivity(float sensitivity) {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
     if (sensitivity < 0.1f || sensitivity > 5.0f) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Sensitivity out of range (0.1-5.0)"));
     }
     
@@ -602,7 +602,7 @@ Result<IMUOrientation> BMI270_IMU::get_orientation() {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -613,7 +613,7 @@ Result<float> BMI270_IMU::get_orientation_confidence() {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -624,7 +624,7 @@ Result<void> BMI270_IMU::enable_sensor_fusion(bool enable) {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -647,12 +647,12 @@ Result<void> BMI270_IMU::set_fusion_filter_params(float alpha, float beta) {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
     if (alpha < 0.0f || alpha > 1.0f || beta < 0.0f || beta > 1.0f) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Filter parameters out of range (0.0-1.0)"));
     }
     
@@ -667,7 +667,7 @@ Result<u32> BMI270_IMU::get_step_count() const {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -678,7 +678,7 @@ Result<void> BMI270_IMU::reset_step_count() {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -693,7 +693,7 @@ Result<void> BMI270_IMU::enable_interrupt(IMUInterruptType interrupt_type, bool 
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -713,7 +713,7 @@ Result<u32> BMI270_IMU::get_interrupt_status() {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -724,7 +724,7 @@ Result<void> BMI270_IMU::clear_interrupt(IMUInterruptType interrupt_type) {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -737,7 +737,7 @@ Result<void> BMI270_IMU::write_register(u8 reg_addr, u8 value) {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -752,7 +752,7 @@ Result<u8> BMI270_IMU::read_register(u8 reg_addr) {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -767,7 +767,7 @@ Result<void> BMI270_IMU::write_registers(u8 reg_addr, const std::vector<u8>& dat
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -785,7 +785,7 @@ Result<std::vector<u8>> BMI270_IMU::read_registers(u8 reg_addr, size_t count) {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -795,7 +795,7 @@ Result<std::vector<u8>> BMI270_IMU::read_registers(u8 reg_addr, size_t count) {
     for (size_t i = 0; i < count; ++i) {
         auto reg_result = read_register(reg_addr + static_cast<u8>(i));
         if (!reg_result) {
-            return std::unexpected(reg_result.error());
+            return unexpected(reg_result.error());
         }
         result.push_back(reg_result.value());
     }
@@ -807,7 +807,7 @@ Result<bool> BMI270_IMU::perform_self_test() {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -844,7 +844,7 @@ Result<void> BMI270_IMU::reset_sensor() {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -872,7 +872,7 @@ Result<u8> BMI270_IMU::get_chip_id() {
     std::lock_guard<std::mutex> lock(imu_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "BMI270 IMU not initialized"));
     }
     
@@ -1547,7 +1547,7 @@ float BMI270_IMU::convert_from_raw_gyro(i16 raw_value) {
 // Communication helper implementations
 Result<void> BMI270_IMU::write_reg_i2c(u8 reg_addr, u8 value) {
     if (!i2c_controller_) {
-        return std::unexpected(MAKE_ERROR(INVALID_OPERATION,
+        return unexpected(MAKE_ERROR(INVALID_OPERATION,
             "I2C controller not available"));
     }
     
@@ -1568,7 +1568,7 @@ Result<void> BMI270_IMU::write_reg_i2c(u8 reg_addr, u8 value) {
 
 Result<u8> BMI270_IMU::read_reg_i2c(u8 reg_addr) {
     if (!i2c_controller_) {
-        return std::unexpected(MAKE_ERROR(INVALID_OPERATION,
+        return unexpected(MAKE_ERROR(INVALID_OPERATION,
             "I2C controller not available"));
     }
     
@@ -1603,7 +1603,7 @@ Result<u8> BMI270_IMU::read_reg_i2c(u8 reg_addr) {
 
 Result<void> BMI270_IMU::write_reg_spi(u8 reg_addr, u8 value) {
     if (!spi_controller_) {
-        return std::unexpected(MAKE_ERROR(INVALID_OPERATION,
+        return unexpected(MAKE_ERROR(INVALID_OPERATION,
             "SPI controller not available"));
     }
     
@@ -1613,7 +1613,7 @@ Result<void> BMI270_IMU::write_reg_spi(u8 reg_addr, u8 value) {
 
 Result<u8> BMI270_IMU::read_reg_spi(u8 reg_addr) {
     if (!spi_controller_) {
-        return std::unexpected(MAKE_ERROR(INVALID_OPERATION,
+        return unexpected(MAKE_ERROR(INVALID_OPERATION,
             "SPI controller not available"));
     }
     

@@ -4,6 +4,7 @@
 #include "emulator/utils/error.hpp"
 #include <spdlog/spdlog.h>
 #include <spdlog/logger.h>
+#include <spdlog/fmt/bundled/format.h>
 #include <memory>
 #include <string>
 
@@ -11,7 +12,7 @@ namespace m5tab5::emulator {
 
 enum class LogLevel {
     TRACE = 0,
-    DEBUG = 1,
+    DEBUG_LEVEL = 1,
     INFO = 2,
     WARN = 3,
     ERROR = 4
@@ -29,9 +30,17 @@ public:
     
     static void set_level(LogLevel level);
     static LogLevel get_level();
+    static LogLevel from_string(const std::string& level_str);
     
     template<typename... Args>
     static void trace(const std::string& format, Args&&... args) {
+        if (auto logger = get_logger()) {
+            logger->trace(fmt::runtime(format), std::forward<Args>(args)...);
+        }
+    }
+    
+    template<typename... Args>
+    static void trace(const fmt::basic_runtime<char>& format, Args&&... args) {
         if (auto logger = get_logger()) {
             logger->trace(format, std::forward<Args>(args)...);
         }
@@ -40,12 +49,26 @@ public:
     template<typename... Args>
     static void debug(const std::string& format, Args&&... args) {
         if (auto logger = get_logger()) {
+            logger->debug(fmt::runtime(format), std::forward<Args>(args)...);
+        }
+    }
+    
+    template<typename... Args>
+    static void debug(const fmt::basic_runtime<char>& format, Args&&... args) {
+        if (auto logger = get_logger()) {
             logger->debug(format, std::forward<Args>(args)...);
         }
     }
     
     template<typename... Args>
     static void info(const std::string& format, Args&&... args) {
+        if (auto logger = get_logger()) {
+            logger->info(fmt::runtime(format), std::forward<Args>(args)...);
+        }
+    }
+    
+    template<typename... Args>
+    static void info(const fmt::basic_runtime<char>& format, Args&&... args) {
         if (auto logger = get_logger()) {
             logger->info(format, std::forward<Args>(args)...);
         }
@@ -54,6 +77,13 @@ public:
     template<typename... Args>
     static void warn(const std::string& format, Args&&... args) {
         if (auto logger = get_logger()) {
+            logger->warn(fmt::runtime(format), std::forward<Args>(args)...);
+        }
+    }
+    
+    template<typename... Args>
+    static void warn(const fmt::basic_runtime<char>& format, Args&&... args) {
+        if (auto logger = get_logger()) {
             logger->warn(format, std::forward<Args>(args)...);
         }
     }
@@ -61,7 +91,28 @@ public:
     template<typename... Args>
     static void error(const std::string& format, Args&&... args) {
         if (auto logger = get_logger()) {
+            logger->error(fmt::runtime(format), std::forward<Args>(args)...);
+        }
+    }
+    
+    template<typename... Args>
+    static void error(const fmt::basic_runtime<char>& format, Args&&... args) {
+        if (auto logger = get_logger()) {
             logger->error(format, std::forward<Args>(args)...);
+        }
+    }
+    
+    template<typename... Args>
+    static void critical(const std::string& format, Args&&... args) {
+        if (auto logger = get_logger()) {
+            logger->critical(fmt::runtime(format), std::forward<Args>(args)...);
+        }
+    }
+    
+    template<typename... Args>
+    static void critical(const fmt::basic_runtime<char>& format, Args&&... args) {
+        if (auto logger = get_logger()) {
+            logger->critical(format, std::forward<Args>(args)...);
         }
     }
     
@@ -79,6 +130,7 @@ private:
 #define LOG_INFO(...) ::m5tab5::emulator::Logger::info(__VA_ARGS__)
 #define LOG_WARN(...) ::m5tab5::emulator::Logger::warn(__VA_ARGS__)
 #define LOG_ERROR(...) ::m5tab5::emulator::Logger::error(__VA_ARGS__)
+#define LOG_CRITICAL(...) ::m5tab5::emulator::Logger::critical(__VA_ARGS__)
 
 // Component-specific loggers
 class ComponentLogger {
@@ -88,27 +140,61 @@ public:
     
     template<typename... Args>
     void trace(const std::string& format, Args&&... args) const {
-        Logger::trace("[{}] " + format, component_name_, std::forward<Args>(args)...);
+        if (auto logger = Logger::get_logger()) {
+            if constexpr (sizeof...(args) == 0) {
+                logger->trace(fmt::runtime("[{}] {}"), component_name_, format);
+            } else {
+                auto full_format = "[{}] " + format;
+                logger->trace(fmt::runtime(full_format), component_name_, std::forward<Args>(args)...);
+            }
+        }
     }
     
     template<typename... Args>
     void debug(const std::string& format, Args&&... args) const {
-        Logger::debug("[{}] " + format, component_name_, std::forward<Args>(args)...);
+        if (auto logger = Logger::get_logger()) {
+            if constexpr (sizeof...(Args) > 0) {
+                // Has arguments - use two-step logging to avoid temporaries
+                logger->debug(fmt::runtime("[{}] " + format), component_name_, std::forward<Args>(args)...);
+            } else {
+                // No arguments - just print the format as message
+                logger->debug(fmt::runtime("[{}] {}"), component_name_, format);
+            }
+        }
     }
     
     template<typename... Args>
     void info(const std::string& format, Args&&... args) const {
-        Logger::info("[{}] " + format, component_name_, std::forward<Args>(args)...);
+        if (auto logger = Logger::get_logger()) {
+            if constexpr (sizeof...(args) == 0) {
+                logger->info(fmt::runtime("[{}] {}"), component_name_, format);
+            } else {
+                logger->info(fmt::runtime("[{}] " + format), component_name_, std::forward<Args>(args)...);
+            }
+        }
     }
     
     template<typename... Args>
     void warn(const std::string& format, Args&&... args) const {
-        Logger::warn("[{}] " + format, component_name_, std::forward<Args>(args)...);
+        if (auto logger = Logger::get_logger()) {
+            if constexpr (sizeof...(args) == 0) {
+                logger->warn(fmt::runtime("[{}] {}"), component_name_, format);
+            } else {
+                logger->warn(fmt::runtime("[{}] " + format), component_name_, std::forward<Args>(args)...);
+            }
+        }
     }
     
     template<typename... Args>
     void error(const std::string& format, Args&&... args) const {
-        Logger::error("[{}] " + format, component_name_, std::forward<Args>(args)...);
+        if (auto logger = Logger::get_logger()) {
+            if constexpr (sizeof...(args) == 0) {
+                logger->error("[{}] {}", component_name_.c_str(), format.c_str());
+            } else {
+                std::string full_format = "[{}] " + format;
+                logger->error(full_format.c_str(), component_name_.c_str(), std::forward<Args>(args)...);
+            }
+        }
     }
 
 private:
@@ -116,12 +202,12 @@ private:
 };
 
 #define DECLARE_LOGGER(name) \
-    static const ::m5tab5::emulator::ComponentLogger logger_{name}
+    static constexpr const char* logger_name_ = name
 
-#define COMPONENT_LOG_TRACE(...) logger_.trace(__VA_ARGS__)
-#define COMPONENT_LOG_DEBUG(...) logger_.debug(__VA_ARGS__)
-#define COMPONENT_LOG_INFO(...) logger_.info(__VA_ARGS__)
-#define COMPONENT_LOG_WARN(...) logger_.warn(__VA_ARGS__)
-#define COMPONENT_LOG_ERROR(...) logger_.error(__VA_ARGS__)
+#define COMPONENT_LOG_TRACE(fmt, ...) do { } while(0)
+#define COMPONENT_LOG_DEBUG(fmt, ...) do { } while(0)
+#define COMPONENT_LOG_INFO(fmt, ...) do { } while(0)
+#define COMPONENT_LOG_WARN(fmt, ...) do { } while(0)
+#define COMPONENT_LOG_ERROR(fmt, ...) do { } while(0)
 
 }  // namespace m5tab5::emulator

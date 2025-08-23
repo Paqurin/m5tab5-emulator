@@ -1,641 +1,598 @@
 #include "emulator/peripherals/gpio_controller.hpp"
 #include "emulator/utils/logging.hpp"
+#include "emulator/peripherals/interrupt_controller.hpp"
 #include <algorithm>
 
 namespace m5tab5::emulator {
 
-DECLARE_LOGGER("GpioController");
+DECLARE_LOGGER("GPIOController");
 
-GpioController::GpioController()
-    : initialized_(false),
-      interrupt_controller_(nullptr) {
-    COMPONENT_LOG_DEBUG("GpioController created");
-}
-
-GpioController::~GpioController() {
-    if (initialized_) {
-        shutdown();
-    }
-    COMPONENT_LOG_DEBUG("GpioController destroyed");
-}
-
-Result<void> GpioController::initialize(const Configuration& config, InterruptController* interrupt_controller) {
-    if (initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
-            "GPIO controller already initialized"));
-    }
+GPIOController::GPIOController() 
+    : direction_register_(0),
+      output_register_(0),
+      interrupt_enable_(0),
+      interrupt_type_(0),
+      interrupt_status_(0),
+      pullup_enable_(0),
+      pulldown_enable_(0),
+      last_pwm_update_(0),
+      stats_{} {
+    COMPONENT_LOG_DEBUG("GPIOController created");
     
+    // Initialize all pins to input mode
+    for (auto& pin : pin_states_) {
+        pin = PinState{};
+    }
+}
+
+GPIOController::~GPIOController() {
+    COMPONENT_LOG_DEBUG("GPIOController destroyed");
+}
+
+EmulatorError GPIOController::initialize() {
     COMPONENT_LOG_INFO("Initializing GPIO controller with {} pins", GPIO_PIN_COUNT);
     
-    interrupt_controller_ = interrupt_controller;
-    
-    // Initialize all GPIO pins
-    for (u8 pin = 0; pin < GPIO_PIN_COUNT; ++pin) {
-        pins_[pin] = std::make_unique<GpioPin>(pin);
-        pins_[pin]->reset();
+    // Reset all pin states
+    for (auto& pin : pin_states_) {
+        pin = PinState{};
     }
     
-    // Set up default pin configurations for ESP32-P4
-    RETURN_IF_ERROR(setup_default_pin_functions());
-    
-    // Initialize MMIO registers
-    RETURN_IF_ERROR(setup_registers());
+    // Reset registers
+    direction_register_ = 0;
+    output_register_ = 0;
+    interrupt_enable_ = 0;
+    interrupt_type_ = 0;
+    interrupt_status_ = 0;
+    pullup_enable_ = 0;
+    pulldown_enable_ = 0;
     
     // Reset statistics
-    statistics_ = {};
+    stats_ = {};
     
-    initialized_ = true;
     COMPONENT_LOG_INFO("GPIO controller initialized successfully");
-    
-    return {};
+    return EmulatorError::Success;
 }
 
-Result<void> GpioController::shutdown() {
-    if (!initialized_) {
-        return {};
+EmulatorError GPIOController::reset() {
+    COMPONENT_LOG_DEBUG("Resetting GPIO controller");
+    
+    // Reset all pin states to default (input mode)
+    for (auto& pin : pin_states_) {
+        pin = PinState{};
     }
     
-    COMPONENT_LOG_INFO("Shutting down GPIO controller");
+    // Reset all registers
+    direction_register_ = 0;
+    output_register_ = 0;
+    interrupt_enable_ = 0;
+    interrupt_type_ = 0;
+    interrupt_status_ = 0;
+    pullup_enable_ = 0;
+    pulldown_enable_ = 0;
     
-    // Reset all pins
-    for (auto& pin : pins_) {
-        if (pin) {
-            pin->reset();
-            pin.reset();
+    return EmulatorError::Success;
+}
+
+EmulatorError GPIOController::tick(ClockCycle cycle) {
+    // Update PWM outputs if needed
+    if (cycle - last_pwm_update_ >= (CPU_FREQ_HZ / PWM_FREQUENCY)) {
+        for (uint8_t pin = 0; pin < GPIO_PIN_COUNT; ++pin) {
+            if (pin_states_[pin].mode == PinMode::PWM) {
+                updatePinOutput(pin);
+                stats_.pwm_updates++;
+            }
         }
+        last_pwm_update_ = cycle;
     }
     
-    // Clear registers
-    registers_.clear();
-    interrupt_pins_.clear();
-    
-    interrupt_controller_ = nullptr;
-    initialized_ = false;
-    
-    COMPONENT_LOG_INFO("GPIO controller shutdown completed");
-    return {};
+    return EmulatorError::Success;
 }
 
-Result<void> GpioController::configure_pin(u8 pin_number, const GpioPinConfig& config) {
-    if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
-            "GPIO controller not initialized"));
-    }
+EmulatorError GPIOController::readRegister(Address address, uint32_t& value) {
+    Register reg = static_cast<Register>(address);
     
-    if (pin_number >= GPIO_PIN_COUNT) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
-            "Invalid GPIO pin number: " + std::to_string(pin_number)));
-    }
-    
-    auto& pin = pins_[pin_number];
-    
-    // Validate configuration
-    RETURN_IF_ERROR(validate_pin_config(pin_number, config));
-    
-    // Apply configuration
-    pin->set_mode(config.mode);
-    pin->set_pull_mode(config.pull_mode);
-    pin->set_drive_strength(config.drive_strength);
-    pin->set_slew_rate(config.slew_rate);
-    pin->set_function(config.function);
-    
-    // Configure interrupt if specified
-    if (config.interrupt_type != GpioInterruptType::NONE) {
-        pin->set_interrupt_type(config.interrupt_type);
-        pin->enable_interrupt(true);
+    switch (reg) {
+        case Register::GPIO_OUT:
+            value = output_register_;
+            break;
+            
+        case Register::GPIO_IN: {
+            uint32_t input_value = 0;
+            for (uint8_t pin = 0; pin < 32 && pin < GPIO_PIN_COUNT; ++pin) {
+                if (digitalRead(pin)) {
+                    input_value |= (1U << pin);
+                }
+            }
+            value = input_value;
+            break;
+        }
         
-        // Add to interrupt monitoring list
-        if (std::find(interrupt_pins_.begin(), interrupt_pins_.end(), pin_number) == interrupt_pins_.end()) {
-            interrupt_pins_.push_back(pin_number);
-        }
+        case Register::GPIO_DIR:
+            value = direction_register_;
+            break;
+            
+        case Register::GPIO_INT_EN:
+            value = interrupt_enable_;
+            break;
+            
+        case Register::GPIO_INT_TYPE:
+            value = interrupt_type_;
+            break;
+            
+        case Register::GPIO_INT_STAT:
+            value = interrupt_status_;
+            break;
+            
+        case Register::GPIO_PULLUP_EN:
+            value = pullup_enable_;
+            break;
+            
+        case Register::GPIO_PULLDOWN_EN:
+            value = pulldown_enable_;
+            break;
+            
+        default:
+            value = 0;
+            return EmulatorError::InvalidAddress;
+    }
+    
+    return EmulatorError::Success;
+}
+
+EmulatorError GPIOController::writeRegister(Address address, uint32_t value) {
+    Register reg = static_cast<Register>(address);
+    
+    switch (reg) {
+        case Register::GPIO_OUT:
+            output_register_ = value;
+            return handleOutputRegister(value);
+            
+        case Register::GPIO_OUT_SET:
+            output_register_ |= value;
+            return handleOutputRegister(output_register_);
+            
+        case Register::GPIO_OUT_CLR:
+            output_register_ &= ~value;
+            return handleOutputRegister(output_register_);
+            
+        case Register::GPIO_DIR:
+            direction_register_ = value;
+            return handleDirectionRegister(value);
+            
+        case Register::GPIO_INT_EN:
+            interrupt_enable_ = value;
+            return handleInterruptEnable(value);
+            
+        case Register::GPIO_INT_TYPE:
+            interrupt_type_ = value;
+            return handleInterruptType(value);
+            
+        case Register::GPIO_INT_CLR:
+            interrupt_status_ &= ~value;
+            break;
+            
+        case Register::GPIO_PULLUP_EN:
+            pullup_enable_ = value;
+            for (uint8_t pin = 0; pin < 32 && pin < GPIO_PIN_COUNT; ++pin) {
+                enablePullUp(pin, (value & (1U << pin)) != 0);
+            }
+            break;
+            
+        case Register::GPIO_PULLDOWN_EN:
+            pulldown_enable_ = value;
+            for (uint8_t pin = 0; pin < 32 && pin < GPIO_PIN_COUNT; ++pin) {
+                enablePullDown(pin, (value & (1U << pin)) != 0);
+            }
+            break;
+            
+        default:
+            return EmulatorError::InvalidAddress;
+    }
+    
+    return EmulatorError::Success;
+}
+
+std::vector<Address> GPIOController::getRegisterAddresses() const {
+    return {
+        static_cast<Address>(Register::GPIO_OUT),
+        static_cast<Address>(Register::GPIO_OUT_SET),
+        static_cast<Address>(Register::GPIO_OUT_CLR),
+        static_cast<Address>(Register::GPIO_IN),
+        static_cast<Address>(Register::GPIO_DIR),
+        static_cast<Address>(Register::GPIO_INT_EN),
+        static_cast<Address>(Register::GPIO_INT_TYPE),
+        static_cast<Address>(Register::GPIO_INT_STAT),
+        static_cast<Address>(Register::GPIO_INT_CLR),
+        static_cast<Address>(Register::GPIO_PULLUP_EN),
+        static_cast<Address>(Register::GPIO_PULLDOWN_EN),
+        static_cast<Address>(Register::GPIO_PWM_CTRL),
+        static_cast<Address>(Register::GPIO_ADC_CTRL),
+        static_cast<Address>(Register::GPIO_PIN_CTRL)
+    };
+}
+
+std::vector<uint32_t> GPIOController::getInterruptIds() const {
+    return {GPIO_INTERRUPT_ID};
+}
+
+EmulatorError GPIOController::setPinMode(uint8_t pin, PinMode mode) {
+    if (pin >= GPIO_PIN_COUNT) {
+        return EmulatorError::InvalidAddress;
+    }
+    
+    pin_states_[pin].mode = mode;
+    
+    // Update direction register
+    switch (mode) {
+        case PinMode::Input:
+        case PinMode::InputPullUp:
+        case PinMode::InputPullDown:
+        case PinMode::AnalogInput:
+            direction_register_ &= ~(1U << pin);
+            break;
+            
+        case PinMode::Output:
+        case PinMode::OpenDrain:
+        case PinMode::PWM:
+            direction_register_ |= (1U << pin);
+            break;
+    }
+    
+    COMPONENT_LOG_DEBUG("GPIO pin {} mode set to {}", pin, static_cast<int>(mode));
+    return EmulatorError::Success;
+}
+
+GPIOController::PinMode GPIOController::getPinMode(uint8_t pin) const {
+    if (pin >= GPIO_PIN_COUNT) {
+        return PinMode::Input;
+    }
+    return pin_states_[pin].mode;
+}
+
+EmulatorError GPIOController::digitalWrite(uint8_t pin, bool level) {
+    if (pin >= GPIO_PIN_COUNT) {
+        return EmulatorError::InvalidAddress;
+    }
+    
+    bool previous_level = pin_states_[pin].level;
+    pin_states_[pin].level = level;
+    
+    // Update output register
+    if (level) {
+        output_register_ |= (1U << pin);
     } else {
-        pin->enable_interrupt(false);
-        
-        // Remove from interrupt monitoring list
-        interrupt_pins_.erase(
-            std::remove(interrupt_pins_.begin(), interrupt_pins_.end(), pin_number),
-            interrupt_pins_.end());
+        output_register_ &= ~(1U << pin);
     }
     
-    COMPONENT_LOG_DEBUG("Configured GPIO pin {}: mode={} pull={} function={}",
-                       pin_number, static_cast<int>(config.mode),
-                       static_cast<int>(config.pull_mode), static_cast<int>(config.function));
+    // Check for interrupt conditions
+    checkPinInterrupt(pin, previous_level, level);
     
-    return {};
+    stats_.pin_writes++;
+    COMPONENT_LOG_TRACE("GPIO pin {} set to {}", pin, level ? "HIGH" : "LOW");
+    
+    return EmulatorError::Success;
 }
 
-Result<void> GpioController::set_pin_level(u8 pin_number, bool high) {
-    if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
-            "GPIO controller not initialized"));
-    }
-    
-    if (pin_number >= GPIO_PIN_COUNT) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
-            "Invalid GPIO pin number: " + std::to_string(pin_number)));
-    }
-    
-    auto& pin = pins_[pin_number];
-    
-    // Check if pin is configured as output
-    if (pin->get_mode() != GpioMode::OUTPUT && pin->get_mode() != GpioMode::OUTPUT_OPEN_DRAIN) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
-            "Pin " + std::to_string(pin_number) + " is not configured as output"));
-    }
-    
-    bool previous_level = pin->get_level();
-    pin->set_level(high);
-    
-    // Check for interrupt conditions on connected pins
-    RETURN_IF_ERROR(check_pin_interrupts(pin_number, previous_level, high));
-    
-    statistics_.pin_writes++;
-    
-    COMPONENT_LOG_TRACE("GPIO pin {} set to {}", pin_number, high ? "HIGH" : "LOW");
-    
-    return {};
-}
-
-Result<bool> GpioController::get_pin_level(u8 pin_number) const {
-    if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
-            "GPIO controller not initialized"));
-    }
-    
-    if (pin_number >= GPIO_PIN_COUNT) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
-            "Invalid GPIO pin number: " + std::to_string(pin_number)));
-    }
-    
-    const auto& pin = pins_[pin_number];
-    bool level = pin->get_level();
-    
-    // Apply pull-up/pull-down for input pins
-    if (pin->get_mode() == GpioMode::INPUT || 
-        pin->get_mode() == GpioMode::INPUT_PULLUP || 
-        pin->get_mode() == GpioMode::INPUT_PULLDOWN) {
-        
-        switch (pin->get_pull_mode()) {
-            case GpioPullMode::PULLUP:
-                if (!pin->is_externally_driven()) {
-                    level = true;
-                }
-                break;
-            case GpioPullMode::PULLDOWN:
-                if (!pin->is_externally_driven()) {
-                    level = false;
-                }
-                break;
-            case GpioPullMode::NONE:
-                // Floating input - return current level
-                break;
-        }
-    }
-    
-    statistics_.pin_reads++;
-    return level;
-}
-
-Result<void> GpioController::set_pin_function(u8 pin_number, GpioPinFunction function) {
-    if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
-            "GPIO controller not initialized"));
-    }
-    
-    if (pin_number >= GPIO_PIN_COUNT) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
-            "Invalid GPIO pin number: " + std::to_string(pin_number)));
-    }
-    
-    // Validate function for this pin
-    if (!is_function_valid_for_pin(pin_number, function)) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
-            "Function not available for pin " + std::to_string(pin_number)));
-    }
-    
-    auto& pin = pins_[pin_number];
-    pin->set_function(function);
-    
-    COMPONENT_LOG_DEBUG("GPIO pin {} function set to {}", pin_number, static_cast<int>(function));
-    
-    return {};
-}
-
-Result<GpioPinFunction> GpioController::get_pin_function(u8 pin_number) const {
-    if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
-            "GPIO controller not initialized"));
-    }
-    
-    if (pin_number >= GPIO_PIN_COUNT) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
-            "Invalid GPIO pin number: " + std::to_string(pin_number)));
-    }
-    
-    return pins_[pin_number]->get_function();
-}
-
-Result<void> GpioController::enable_pin_interrupt(u8 pin_number, GpioInterruptType type) {
-    if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
-            "GPIO controller not initialized"));
-    }
-    
-    if (pin_number >= GPIO_PIN_COUNT) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
-            "Invalid GPIO pin number: " + std::to_string(pin_number)));
-    }
-    
-    auto& pin = pins_[pin_number];
-    pin->set_interrupt_type(type);
-    pin->enable_interrupt(true);
-    
-    // Add to interrupt monitoring list
-    if (std::find(interrupt_pins_.begin(), interrupt_pins_.end(), pin_number) == interrupt_pins_.end()) {
-        interrupt_pins_.push_back(pin_number);
-    }
-    
-    COMPONENT_LOG_DEBUG("Enabled interrupt on GPIO pin {} (type={})",
-                       pin_number, static_cast<int>(type));
-    
-    return {};
-}
-
-Result<void> GpioController::disable_pin_interrupt(u8 pin_number) {
-    if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
-            "GPIO controller not initialized"));
-    }
-    
-    if (pin_number >= GPIO_PIN_COUNT) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
-            "Invalid GPIO pin number: " + std::to_string(pin_number)));
-    }
-    
-    auto& pin = pins_[pin_number];
-    pin->enable_interrupt(false);
-    
-    // Remove from interrupt monitoring list
-    interrupt_pins_.erase(
-        std::remove(interrupt_pins_.begin(), interrupt_pins_.end(), pin_number),
-        interrupt_pins_.end());
-    
-    COMPONENT_LOG_DEBUG("Disabled interrupt on GPIO pin {}", pin_number);
-    
-    return {};
-}
-
-Result<void> GpioController::update() {
-    if (!initialized_) {
-        return {};
-    }
-    
-    // Process any pending interrupt conditions
-    for (u8 pin_number : interrupt_pins_) {
-        auto& pin = pins_[pin_number];
-        if (pin->has_pending_interrupt()) {
-            RETURN_IF_ERROR(trigger_pin_interrupt(pin_number));
-            pin->clear_pending_interrupt();
-            statistics_.interrupts_generated++;
-        }
-    }
-    
-    return {};
-}
-
-const GpioStatistics& GpioController::get_statistics() const {
-    return statistics_;
-}
-
-void GpioController::clear_statistics() {
-    statistics_ = {};
-}
-
-Result<u32> GpioController::handle_mmio_read(Address address) {
-    if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
-            "GPIO controller not initialized"));
-    }
-    
-    u32 offset = address - GPIO_CONTROLLER_BASE_ADDR;
-    
-    switch (offset) {
-        case GPIO_REG_INPUT_STATUS: {
-            u32 status = 0;
-            for (u8 pin = 0; pin < std::min(static_cast<u8>(32), GPIO_PIN_COUNT); ++pin) {
-                auto level_result = get_pin_level(pin);
-                if (level_result && level_result.value()) {
-                    status |= (1U << pin);
-                }
-            }
-            return status;
-        }
-        
-        case GPIO_REG_INTERRUPT_STATUS: {
-            u32 status = 0;
-            for (u8 pin = 0; pin < std::min(static_cast<u8>(32), GPIO_PIN_COUNT); ++pin) {
-                if (pins_[pin]->has_pending_interrupt()) {
-                    status |= (1U << pin);
-                }
-            }
-            return status;
-        }
-        
-        default:
-            return read_register(offset);
-    }
-}
-
-Result<void> GpioController::handle_mmio_write(Address address, u32 value) {
-    if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
-            "GPIO controller not initialized"));
-    }
-    
-    u32 offset = address - GPIO_CONTROLLER_BASE_ADDR;
-    
-    switch (offset) {
-        case GPIO_REG_OUTPUT_SET: {
-            // Set specified pins high
-            for (u8 pin = 0; pin < std::min(static_cast<u8>(32), GPIO_PIN_COUNT); ++pin) {
-                if (value & (1U << pin)) {
-                    auto result = set_pin_level(pin, true);
-                    if (!result) {
-                        COMPONENT_LOG_WARN("Failed to set GPIO pin {}: {}", 
-                                          pin, result.error().to_string());
-                    }
-                }
-            }
-            return {};
-        }
-        
-        case GPIO_REG_OUTPUT_CLEAR: {
-            // Set specified pins low
-            for (u8 pin = 0; pin < std::min(static_cast<u8>(32), GPIO_PIN_COUNT); ++pin) {
-                if (value & (1U << pin)) {
-                    auto result = set_pin_level(pin, false);
-                    if (!result) {
-                        COMPONENT_LOG_WARN("Failed to clear GPIO pin {}: {}", 
-                                          pin, result.error().to_string());
-                    }
-                }
-            }
-            return {};
-        }
-        
-        case GPIO_REG_INTERRUPT_CLEAR: {
-            // Clear interrupt flags for specified pins
-            for (u8 pin = 0; pin < std::min(static_cast<u8>(32), GPIO_PIN_COUNT); ++pin) {
-                if (value & (1U << pin)) {
-                    pins_[pin]->clear_pending_interrupt();
-                }
-            }
-            return {};
-        }
-        
-        default:
-            write_register(offset, value);
-            return {};
-    }
-}
-
-Result<void> GpioController::setup_default_pin_functions() {
-    COMPONENT_LOG_DEBUG("Setting up default GPIO pin functions for ESP32-P4");
-    
-    // ESP32-P4 specific pin configurations
-    // GPIO0-15: Touch sensing capable
-    for (u8 pin = 0; pin <= 15; ++pin) {
-        pins_[pin]->add_available_function(GpioPinFunction::GPIO);
-        pins_[pin]->add_available_function(GpioPinFunction::TOUCH);
-    }
-    
-    // GPIO16-23: ADC1 channels
-    for (u8 pin = 16; pin <= 23; ++pin) {
-        pins_[pin]->add_available_function(GpioPinFunction::GPIO);
-        pins_[pin]->add_available_function(GpioPinFunction::ADC);
-    }
-    
-    // Common peripheral pins
-    for (u8 pin = 0; pin < GPIO_PIN_COUNT; ++pin) {
-        pins_[pin]->add_available_function(GpioPinFunction::GPIO);
-        
-        // Most pins can be used for SPI/I2C/UART
-        if (pin < 50) { // Reserve some pins for special functions
-            pins_[pin]->add_available_function(GpioPinFunction::SPI);
-            pins_[pin]->add_available_function(GpioPinFunction::I2C);
-            pins_[pin]->add_available_function(GpioPinFunction::UART);
-            pins_[pin]->add_available_function(GpioPinFunction::PWM);
-        }
-    }
-    
-    // USB pins (GPIO24-25)
-    pins_[24]->add_available_function(GpioPinFunction::USB);
-    pins_[25]->add_available_function(GpioPinFunction::USB);
-    
-    // MIPI CSI pins (camera interface)
-    for (u8 pin = 40; pin <= 47; ++pin) {
-        if (pin < GPIO_PIN_COUNT) {
-            pins_[pin]->add_available_function(GpioPinFunction::MIPI_CSI);
-        }
-    }
-    
-    // MIPI DSI pins (display interface)
-    for (u8 pin = 48; pin <= 54; ++pin) {
-        if (pin < GPIO_PIN_COUNT) {
-            pins_[pin]->add_available_function(GpioPinFunction::MIPI_DSI);
-        }
-    }
-    
-    return {};
-}
-
-Result<void> GpioController::setup_registers() {
-    // Initialize GPIO control registers
-    registers_[GPIO_REG_INPUT_STATUS] = 0;
-    registers_[GPIO_REG_OUTPUT_SET] = 0;
-    registers_[GPIO_REG_OUTPUT_CLEAR] = 0;
-    registers_[GPIO_REG_INTERRUPT_STATUS] = 0;
-    registers_[GPIO_REG_INTERRUPT_CLEAR] = 0;
-    registers_[GPIO_REG_INTERRUPT_ENABLE] = 0;
-    
-    // Pin configuration registers (one per pin)
-    for (u8 pin = 0; pin < GPIO_PIN_COUNT; ++pin) {
-        u32 config_reg = GPIO_REG_PIN_CONFIG_BASE + (pin * 4);
-        registers_[config_reg] = 0; // Default configuration
-    }
-    
-    return {};
-}
-
-Result<void> GpioController::validate_pin_config(u8 pin_number, const GpioPinConfig& config) const {
-    // Check if the requested function is available for this pin
-    if (!is_function_valid_for_pin(pin_number, config.function)) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
-            "Function not available for pin " + std::to_string(pin_number)));
-    }
-    
-    // Validate mode and pull configuration
-    if (config.mode == GpioMode::INPUT_PULLUP && config.pull_mode != GpioPullMode::PULLUP) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
-            "INPUT_PULLUP mode requires PULLUP pull mode"));
-    }
-    
-    if (config.mode == GpioMode::INPUT_PULLDOWN && config.pull_mode != GpioPullMode::PULLDOWN) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
-            "INPUT_PULLDOWN mode requires PULLDOWN pull mode"));
-    }
-    
-    return {};
-}
-
-bool GpioController::is_function_valid_for_pin(u8 pin_number, GpioPinFunction function) const {
-    if (pin_number >= GPIO_PIN_COUNT) {
+bool GPIOController::digitalRead(uint8_t pin) const {
+    if (pin >= GPIO_PIN_COUNT) {
         return false;
     }
     
-    return pins_[pin_number]->is_function_available(function);
-}
-
-Result<void> GpioController::check_pin_interrupts(u8 pin_number, bool previous_level, bool current_level) {
-    auto& pin = pins_[pin_number];
+    bool level = pin_states_[pin].level;
     
-    if (!pin->is_interrupt_enabled()) {
-        return {};
-    }
-    
-    bool trigger_interrupt = false;
-    
-    switch (pin->get_interrupt_type()) {
-        case GpioInterruptType::RISING_EDGE:
-            trigger_interrupt = (!previous_level && current_level);
-            break;
-            
-        case GpioInterruptType::FALLING_EDGE:
-            trigger_interrupt = (previous_level && !current_level);
-            break;
-            
-        case GpioInterruptType::BOTH_EDGES:
-            trigger_interrupt = (previous_level != current_level);
-            break;
-            
-        case GpioInterruptType::LOW_LEVEL:
-            trigger_interrupt = !current_level;
-            break;
-            
-        case GpioInterruptType::HIGH_LEVEL:
-            trigger_interrupt = current_level;
-            break;
-            
-        default:
-            break;
-    }
-    
-    if (trigger_interrupt) {
-        pin->set_pending_interrupt(true);
-    }
-    
-    return {};
-}
-
-Result<void> GpioController::trigger_pin_interrupt(u8 pin_number) {
-    if (interrupt_controller_) {
-        auto result = interrupt_controller_->trigger_interrupt(
-            CoreId::CORE_0, InterruptType::GPIO, pin_number);
-        if (!result) {
-            return std::unexpected(result.error());
+    // Apply pull-up/pull-down if pin is floating
+    if (pin_states_[pin].mode == PinMode::Input) {
+        if (isPullUpEnabled(pin)) {
+            level = true;
+        } else if (isPullDownEnabled(pin)) {
+            level = false;
         }
-        
-        COMPONENT_LOG_TRACE("Triggered GPIO interrupt for pin {}", pin_number);
     }
     
-    return {};
+    const_cast<GPIOController*>(this)->stats_.pin_reads++;
+    return level;
 }
 
-void GpioController::write_register(u32 offset, u32 value) {
-    registers_[offset] = value;
-}
-
-u32 GpioController::read_register(u32 offset) const {
-    auto it = registers_.find(offset);
-    return (it != registers_.end()) ? it->second : 0;
-}
-
-void GpioController::dump_pin_status() const {
-    COMPONENT_LOG_INFO("=== GPIO Controller Status ===");
-    COMPONENT_LOG_INFO("Initialized: {}", initialized_);
+EmulatorError GPIOController::setPinInterrupt(uint8_t pin, InterruptMode mode) {
+    if (pin >= GPIO_PIN_COUNT) {
+        return EmulatorError::InvalidAddress;
+    }
     
-    if (initialized_) {
-        COMPONENT_LOG_INFO("Statistics:");
-        COMPONENT_LOG_INFO("  Pin reads: {}", statistics_.pin_reads);
-        COMPONENT_LOG_INFO("  Pin writes: {}", statistics_.pin_writes);
-        COMPONENT_LOG_INFO("  Interrupts generated: {}", statistics_.interrupts_generated);
+    pin_states_[pin].interrupt_mode = mode;
+    
+    // Update interrupt enable register
+    if (mode != InterruptMode::None) {
+        interrupt_enable_ |= (1U << pin);
+    } else {
+        interrupt_enable_ &= ~(1U << pin);
+    }
+    
+    COMPONENT_LOG_DEBUG("GPIO pin {} interrupt mode set to {}", pin, static_cast<int>(mode));
+    return EmulatorError::Success;
+}
+
+GPIOController::InterruptMode GPIOController::getPinInterrupt(uint8_t pin) const {
+    if (pin >= GPIO_PIN_COUNT) {
+        return InterruptMode::None;
+    }
+    return pin_states_[pin].interrupt_mode;
+}
+
+EmulatorError GPIOController::setPWM(uint8_t pin, uint16_t duty_cycle) {
+    if (pin >= GPIO_PIN_COUNT) {
+        return EmulatorError::InvalidAddress;
+    }
+    
+    pin_states_[pin].pwm_duty = std::min(duty_cycle, static_cast<uint16_t>(1023));
+    setPinMode(pin, PinMode::PWM);
+    
+    COMPONENT_LOG_DEBUG("GPIO pin {} PWM duty set to {}", pin, pin_states_[pin].pwm_duty);
+    return EmulatorError::Success;
+}
+
+uint16_t GPIOController::getPWM(uint8_t pin) const {
+    if (pin >= GPIO_PIN_COUNT) {
+        return 0;
+    }
+    return pin_states_[pin].pwm_duty;
+}
+
+EmulatorError GPIOController::setAnalogValue(uint8_t pin, uint16_t value) {
+    if (pin >= GPIO_PIN_COUNT) {
+        return EmulatorError::InvalidAddress;
+    }
+    
+    pin_states_[pin].analog_value = std::min(value, static_cast<uint16_t>(4095));
+    setPinMode(pin, PinMode::AnalogInput);
+    
+    COMPONENT_LOG_DEBUG("GPIO pin {} analog value set to {}", pin, pin_states_[pin].analog_value);
+    return EmulatorError::Success;
+}
+
+uint16_t GPIOController::getAnalogValue(uint8_t pin) const {
+    if (pin >= GPIO_PIN_COUNT) {
+        return 0;
+    }
+    
+    const_cast<GPIOController*>(this)->stats_.adc_reads++;
+    return pin_states_[pin].analog_value;
+}
+
+EmulatorError GPIOController::simulatePinChange(uint8_t pin, bool new_level) {
+    if (pin >= GPIO_PIN_COUNT) {
+        return EmulatorError::InvalidAddress;
+    }
+    
+    bool previous_level = pin_states_[pin].level;
+    pin_states_[pin].level = new_level;
+    
+    checkPinInterrupt(pin, previous_level, new_level);
+    
+    COMPONENT_LOG_DEBUG("Simulated pin {} change: {} -> {}", pin, 
+                       previous_level ? "HIGH" : "LOW", 
+                       new_level ? "HIGH" : "LOW");
+    
+    return EmulatorError::Success;
+}
+
+EmulatorError GPIOController::simulateAnalogInput(uint8_t pin, uint16_t value) {
+    return setAnalogValue(pin, value);
+}
+
+EmulatorError GPIOController::enablePullUp(uint8_t pin, bool enable) {
+    if (pin >= GPIO_PIN_COUNT) {
+        return EmulatorError::InvalidAddress;
+    }
+    
+    if (enable) {
+        pullup_enable_ |= (1U << pin);
+    } else {
+        pullup_enable_ &= ~(1U << pin);
+    }
+    
+    return EmulatorError::Success;
+}
+
+EmulatorError GPIOController::enablePullDown(uint8_t pin, bool enable) {
+    if (pin >= GPIO_PIN_COUNT) {
+        return EmulatorError::InvalidAddress;
+    }
+    
+    if (enable) {
+        pulldown_enable_ |= (1U << pin);
+    } else {
+        pulldown_enable_ &= ~(1U << pin);
+    }
+    
+    return EmulatorError::Success;
+}
+
+bool GPIOController::isPullUpEnabled(uint8_t pin) const {
+    if (pin >= GPIO_PIN_COUNT) {
+        return false;
+    }
+    return (pullup_enable_ & (1U << pin)) != 0;
+}
+
+bool GPIOController::isPullDownEnabled(uint8_t pin) const {
+    if (pin >= GPIO_PIN_COUNT) {
+        return false;
+    }
+    return (pulldown_enable_ & (1U << pin)) != 0;
+}
+
+EmulatorError GPIOController::writePort(uint32_t mask, uint32_t value) {
+    for (uint8_t pin = 0; pin < 32 && pin < GPIO_PIN_COUNT; ++pin) {
+        if (mask & (1U << pin)) {
+            digitalWrite(pin, (value & (1U << pin)) != 0);
+        }
+    }
+    return EmulatorError::Success;
+}
+
+uint32_t GPIOController::readPort() const {
+    uint32_t value = 0;
+    for (uint8_t pin = 0; pin < 32 && pin < GPIO_PIN_COUNT; ++pin) {
+        if (digitalRead(pin)) {
+            value |= (1U << pin);
+        }
+    }
+    return value;
+}
+
+std::string GPIOController::getPinStatusString(uint8_t pin) const {
+    if (pin >= GPIO_PIN_COUNT) {
+        return "Invalid pin";
+    }
+    
+    const auto& state = pin_states_[pin];
+    std::string mode_str;
+    
+    switch (state.mode) {
+        case PinMode::Input: mode_str = "Input"; break;
+        case PinMode::Output: mode_str = "Output"; break;
+        case PinMode::InputPullUp: mode_str = "InputPullUp"; break;
+        case PinMode::InputPullDown: mode_str = "InputPullDown"; break;
+        case PinMode::OpenDrain: mode_str = "OpenDrain"; break;
+        case PinMode::AnalogInput: mode_str = "AnalogInput"; break;
+        case PinMode::PWM: mode_str = "PWM"; break;
+    }
+    
+    return fmt::format("Pin {}: Mode={}, Level={}, PWM={}, Analog={}",
+                      pin, mode_str, state.level ? "HIGH" : "LOW",
+                      state.pwm_duty, state.analog_value);
+}
+
+std::vector<uint8_t> GPIOController::getConfiguredPins() const {
+    std::vector<uint8_t> configured_pins;
+    for (uint8_t pin = 0; pin < GPIO_PIN_COUNT; ++pin) {
+        if (pin_states_[pin].mode != PinMode::Input || 
+            pin_states_[pin].interrupt_mode != InterruptMode::None) {
+            configured_pins.push_back(pin);
+        }
+    }
+    return configured_pins;
+}
+
+// Private methods
+void GPIOController::updatePinOutput(uint8_t pin) {
+    if (pin >= GPIO_PIN_COUNT) return;
+    
+    const auto& state = pin_states_[pin];
+    if (state.mode == PinMode::PWM) {
+        // Simple PWM simulation - could be more sophisticated
+        static uint16_t pwm_counter = 0;
+        bool pwm_output = (pwm_counter % 1024) < state.pwm_duty;
         
-        COMPONENT_LOG_INFO("Pin Configuration Summary:");
-        for (u8 pin = 0; pin < GPIO_PIN_COUNT; ++pin) {
-            const auto& gpio_pin = pins_[pin];
-            if (gpio_pin->get_function() != GpioPinFunction::GPIO || 
-                gpio_pin->get_mode() != GpioMode::INPUT) {
-                
-                COMPONENT_LOG_INFO("  Pin {}: mode={} function={} level={} interrupt={}",
-                                  pin,
-                                  static_cast<int>(gpio_pin->get_mode()),
-                                  static_cast<int>(gpio_pin->get_function()),
-                                  gpio_pin->get_level() ? "HIGH" : "LOW",
-                                  gpio_pin->is_interrupt_enabled() ? "EN" : "DIS");
+        // Update the actual pin level based on PWM
+        const_cast<PinState&>(state).level = pwm_output;
+        pwm_counter++;
+    }
+}
+
+void GPIOController::checkPinInterrupt(uint8_t pin, bool old_level, bool new_level) {
+    if (pin >= GPIO_PIN_COUNT) return;
+    
+    const auto& state = pin_states_[pin];
+    if (state.interrupt_mode == InterruptMode::None) return;
+    
+    bool trigger = false;
+    
+    switch (state.interrupt_mode) {
+        case InterruptMode::Rising:
+            trigger = !old_level && new_level;
+            break;
+        case InterruptMode::Falling:
+            trigger = old_level && !new_level;
+            break;
+        case InterruptMode::Both:
+            trigger = old_level != new_level;
+            break;
+        case InterruptMode::Low:
+            trigger = !new_level;
+            break;
+        case InterruptMode::High:
+            trigger = new_level;
+            break;
+        case InterruptMode::None:
+            break;
+    }
+    
+    if (trigger) {
+        triggerPinInterrupt(pin);
+    }
+}
+
+void GPIOController::triggerPinInterrupt(uint8_t pin) {
+    if (pin >= GPIO_PIN_COUNT) return;
+    
+    // Set interrupt status
+    interrupt_status_ |= (1U << pin);
+    pin_states_[pin].interrupt_pending = true;
+    
+    stats_.interrupts_generated++;
+    
+    COMPONENT_LOG_TRACE("GPIO interrupt triggered on pin {}", pin);
+}
+
+EmulatorError GPIOController::handleDirectionRegister(uint32_t value) {
+    direction_register_ = value;
+    
+    // Update pin modes based on direction
+    for (uint8_t pin = 0; pin < 32 && pin < GPIO_PIN_COUNT; ++pin) {
+        if (value & (1U << pin)) {
+            // Output
+            if (pin_states_[pin].mode == PinMode::Input ||
+                pin_states_[pin].mode == PinMode::InputPullUp ||
+                pin_states_[pin].mode == PinMode::InputPullDown) {
+                setPinMode(pin, PinMode::Output);
+            }
+        } else {
+            // Input
+            if (pin_states_[pin].mode == PinMode::Output ||
+                pin_states_[pin].mode == PinMode::OpenDrain ||
+                pin_states_[pin].mode == PinMode::PWM) {
+                setPinMode(pin, PinMode::Input);
             }
         }
+    }
+    
+    return EmulatorError::Success;
+}
+
+EmulatorError GPIOController::handleOutputRegister(uint32_t value) {
+    output_register_ = value;
+    
+    // Update pin levels
+    for (uint8_t pin = 0; pin < 32 && pin < GPIO_PIN_COUNT; ++pin) {
+        bool level = (value & (1U << pin)) != 0;
+        bool previous_level = pin_states_[pin].level;
+        pin_states_[pin].level = level;
         
-        if (!interrupt_pins_.empty()) {
-            COMPONENT_LOG_INFO("Interrupt-enabled pins: [{}]",
-                              [this]() {
-                                  std::string pins;
-                                  for (size_t i = 0; i < interrupt_pins_.size(); ++i) {
-                                      if (i > 0) pins += ", ";
-                                      pins += std::to_string(interrupt_pins_[i]);
-                                  }
-                                  return pins;
-                              }());
+        checkPinInterrupt(pin, previous_level, level);
+    }
+    
+    return EmulatorError::Success;
+}
+
+EmulatorError GPIOController::handleInterruptEnable(uint32_t value) {
+    interrupt_enable_ = value;
+    
+    // Update interrupt modes for pins
+    for (uint8_t pin = 0; pin < 32 && pin < GPIO_PIN_COUNT; ++pin) {
+        if (!(value & (1U << pin))) {
+            pin_states_[pin].interrupt_mode = InterruptMode::None;
         }
     }
+    
+    return EmulatorError::Success;
 }
 
-// GpioPin implementation
-
-GpioPin::GpioPin(u8 pin_number)
-    : pin_number_(pin_number),
-      mode_(GpioMode::INPUT),
-      pull_mode_(GpioPullMode::NONE),
-      drive_strength_(GpioDriveStrength::MEDIUM),
-      slew_rate_(GpioSlewRate::MEDIUM),
-      function_(GpioPinFunction::GPIO),
-      level_(false),
-      externally_driven_(false),
-      interrupt_enabled_(false),
-      interrupt_type_(GpioInterruptType::NONE),
-      pending_interrupt_(false) {
+EmulatorError GPIOController::handleInterruptType(uint32_t value) {
+    interrupt_type_ = value;
+    // Implementation depends on specific interrupt type encoding
+    // For now, just store the value
+    return EmulatorError::Success;
 }
 
-void GpioPin::reset() {
-    mode_ = GpioMode::INPUT;
-    pull_mode_ = GpioPullMode::NONE;
-    drive_strength_ = GpioDriveStrength::MEDIUM;
-    slew_rate_ = GpioSlewRate::MEDIUM;
-    function_ = GpioPinFunction::GPIO;
-    level_ = false;
-    externally_driven_ = false;
-    interrupt_enabled_ = false;
-    interrupt_type_ = GpioInterruptType::NONE;
-    pending_interrupt_ = false;
-    available_functions_.clear();
-    available_functions_.insert(GpioPinFunction::GPIO);
-}
-
-void GpioPin::add_available_function(GpioPinFunction function) {
-    available_functions_.insert(function);
-}
-
-bool GpioPin::is_function_available(GpioPinFunction function) const {
-    return available_functions_.find(function) != available_functions_.end();
-}
-
-}  // namespace m5tab5::emulator
+} // namespace m5tab5::emulator

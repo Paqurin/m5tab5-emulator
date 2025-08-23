@@ -1,7 +1,9 @@
 #pragma once
 
 #include "emulator/core/types.hpp"
+#include "emulator/utils/error.hpp"
 #include "emulator/cpu/register_file.hpp"
+#include "emulator/cpu/instruction_set.hpp"
 #include "emulator/memory/memory_interface.hpp"
 
 #include <array>
@@ -21,7 +23,7 @@ namespace m5tab5::emulator {
  * - Interrupt handling
  * - Performance counters
  */
-class CPUCore {
+class CpuCore {
 public:
     enum class CoreType {
         MainCore0,
@@ -38,8 +40,8 @@ public:
         bool enable_mul_div = true;
     };
 
-    explicit CPUCore(const CoreConfig& config, MemoryInterface& memory);
-    ~CPUCore();
+    explicit CpuCore(const CoreConfig& config, MemoryInterface& memory);
+    ~CpuCore();
 
     // Core control
     EmulatorError initialize();
@@ -143,9 +145,7 @@ private:
     // Branch prediction table (256 entries, 2-bit saturating counters)
     std::array<uint8_t, 256> branch_predictor_ = {};
 
-    // Forward declarations to avoid circular dependencies
-    class InstructionSet;
-    std::unique_ptr<InstructionSet> instruction_set_;
+    // Future: Add instruction set implementation here if needed
 };
 
 } // namespace m5tab5::emulator

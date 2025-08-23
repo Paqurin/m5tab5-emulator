@@ -4,6 +4,8 @@
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <vector>
 #include <memory>
+#include <algorithm>
+#include <cctype>
 
 namespace m5tab5::emulator {
 
@@ -13,7 +15,7 @@ LogLevel Logger::current_level_ = LogLevel::INFO;
 Result<void> Logger::initialize(LogLevel level, const std::string& log_file, bool enable_console) {
     try {
         if (initialized_) {
-            return std::unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING, 
+            return unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING, 
                 "Logger already initialized"));
         }
         
@@ -35,7 +37,7 @@ Result<void> Logger::initialize(LogLevel level, const std::string& log_file, boo
         }
         
         if (sinks.empty()) {
-            return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+            return unexpected(MAKE_ERROR(INVALID_PARAMETER,
                 "At least one logging sink must be enabled"));
         }
         
@@ -54,10 +56,10 @@ Result<void> Logger::initialize(LogLevel level, const std::string& log_file, boo
         return {};
         
     } catch (const spdlog::spdlog_ex& ex) {
-        return std::unexpected(MAKE_ERROR(OPERATION_FAILED,
+        return unexpected(MAKE_ERROR(OPERATION_FAILED,
             "Failed to initialize logger: " + std::string(ex.what())));
     } catch (const std::exception& ex) {
-        return std::unexpected(MAKE_ERROR(OPERATION_FAILED,
+        return unexpected(MAKE_ERROR(OPERATION_FAILED,
             "Unexpected error during logger initialization: " + std::string(ex.what())));
     }
 }
@@ -72,11 +74,8 @@ void Logger::shutdown() {
 
 std::shared_ptr<spdlog::logger> Logger::get_logger(const std::string& name) {
     if (!initialized_) {
-        // Initialize with default settings if not already initialized
-        auto result = initialize();
-        if (!result) {
-            return nullptr;
-        }
+        // Return nullptr if logger not initialized - don't auto-initialize
+        return nullptr;
     }
     
     auto logger = spdlog::get(name);
@@ -84,7 +83,8 @@ std::shared_ptr<spdlog::logger> Logger::get_logger(const std::string& name) {
         // Create a new logger based on the main logger's sinks
         auto main_logger = spdlog::get("main");
         if (main_logger) {
-            logger = std::make_shared<spdlog::logger>(name, main_logger->sinks());
+            auto sinks = main_logger->sinks();
+            logger = std::make_shared<spdlog::logger>(name, sinks.begin(), sinks.end());
             logger->set_level(main_logger->level());
             spdlog::register_logger(logger);
         }
@@ -109,7 +109,7 @@ LogLevel Logger::get_level() {
 spdlog::level::level_enum Logger::to_spdlog_level(LogLevel level) {
     switch (level) {
         case LogLevel::TRACE: return spdlog::level::trace;
-        case LogLevel::DEBUG: return spdlog::level::debug;
+        case LogLevel::DEBUG_LEVEL: return spdlog::level::debug;
         case LogLevel::INFO: return spdlog::level::info;
         case LogLevel::WARN: return spdlog::level::warn;
         case LogLevel::ERROR: return spdlog::level::err;
@@ -120,12 +120,24 @@ spdlog::level::level_enum Logger::to_spdlog_level(LogLevel level) {
 LogLevel Logger::from_spdlog_level(spdlog::level::level_enum level) {
     switch (level) {
         case spdlog::level::trace: return LogLevel::TRACE;
-        case spdlog::level::debug: return LogLevel::DEBUG;
+        case spdlog::level::debug: return LogLevel::DEBUG_LEVEL;
         case spdlog::level::info: return LogLevel::INFO;
         case spdlog::level::warn: return LogLevel::WARN;
         case spdlog::level::err: return LogLevel::ERROR;
         default: return LogLevel::INFO;
     }
+}
+
+LogLevel Logger::from_string(const std::string& level_str) {
+    std::string lower = level_str;
+    std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+    
+    if (lower == "trace") return LogLevel::TRACE;
+    else if (lower == "debug") return LogLevel::DEBUG_LEVEL;
+    else if (lower == "info") return LogLevel::INFO;
+    else if (lower == "warn" || lower == "warning") return LogLevel::WARN;
+    else if (lower == "error" || lower == "err") return LogLevel::ERROR;
+    else return LogLevel::INFO; // default fallback
 }
 
 }  // namespace m5tab5::emulator

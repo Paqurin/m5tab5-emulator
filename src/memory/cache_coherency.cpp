@@ -23,7 +23,7 @@ CacheCoherencyController::~CacheCoherencyController() {
 Result<void> CacheCoherencyController::initialize(const Configuration& config, 
                                                    MemoryController& memory_controller) {
     if (initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
+        return unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
             "Cache coherency controller already initialized"));
     }
     
@@ -68,13 +68,13 @@ Result<void> CacheCoherencyController::shutdown() {
 Result<void> CacheCoherencyController::register_cache_line(CoreId core_id, Address address, 
                                                            CacheLineState initial_state) {
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Cache coherency controller not initialized"));
     }
     
     int core_index = static_cast<int>(core_id);
     if (core_index >= MAX_CORES) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid core ID: " + std::to_string(core_index)));
     }
     
@@ -91,7 +91,7 @@ Result<void> CacheCoherencyController::register_cache_line(CoreId core_id, Addre
 
 Result<void> CacheCoherencyController::invalidate_cache_line(CoreId core_id, Address address) {
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Cache coherency controller not initialized"));
     }
     
@@ -116,7 +116,7 @@ Result<void> CacheCoherencyController::invalidate_cache_line(CoreId core_id, Add
 
 Result<CacheCoherencyAction> CacheCoherencyController::handle_read_request(CoreId core_id, Address address) {
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Cache coherency controller not initialized"));
     }
     
@@ -143,7 +143,7 @@ Result<CacheCoherencyAction> CacheCoherencyController::handle_read_request(CoreI
             action = handle_msi_read(core_id, cache_line_addr, current_state);
             break;
         default:
-            return std::unexpected(MAKE_ERROR(NOT_IMPLEMENTED,
+            return unexpected(MAKE_ERROR(NOT_IMPLEMENTED,
                 "Unsupported coherency protocol"));
     }
     
@@ -156,7 +156,7 @@ Result<CacheCoherencyAction> CacheCoherencyController::handle_read_request(CoreI
 
 Result<CacheCoherencyAction> CacheCoherencyController::handle_write_request(CoreId core_id, Address address) {
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Cache coherency controller not initialized"));
     }
     
@@ -183,7 +183,7 @@ Result<CacheCoherencyAction> CacheCoherencyController::handle_write_request(Core
             action = handle_msi_write(core_id, cache_line_addr, current_state);
             break;
         default:
-            return std::unexpected(MAKE_ERROR(NOT_IMPLEMENTED,
+            return unexpected(MAKE_ERROR(NOT_IMPLEMENTED,
                 "Unsupported coherency protocol"));
     }
     

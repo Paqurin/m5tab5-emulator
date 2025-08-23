@@ -28,7 +28,7 @@ Result<void> I2CController::initialize(const Configuration& config, InterruptCon
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
+        return unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
             "I2C controller already initialized"));
     }
     
@@ -69,7 +69,7 @@ Result<void> I2CController::shutdown() {
     
     // Complete any pending transaction
     if (current_transaction_) {
-        complete_transaction(std::unexpected(MAKE_ERROR(SYSTEM_SHUTDOWN,
+        complete_transaction(unexpected(MAKE_ERROR(SYSTEM_SHUTDOWN,
             "I2C controller shutting down")));
     }
     
@@ -88,12 +88,12 @@ Result<void> I2CController::configure(I2CMode mode, I2CSpeed speed) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "I2C controller not initialized"));
     }
     
     if (state_ != I2CState::IDLE) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_BUSY,
+        return unexpected(MAKE_ERROR(SYSTEM_BUSY,
             "Cannot configure I2C controller while busy"));
     }
     
@@ -111,7 +111,7 @@ Result<void> I2CController::set_timeout(u32 timeout_ms) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "I2C controller not initialized"));
     }
     
@@ -126,17 +126,17 @@ Result<void> I2CController::start_transaction(u8 slave_address, bool is_read, co
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "I2C controller not initialized"));
     }
     
     if (mode_ != I2CMode::MASTER) {
-        return std::unexpected(MAKE_ERROR(INVALID_OPERATION,
+        return unexpected(MAKE_ERROR(INVALID_OPERATION,
             "Can only start transactions in master mode"));
     }
     
     if (state_ != I2CState::IDLE) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_BUSY,
+        return unexpected(MAKE_ERROR(SYSTEM_BUSY,
             "I2C controller busy with another transaction"));
     }
     
@@ -163,7 +163,7 @@ Result<std::vector<u8>> I2CController::read_data(size_t num_bytes) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "I2C controller not initialized"));
     }
     
@@ -176,7 +176,7 @@ Result<std::vector<u8>> I2CController::read_data(size_t num_bytes) {
     }
     
     if (result.size() < num_bytes) {
-        return std::unexpected(MAKE_ERROR(INSUFFICIENT_DATA,
+        return unexpected(MAKE_ERROR(INSUFFICIENT_DATA,
             "Not enough data in RX FIFO"));
     }
     
@@ -188,13 +188,13 @@ Result<void> I2CController::write_data(const std::vector<u8>& data) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "I2C controller not initialized"));
     }
     
     if (tx_fifo_.size() + data.size() > TX_FIFO_SIZE) {
         statistics_.fifo_overflows++;
-        return std::unexpected(MAKE_ERROR(BUFFER_OVERFLOW,
+        return unexpected(MAKE_ERROR(BUFFER_OVERFLOW,
             "TX FIFO overflow"));
     }
     
@@ -210,12 +210,12 @@ Result<void> I2CController::stop_transaction() {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "I2C controller not initialized"));
     }
     
     if (!current_transaction_) {
-        return std::unexpected(MAKE_ERROR(INVALID_OPERATION,
+        return unexpected(MAKE_ERROR(INVALID_OPERATION,
             "No active transaction to stop"));
     }
     
@@ -230,7 +230,7 @@ Result<void> I2CController::handle_mmio_write(Address address, u32 value) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "I2C controller not initialized"));
     }
     
@@ -294,7 +294,7 @@ Result<void> I2CController::handle_mmio_write(Address address, u32 value) {
             break;
             
         default:
-            return std::unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
+            return unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
                 "Invalid I2C register offset: 0x" + std::to_string(offset)));
     }
     
@@ -305,7 +305,7 @@ Result<u32> I2CController::handle_mmio_read(Address address) {
     std::lock_guard<std::mutex> lock(controller_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "I2C controller not initialized"));
     }
     
@@ -353,7 +353,7 @@ Result<u32> I2CController::handle_mmio_read(Address address) {
             return registers_.fifo_status;
             
         default:
-            return std::unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
+            return unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
                 "Invalid I2C register offset: 0x" + std::to_string(offset)));
     }
 }
@@ -377,7 +377,7 @@ void I2CController::update_transaction() {
     // Check for timeout
     if (elapsed.count() > timeout_ms_) {
         statistics_.timeout_errors++;
-        complete_transaction(std::unexpected(MAKE_ERROR(TIMEOUT_ERROR,
+        complete_transaction(unexpected(MAKE_ERROR(TIMEOUT_ERROR,
             "I2C transaction timeout")));
         trigger_interrupt(I2CInterruptType::TIMEOUT);
         return;

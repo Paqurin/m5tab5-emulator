@@ -52,7 +52,7 @@ enum class IMUPowerMode : u8 {
     FAST_STARTUP = 3
 };
 
-enum class IMUInterruptType : u8 {
+enum class IMUInterruptType : u16 {
     DATA_READY = 0x01,
     MOTION_DETECT = 0x02,
     NO_MOTION = 0x04,

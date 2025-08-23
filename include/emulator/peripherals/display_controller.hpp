@@ -4,12 +4,15 @@
 #include "emulator/graphics/framebuffer.hpp"
 #include "emulator/graphics/touch_input.hpp"
 
+#ifndef NO_GRAPHICS
 #include <SDL2/SDL.h>
+#endif
 #include <memory>
 #include <thread>
 #include <atomic>
 #include <mutex>
 #include <unordered_map>
+#include <chrono>
 
 namespace m5tab5::emulator {
 
@@ -103,8 +106,13 @@ public:
     EmulatorError injectMultiTouch(const std::vector<TouchPoint>& points);
 
     // SDL integration
+#ifndef NO_GRAPHICS
     SDL_Window* getSDLWindow() { return window_; }
     SDL_Renderer* getSDLRenderer() { return renderer_; }
+#else
+    void* getSDLWindow() { return nullptr; }
+    void* getSDLRenderer() { return nullptr; }
+#endif
     bool isWindowOpen() const { return window_open_.load(); }
 
     // Debug and inspection
@@ -140,9 +148,15 @@ private:
     DisplayConfig config_;
 
     // SDL components
+#ifndef NO_GRAPHICS
     SDL_Window* window_ = nullptr;
     SDL_Renderer* renderer_ = nullptr;
     SDL_Texture* display_texture_ = nullptr;
+#else
+    void* window_ = nullptr;
+    void* renderer_ = nullptr;
+    void* display_texture_ = nullptr;
+#endif
     std::atomic<bool> window_open_{false};
 
     // Display state

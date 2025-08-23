@@ -47,10 +47,14 @@ enum class TrapType {
     MachineExternalInterrupt = 11
 };
 
+// Forward declaration for InstructionType
+enum class InstructionType;
+
 // Decoded instruction representation
 struct DecodedInstruction {
     uint32_t raw_instruction = 0;
     InstructionFormat format = InstructionFormat::R_TYPE;
+    InstructionType type; // Instruction type for execution dispatch (no default to avoid circular include)
     
     // Common fields
     uint8_t opcode = 0;
@@ -65,6 +69,7 @@ struct DecodedInstruction {
     
     // Execution info
     bool valid = false;
+    bool compressed = false; // RV32C compressed instruction flag
     std::string mnemonic;
     Address pc = 0;
 };

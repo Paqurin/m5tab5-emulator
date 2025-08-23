@@ -39,7 +39,7 @@ Result<void> ES8388Codec::initialize(const Configuration& config, InterruptContr
     std::lock_guard<std::mutex> lock(codec_mutex_);
     
     if (initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
+        return unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
             "ES8388 codec already initialized"));
     }
     
@@ -106,12 +106,12 @@ Result<void> ES8388Codec::configure_format(AudioFormat format, AudioSampleRate s
     std::lock_guard<std::mutex> lock(codec_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ES8388 codec not initialized"));
     }
     
     if (playback_active_ || recording_active_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_BUSY,
+        return unexpected(MAKE_ERROR(SYSTEM_BUSY,
             "Cannot change format while audio is active"));
     }
     
@@ -143,7 +143,7 @@ Result<void> ES8388Codec::set_input_source(AudioInput left, AudioInput right) {
     std::lock_guard<std::mutex> lock(codec_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ES8388 codec not initialized"));
     }
     
@@ -163,7 +163,7 @@ Result<void> ES8388Codec::set_output_destination(AudioOutput output) {
     std::lock_guard<std::mutex> lock(codec_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ES8388 codec not initialized"));
     }
     
@@ -193,12 +193,12 @@ Result<void> ES8388Codec::set_input_gain(AudioInput input, float gain_db) {
     std::lock_guard<std::mutex> lock(codec_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ES8388 codec not initialized"));
     }
     
     if (gain_db < -12.0f || gain_db > 30.0f) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Input gain out of range (-12dB to +30dB)"));
     }
     
@@ -236,12 +236,12 @@ Result<void> ES8388Codec::set_output_volume(AudioOutput output, float volume_per
     std::lock_guard<std::mutex> lock(codec_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ES8388 codec not initialized"));
     }
     
     if (volume_percent < 0.0f || volume_percent > 100.0f) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Volume out of range (0-100%)"));
     }
     
@@ -264,9 +264,9 @@ Result<void> ES8388Codec::set_output_volume(AudioOutput output, float volume_per
                 registers_.rout2_volume = volume_reg;
                 break;
             case AudioOutput::LINEOUT:
-                // Line out uses DAC control registers
-                registers_.dac_control24 = volume_reg;
-                registers_.dac_control25 = volume_reg;
+                // Line out uses DAC control registers (LOUT1/ROUT1 volume)
+                registers_.dac_control17 = volume_reg;
+                registers_.dac_control18 = volume_reg;
                 break;
             default:
                 break;
@@ -283,7 +283,7 @@ Result<void> ES8388Codec::mute_input(AudioInput input, bool mute) {
     std::lock_guard<std::mutex> lock(codec_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ES8388 codec not initialized"));
     }
     
@@ -302,7 +302,7 @@ Result<void> ES8388Codec::mute_output(AudioOutput output, bool mute) {
     std::lock_guard<std::mutex> lock(codec_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ES8388 codec not initialized"));
     }
     
@@ -348,12 +348,12 @@ Result<void> ES8388Codec::set_bass_control(float gain_db, bool boost_enable) {
     std::lock_guard<std::mutex> lock(codec_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ES8388 codec not initialized"));
     }
     
     if (gain_db < -12.0f || gain_db > 12.0f) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Bass gain out of range (-12dB to +12dB)"));
     }
     
@@ -372,12 +372,12 @@ Result<void> ES8388Codec::set_treble_control(float gain_db, bool boost_enable) {
     std::lock_guard<std::mutex> lock(codec_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ES8388 codec not initialized"));
     }
     
     if (gain_db < -12.0f || gain_db > 12.0f) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Treble gain out of range (-12dB to +12dB)"));
     }
     
@@ -396,7 +396,7 @@ Result<void> ES8388Codec::power_on() {
     std::lock_guard<std::mutex> lock(codec_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ES8388 codec not initialized"));
     }
     
@@ -413,7 +413,7 @@ Result<void> ES8388Codec::power_off() {
     std::lock_guard<std::mutex> lock(codec_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ES8388 codec not initialized"));
     }
     
@@ -434,7 +434,7 @@ Result<void> ES8388Codec::set_power_mode(bool low_power) {
     std::lock_guard<std::mutex> lock(codec_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ES8388 codec not initialized"));
     }
     
@@ -449,12 +449,12 @@ Result<void> ES8388Codec::start_playback() {
     std::lock_guard<std::mutex> lock(codec_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ES8388 codec not initialized"));
     }
     
     if (!powered_on_) {
-        return std::unexpected(MAKE_ERROR(INVALID_OPERATION,
+        return unexpected(MAKE_ERROR(INVALID_OPERATION,
             "Codec not powered on"));
     }
     
@@ -469,7 +469,7 @@ Result<void> ES8388Codec::stop_playback() {
     std::lock_guard<std::mutex> lock(codec_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ES8388 codec not initialized"));
     }
     
@@ -484,12 +484,12 @@ Result<void> ES8388Codec::start_recording() {
     std::lock_guard<std::mutex> lock(codec_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ES8388 codec not initialized"));
     }
     
     if (!powered_on_) {
-        return std::unexpected(MAKE_ERROR(INVALID_OPERATION,
+        return unexpected(MAKE_ERROR(INVALID_OPERATION,
             "Codec not powered on"));
     }
     
@@ -504,7 +504,7 @@ Result<void> ES8388Codec::stop_recording() {
     std::lock_guard<std::mutex> lock(codec_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ES8388 codec not initialized"));
     }
     
@@ -519,12 +519,12 @@ Result<void> ES8388Codec::write_audio_data(const std::vector<i16>& samples) {
     std::lock_guard<std::mutex> lock(codec_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ES8388 codec not initialized"));
     }
     
     if (!playback_active_) {
-        return std::unexpected(MAKE_ERROR(INVALID_OPERATION,
+        return unexpected(MAKE_ERROR(INVALID_OPERATION,
             "Playback not active"));
     }
     
@@ -532,7 +532,7 @@ Result<void> ES8388Codec::write_audio_data(const std::vector<i16>& samples) {
     if (playback_buffer_.size() + samples.size() > AUDIO_BUFFER_SIZE) {
         statistics_.overrun_errors++;
         trigger_interrupt(CodecInterruptType::PLAYBACK_OVERRUN);
-        return std::unexpected(MAKE_ERROR(BUFFER_OVERFLOW,
+        return unexpected(MAKE_ERROR(BUFFER_OVERFLOW,
             "Playback buffer overflow"));
     }
     
@@ -548,12 +548,12 @@ Result<std::vector<i16>> ES8388Codec::read_audio_data(size_t max_samples) {
     std::lock_guard<std::mutex> lock(codec_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ES8388 codec not initialized"));
     }
     
     if (!recording_active_) {
-        return std::unexpected(MAKE_ERROR(INVALID_OPERATION,
+        return unexpected(MAKE_ERROR(INVALID_OPERATION,
             "Recording not active"));
     }
     
@@ -585,7 +585,7 @@ Result<void> ES8388Codec::write_register(u8 reg_addr, u8 value) {
     std::lock_guard<std::mutex> lock(codec_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ES8388 codec not initialized"));
     }
     
@@ -613,7 +613,7 @@ Result<u8> ES8388Codec::read_register(u8 reg_addr) const {
     std::lock_guard<std::mutex> lock(codec_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ES8388 codec not initialized"));
     }
     
@@ -634,7 +634,7 @@ Result<void> ES8388Codec::enable_interrupt(CodecInterruptType interrupt_type) {
     std::lock_guard<std::mutex> lock(codec_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ES8388 codec not initialized"));
     }
     
@@ -649,7 +649,7 @@ Result<void> ES8388Codec::disable_interrupt(CodecInterruptType interrupt_type) {
     std::lock_guard<std::mutex> lock(codec_mutex_);
     
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "ES8388 codec not initialized"));
     }
     

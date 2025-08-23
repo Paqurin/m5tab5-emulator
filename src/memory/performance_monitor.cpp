@@ -24,7 +24,7 @@ PerformanceMonitor::~PerformanceMonitor() {
 Result<void> PerformanceMonitor::initialize(const Configuration& config,
                                             MemoryController& memory_controller) {
     if (initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
+        return unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING,
             "Performance monitor already initialized"));
     }
     
@@ -64,7 +64,7 @@ Result<void> PerformanceMonitor::shutdown() {
 
 Result<void> PerformanceMonitor::enable_monitoring() {
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Performance monitor not initialized"));
     }
     
@@ -75,7 +75,7 @@ Result<void> PerformanceMonitor::enable_monitoring() {
 
 Result<void> PerformanceMonitor::disable_monitoring() {
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Performance monitor not initialized"));
     }
     
@@ -132,18 +132,18 @@ Result<void> PerformanceMonitor::record_memory_access(const MemoryAccessEvent& e
 
 Result<u8> PerformanceMonitor::add_monitoring_region(const MonitoringRegion& region) {
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Performance monitor not initialized"));
     }
     
     if (monitoring_regions_.size() >= MAX_MONITORING_REGIONS) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_RESOURCE_EXHAUSTED,
+        return unexpected(MAKE_ERROR(SYSTEM_RESOURCE_EXHAUSTED,
             "Maximum number of monitoring regions reached"));
     }
     
     // Validate region
     if (region.size == 0) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Monitoring region size cannot be zero"));
     }
     
@@ -160,12 +160,12 @@ Result<u8> PerformanceMonitor::add_monitoring_region(const MonitoringRegion& reg
 
 Result<void> PerformanceMonitor::remove_monitoring_region(u8 region_id) {
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Performance monitor not initialized"));
     }
     
     if (region_id >= monitoring_regions_.size()) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid monitoring region ID: " + std::to_string(region_id)));
     }
     
@@ -182,12 +182,12 @@ const PerformanceCounters& PerformanceMonitor::get_global_counters() const {
 
 Result<RegionStatistics> PerformanceMonitor::get_region_statistics(u8 region_id) const {
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Performance monitor not initialized"));
     }
     
     if (region_id >= monitoring_regions_.size()) {
-        return std::unexpected(MAKE_ERROR(INVALID_PARAMETER,
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER,
             "Invalid monitoring region ID: " + std::to_string(region_id)));
     }
     
@@ -199,12 +199,12 @@ std::vector<MonitoringRegion> PerformanceMonitor::get_all_regions() const {
 }
 
 std::vector<MemoryAccessEvent> PerformanceMonitor::get_access_history() const {
-    return access_history_;
+    return std::vector<MemoryAccessEvent>(access_history_.begin(), access_history_.end());
 }
 
 Result<PerformanceReport> PerformanceMonitor::generate_report() const {
     if (!initialized_) {
-        return std::unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
             "Performance monitor not initialized"));
     }
     
@@ -248,10 +248,6 @@ void PerformanceMonitor::reset_counters() {
     access_history_.clear();
     
     COMPONENT_LOG_DEBUG("Performance counters reset");
-}
-
-bool PerformanceMonitor::is_monitoring_enabled() const {
-    return monitoring_enabled_;
 }
 
 void PerformanceMonitor::dump_statistics() const {
@@ -315,7 +311,7 @@ Result<void> PerformanceMonitor::setup_default_monitoring_regions() {
     
     auto flash_result = add_monitoring_region(flash_region);
     if (!flash_result) {
-        return std::unexpected(flash_result.error());
+        return unexpected(flash_result.error());
     }
     
     // PSRAM region
@@ -327,7 +323,7 @@ Result<void> PerformanceMonitor::setup_default_monitoring_regions() {
     
     auto psram_result = add_monitoring_region(psram_region);
     if (!psram_result) {
-        return std::unexpected(psram_result.error());
+        return unexpected(psram_result.error());
     }
     
     // SRAM region
@@ -339,7 +335,7 @@ Result<void> PerformanceMonitor::setup_default_monitoring_regions() {
     
     auto sram_result = add_monitoring_region(sram_region);
     if (!sram_result) {
-        return std::unexpected(sram_result.error());
+        return unexpected(sram_result.error());
     }
     
     // MMIO region
@@ -351,7 +347,7 @@ Result<void> PerformanceMonitor::setup_default_monitoring_regions() {
     
     auto mmio_result = add_monitoring_region(mmio_region);
     if (!mmio_result) {
-        return std::unexpected(mmio_result.error());
+        return unexpected(mmio_result.error());
     }
     
     COMPONENT_LOG_DEBUG("Default monitoring regions set up successfully");

@@ -161,6 +161,10 @@ private:
     // Performance optimization
     mutable Address last_address_ = 0;
     mutable PeripheralBase* last_peripheral_ = nullptr;
+    
+    // State management
+    bool initialized_ = false;
+    mutable std::mutex manager_mutex_;
 };
 
 } // namespace m5tab5::emulator
