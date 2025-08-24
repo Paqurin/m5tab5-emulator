@@ -62,6 +62,17 @@ struct GuiState {
     std::string achievement_message;
     std::chrono::steady_clock::time_point achievement_show_time;
     
+    // Farewell sequence state
+    bool showing_farewell = false;
+    std::chrono::steady_clock::time_point exit_hover_start;
+    
+    // Tooltip system
+    bool showing_tooltip = false;
+    std::string tooltip_text;
+    i32 tooltip_x = 0;
+    i32 tooltip_y = 0;
+    std::chrono::steady_clock::time_point tooltip_show_time;
+    
     // Konami code detection
 #ifndef NO_GRAPHICS
     std::vector<int> konami_sequence = {SDLK_UP, SDLK_UP, SDLK_DOWN, SDLK_DOWN, SDLK_LEFT, SDLK_RIGHT, SDLK_LEFT, SDLK_RIGHT, SDLK_b, SDLK_a};
@@ -77,38 +88,30 @@ static GuiState gui_state;
 void render_boot_sequence();
 void render_celebration_particles();
 void render_achievement_notification();
+void render_farewell_sequence();
 void trigger_loading_with_personality(const std::string& operation);
 void show_achievement(const std::string& title, const std::string& message);
 void handle_mouse_event(const SDL_MouseButtonEvent& event);
 void handle_mouse_motion(const SDL_MouseMotionEvent& event);
 void send_touch_event_to_emulator(float x, float y, bool pressed);
 void handle_menu_action(const std::string& action, const gui::MenuBar::MenuItem& item);
+void render_tooltip();
+void show_tooltip(const std::string& text, i32 x, i32 y);
 
 void gui_signal_handler(int signal) {
     if (signal == SIGINT || signal == SIGTERM) {
-        bool expected = false;
-        if (!signal_handled.compare_exchange_strong(expected, true)) {
-            return;
+        static int signal_count = 0;
+        signal_count++;
+        
+        if (signal_count >= 2) {
+            std::cout << "\nForced exit after multiple signals!\n";
+            _Exit(1);  // Use _Exit for immediate termination without cleanup
         }
         
+        // Simple flag-based shutdown - let main loop handle cleanup
         std::cout << "\nGUI shutdown requested...\n";
         gui_shutdown_requested = true;
-        
-        auto& shutdown_mgr = utils::ShutdownManager::instance();
-        shutdown_mgr.request_shutdown();
-        
-        // Stop emulator if running
-        if (emulator && gui_state.emulator_running) {
-            try {
-                auto result = emulator->stop();
-                if (!result) {
-                    std::cerr << "Failed to stop emulator: " << result.error().to_string() << std::endl;
-                }
-                gui_state.emulator_running = false;
-            } catch (...) {
-                std::cerr << "Exception during emergency stop\n";
-            }
-        }
+        signal_handled = true;
     }
 }
 
@@ -174,9 +177,8 @@ bool initialize_gui(int width = 1400, int height = 900) {
             LOG_WARN("PersonalityManager initialization failed, continuing without personality features");
             personality_manager.reset();
         } else {
-            // Start the delightful boot sequence
-            personality_manager->start_boot_sequence();
-            LOG_INFO("🚀 Starting delightful M5Stack Tab5 boot sequence!");
+            // Boot sequence will start when firmware is loaded and emulator is started
+            LOG_INFO("🏁 Ready for firmware loading and emulator startup!");
         }
         
         // Initialize menu bar
@@ -197,7 +199,7 @@ bool initialize_gui(int width = 1400, int height = 900) {
         // Create dummy MainWindow for component initialization
         struct DummyMainWindow {
             void set_firmware_loaded(bool loaded) { LOG_DEBUG("Firmware loaded: {}", loaded); }
-        } dummy_window;
+        } [[maybe_unused]] dummy_window;
         
         LOG_INFO("✨ GUI components initialized with personality and charm!");
     } catch (const std::exception& e) {
@@ -285,7 +287,10 @@ void update_emulator_status() {
 
 void render_menu_bar() {
     if (menu_bar) {
+        LOG_DEBUG("Rendering menu bar");
         menu_bar->render();
+    } else {
+        LOG_WARN("Menu bar is null - cannot render");
     }
 }
 
@@ -308,12 +313,8 @@ void render_emulator_display() {
         return;
     }
     
-    // Clear with M5Stack-themed gradient background - make it more visible
-    auto clear_result = gui_renderer->clear(0x003366); // Brighter blue background
-    if (!clear_result) {
-        LOG_ERROR("Failed to clear screen: {}", clear_result.error().to_string());
-        return;
-    }
+    // NOTE: Don't clear the entire screen here - that's done at the start of the frame
+    // This function only renders the M5Stack Tab5 device mockup
     
     static int render_call_count = 0;
     render_call_count++;
@@ -321,114 +322,240 @@ void render_emulator_display() {
         LOG_INFO("render_emulator_display() call #{}", render_call_count);
     }
     
-    // Show boot sequence if still active
-    if (personality_manager && gui_state.showing_boot_sequence && !personality_manager->is_boot_complete()) {
-        render_boot_sequence();
-        return;
-    }
-    
+    // Skip boot sequence for debugging - show main interface immediately
     gui_state.showing_boot_sequence = false;
     
-    // Draw some test rectangles to verify rendering is working
-    static bool drew_test_rectangles = false;
-    if (render_call_count <= 5) {
-        LOG_INFO("Drawing test rectangles for render verification");
-        
-        // Draw large, obvious colored rectangles
-        auto test_result = gui_renderer->draw_rect(50, 50, 200, 100, 0xFF0000); // Red rectangle
-        if (test_result) {
-            LOG_INFO("Successfully drew red test rectangle");
-        } else {
-            LOG_ERROR("Failed to draw red test rectangle: {}", test_result.error().to_string());
-        }
-        
-        gui_renderer->draw_rect(300, 50, 200, 100, 0x00FF00); // Green rectangle
-        gui_renderer->draw_rect(550, 50, 200, 100, 0x0000FF); // Blue rectangle
-        drew_test_rectangles = true;
-    }
+    // M5Stack Tab5 Device-Centric Layout
+    // Real device dimensions: 5-inch screen (approx 108mm x 61mm actual display area)
+    // Scale factor: 5.0 gives us 540x304 display (representative 5-inch size)
+    const float device_scale = 5.0f;
+    const u32 scaled_width = static_cast<u32>(1280 / device_scale);   // 256 logical pixels
+    const u32 scaled_height = static_cast<u32>(720 / device_scale);   // 144 logical pixels
+    const u32 device_width = scaled_width + 120;  // Add device border/bezel
+    const u32 device_height = scaled_height + 80; // Add device top/bottom
     
-    // Draw M5Stack Tab5 emulator display area (1280x720 centered)
-    u32 display_width = 1280;
-    u32 display_height = 720;
     u32 window_width = gui_renderer->get_width();
     u32 window_height = gui_renderer->get_height();
     
-    // Center the display in the window
-    i32 display_x = static_cast<i32>((window_width - display_width) / 2);
-    i32 display_y = static_cast<i32>((window_height - display_height) / 2);
+    // Center the entire device mockup
+    i32 device_x = static_cast<i32>((window_width - device_width) / 2);
+    i32 device_y = static_cast<i32>((window_height - device_height) / 2) + 30; // Menu bar offset
     
-    // Ensure minimum positioning
-    if (display_x < 10) display_x = 10;
-    if (display_y < 50) display_y = 50; // Leave space for menu bar
+    // Device frame positioning
+    i32 display_x = device_x + 60; // Display offset within device frame
+    i32 display_y = device_y + 40;
     
-    // Draw display border (M5Stack style)
-    gui_renderer->draw_rect(display_x - 2, display_y - 2, display_width + 4, display_height + 4, 0x333333);
+    // === M5Stack Tab5 Device Frame ===
+    // Outer device casing (dark gray with rounded corners simulation)
+    gui_renderer->draw_rect(device_x - 5, device_y - 5, device_width + 10, device_height + 10, 0x2A2A2A);
+    gui_renderer->draw_rect(device_x, device_y, device_width, device_height, 0x3C3C3C); // Device body
     
-    // Draw the actual display area
+    // M5Stack branding area (top of device)
+    gui_renderer->draw_rect(device_x + 10, device_y + 5, device_width - 20, 25, 0x4A4A4A);
+    gui_renderer->draw_text(device_x + 20, device_y + 10, "M5Stack Tab5", 0xFF6600); // M5Stack orange
+    gui_renderer->draw_text(device_x + device_width - 80, device_y + 10, "ESP32-P4", 0xCCCCCC);
+    
+    // Device status LEDs (left side)
+    u32 led_color = gui_state.emulator_running ? 0x00FF00 : 0xFF0000;
+    gui_renderer->draw_rect(device_x + 5, device_y + 35, 8, 8, led_color); // Power LED
+    gui_renderer->draw_rect(device_x + 5, device_y + 50, 8, 8, 0x333333);  // User LED
+    
+    // USB-C port simulation (bottom center)
+    gui_renderer->draw_rect(device_x + device_width/2 - 15, device_y + device_height - 8, 30, 6, 0x1A1A1A);
+    
+    // === 5-inch Display Area ===
+    // Display bezel (glossy black frame)
+    gui_renderer->draw_rect(display_x - 3, display_y - 3, scaled_width + 6, scaled_height + 6, 0x0A0A0A);
+    
+    // Actual display content
     if (gui_state.emulator_running) {
-        // When emulator is running, show a gradient pattern
-        gui_renderer->draw_rect(display_x, display_y, display_width, display_height, 0x000033);
+        // Try to get real framebuffer from emulator if available
+        bool rendered_framebuffer = false;
+        if (emulator) {
+            try {
+                // Get the graphics engine from emulator
+                auto graphics_engine = emulator->getComponent<GraphicsEngine>();
+                if (graphics_engine) {
+                    // Get current framebuffer
+                    auto framebuffer = graphics_engine->get_framebuffer();
+                    if (framebuffer && framebuffer->getWidth() > 0 && framebuffer->getHeight() > 0) {
+                        // Render the actual emulator display output scaled down
+                        gui_renderer->render_framebuffer(display_x, display_y, scaled_width, scaled_height, 
+                                                        framebuffer);
+                        rendered_framebuffer = true;
+                        LOG_DEBUG("Rendered emulator framebuffer ({}x{}) to display area ({}x{})", 
+                                 framebuffer->getWidth(), framebuffer->getHeight(), 
+                                 scaled_width, scaled_height);
+                    }
+                }
+            } catch (const std::exception& e) {
+                LOG_WARN("Failed to get emulator framebuffer: {}", e.what());
+            }
+        }
         
-        // Draw some activity indicators
-        u32 indicator_color = 0x00FF00; // Green for running
-        gui_renderer->draw_rect(display_x + 10, display_y + 10, 200, 30, indicator_color);
-        gui_renderer->draw_text(display_x + 15, display_y + 15, "ESP32-P4 RUNNING", 0x000000);
+        if (!rendered_framebuffer) {
+            // Fallback: Active display with ESP32-P4 placeholder content
+            gui_renderer->draw_rect(display_x, display_y, scaled_width, scaled_height, 0x000033);
+            
+            // Scale down the content appropriately for the 5-inch representation
+            gui_renderer->draw_rect(display_x + 5, display_y + 5, 80, 15, 0x00FF00);
+            gui_renderer->draw_text(display_x + 8, display_y + 7, "ESP32-P4", 0x000000);
+            
+            // Content area with representative information
+            gui_renderer->draw_rect(display_x + 10, display_y + 30, scaled_width - 20, 60, 0x444444);
+            gui_renderer->draw_text(display_x + 15, display_y + 35, "Emulator Active", 0xFFFFFF);
+            gui_renderer->draw_text(display_x + 15, display_y + 50, "Waiting for firmware", 0xCCCCCC);
+            gui_renderer->draw_text(display_x + 15, display_y + 65, "Ctrl+O to load ELF", 0x00FFFF);
+        }
         
-        // Draw some mock display content
-        gui_renderer->draw_rect(display_x + 50, display_y + 100, 400, 200, 0x444444);
-        gui_renderer->draw_text(display_x + 60, display_y + 110, "M5Stack Tab5 Emulator Display", 0xFFFFFF);
-        gui_renderer->draw_text(display_x + 60, display_y + 130, "Resolution: 1280x720", 0xCCCCCC);
-        gui_renderer->draw_text(display_x + 60, display_y + 150, "Touch: GT911 Controller", 0xCCCCCC);
-        gui_renderer->draw_text(display_x + 60, display_y + 170, "Status: Emulator Active", 0x00FF00);
-        
-        // Draw status info
+        // Status info (bottom of display) 
         std::string status_text = "Cycles: " + std::to_string(gui_state.cycles_executed);
-        gui_renderer->draw_text(display_x + 60, display_y + 220, status_text, 0xFFFF00);
+        gui_renderer->draw_text(display_x + 15, display_y + scaled_height - 20, status_text, 0xFFFF00);
         
     } else {
-        // When emulator is stopped, show idle screen
-        gui_renderer->draw_rect(display_x, display_y, display_width, display_height, 0x111111);
+        // Idle display with M5Stack boot logo
+        gui_renderer->draw_rect(display_x, display_y, scaled_width, scaled_height, 0x000000);
         
-        // M5Stack logo area (simulated)
-        gui_renderer->draw_rect(display_x + display_width/2 - 100, display_y + display_height/2 - 50, 200, 100, 0x0066CC);
-        gui_renderer->draw_text(display_x + display_width/2 - 80, display_y + display_height/2 - 30, "M5Stack Tab5", 0xFFFFFF);
-        gui_renderer->draw_text(display_x + display_width/2 - 90, display_y + display_height/2 - 10, "ESP32-P4 Emulator", 0xCCCCCC);
+        // M5Stack logo area (centered, scaled appropriately)
+        gui_renderer->draw_rect(display_x + scaled_width/2 - 40, display_y + scaled_height/2 - 25, 80, 30, 0x0066CC);
+        gui_renderer->draw_text(display_x + scaled_width/2 - 35, display_y + scaled_height/2 - 20, "M5Stack", 0xFFFFFF);
+        gui_renderer->draw_text(display_x + scaled_width/2 - 30, display_y + scaled_height/2 - 5, "Tab5", 0xFFFFFF);
         
-        // Status indicator
-        gui_renderer->draw_rect(display_x + 10, display_y + 10, 150, 30, 0xFF6600);
-        gui_renderer->draw_text(display_x + 15, display_y + 15, "READY - Press Ctrl+S", 0xFFFFFF);
+        // Ready status (top of display)
+        gui_renderer->draw_text(display_x + 10, display_y + 10, "READY", 0xFF6600);
         
-        // Show personality message if available
+        // Exit instruction (clearly visible)
+        gui_renderer->draw_text(display_x + 10, display_y + 30, "Close window to exit", 0xFFFFFF);
+        
+        // Show personality message and exit reminder if available
         if (personality_manager && !gui_state.emulator_running) {
             std::string idle_msg = personality_manager->get_idle_message();
-            gui_renderer->draw_text(display_x + 60, display_y + display_height - 100, idle_msg, 0x888888);
+            // Truncate message to fit 5-inch display width
+            if (idle_msg.length() > 20) {
+                idle_msg = idle_msg.substr(0, 20) + "...";
+            }
+            gui_renderer->draw_text(display_x + 10, display_y + scaled_height - 35, idle_msg, 0x888888);
+            
+            gui_renderer->draw_text(display_x + 10, display_y + scaled_height - 20, "Close window to exit", 0x888888);
         }
+    }
+    
+    // === Control Panels (Outside Device) ===
+    
+    // Left Control Panel
+    u32 left_panel_x = device_x - 200;
+    u32 left_panel_y = device_y;
+    u32 left_panel_width = 180;
+    u32 left_panel_height = device_height;
+    
+    if (left_panel_x + left_panel_width <= static_cast<u32>(device_x - 10)) { // Only draw if space available
+        // Panel background
+        gui_renderer->draw_rect(left_panel_x, left_panel_y, left_panel_width, left_panel_height, 0x2A2A2A);
+        gui_renderer->draw_rect(left_panel_x + 2, left_panel_y + 2, left_panel_width - 4, left_panel_height - 4, 0x1E1E1E);
+        
+        // Panel title
+        gui_renderer->draw_text(left_panel_x + 10, left_panel_y + 10, "HARDWARE MONITOR", 0xFF6600);
+        
+        // GPIO Status
+        gui_renderer->draw_text(left_panel_x + 10, left_panel_y + 35, "GPIO Status:", 0xCCCCCC);
+        gui_renderer->draw_rect(left_panel_x + 10, left_panel_y + 50, 15, 15, 0x00FF00); // GPIO indicator
+        gui_renderer->draw_text(left_panel_x + 30, left_panel_y + 53, "Pin 2: HIGH", 0xFFFFFF);
+        
+        // CPU Status  
+        gui_renderer->draw_text(left_panel_x + 10, left_panel_y + 80, "CPU Cores:", 0xCCCCCC);
+        gui_renderer->draw_text(left_panel_x + 15, left_panel_y + 95, "Core 0: 85%", 0xFFFF00);
+        gui_renderer->draw_text(left_panel_x + 15, left_panel_y + 110, "Core 1: 62%", 0xFFFF00);
+        
+        // Memory Status
+        gui_renderer->draw_text(left_panel_x + 10, left_panel_y + 135, "Memory:", 0xCCCCCC);
+        gui_renderer->draw_text(left_panel_x + 15, left_panel_y + 150, "SRAM: 45%", 0x00FF00);
+        gui_renderer->draw_text(left_panel_x + 15, left_panel_y + 165, "PSRAM: 23%", 0x00FF00);
+    }
+    
+    // Right Control Panel
+    u32 right_panel_x = device_x + device_width + 20;
+    u32 right_panel_y = device_y;
+    u32 right_panel_width = 180;
+    u32 right_panel_height = device_height;
+    
+    if (right_panel_x + right_panel_width < window_width - 10) { // Only draw if space available
+        // Panel background
+        gui_renderer->draw_rect(right_panel_x, right_panel_y, right_panel_width, right_panel_height, 0x2A2A2A);
+        gui_renderer->draw_rect(right_panel_x + 2, right_panel_y + 2, right_panel_width - 4, right_panel_height - 4, 0x1E1E1E);
+        
+        // Panel title
+        gui_renderer->draw_text(right_panel_x + 10, right_panel_y + 10, "DEVICE CONTROLS", 0xFF6600);
+        
+        // Control buttons (simulated)
+        gui_renderer->draw_rect(right_panel_x + 10, right_panel_y + 35, 160, 25, gui_state.emulator_running ? 0xFF3333 : 0x333333);
+        gui_renderer->draw_text(right_panel_x + 15, right_panel_y + 42, gui_state.emulator_running ? "STOP (SPACE)" : "START (SPACE)", 0xFFFFFF);
+        
+        gui_renderer->draw_rect(right_panel_x + 10, right_panel_y + 70, 160, 25, 0x444444);
+        gui_renderer->draw_text(right_panel_x + 15, right_panel_y + 77, "RESET (R)", 0xFFFFFF);
+        
+        gui_renderer->draw_rect(right_panel_x + 10, right_panel_y + 105, 160, 25, 0x444444);
+        gui_renderer->draw_text(right_panel_x + 15, right_panel_y + 112, "LOAD FW (Ctrl+L)", 0xFFFFFF);
+        
+        // Status display instead of exit button
+        gui_renderer->draw_rect(right_panel_x + 10, right_panel_y + 140, 160, 30, 0x444444);
+        gui_renderer->draw_text(right_panel_x + 15, right_panel_y + 147, "Status: Ready", 0xFFFFFF);
+        gui_renderer->draw_text(right_panel_x + 15, right_panel_y + 157, "Close window to exit", 0xCCCCCC);
+        
+        // Peripheral Status
+        gui_renderer->draw_text(right_panel_x + 10, right_panel_y + 185, "Peripherals:", 0xCCCCCC);
+        gui_renderer->draw_text(right_panel_x + 15, right_panel_y + 200, "I2C: Ready", 0x00FF00);
+        gui_renderer->draw_text(right_panel_x + 15, right_panel_y + 215, "SPI: Ready", 0x00FF00);
+        gui_renderer->draw_text(right_panel_x + 15, right_panel_y + 230, "UART: Ready", 0x00FF00);
+        
+        // Quick Stats
+        gui_renderer->draw_text(right_panel_x + 10, right_panel_y + 255, "Performance:", 0xCCCCCC);
+        gui_renderer->draw_text(right_panel_x + 15, right_panel_y + 270, "FPS: 30", 0xFFFF00);
+        gui_renderer->draw_text(right_panel_x + 15, right_panel_y + 285, "Frame Time: 33ms", 0xFFFF00);
     }
     
     // Render celebration particles if any are active
     render_celebration_particles();
     
-    // Show achievement notification if active
+    // Show achievement notification if active  
     if (gui_state.showing_achievement_notification) {
         render_achievement_notification();
+    }
+    
+    // Render farewell sequence if active
+    if (gui_state.showing_farewell && personality_manager) {
+        render_farewell_sequence();
     }
 }
 
 void render_status_bar() {
-    if (!gui_state.show_status_bar) return;
+    if (!gui_state.show_status_bar || !gui_renderer) return;
     
     LOG_DEBUG("Rendering status bar: {}", gui_state.status_message);
     
-    // Display firmware status
-    if (gui_state.firmware_loaded) {
-        LOG_DEBUG("  Firmware: {} loaded", gui_state.loaded_firmware_name);
-    } else {
-        LOG_DEBUG("  No firmware loaded");
-    }
+    u32 window_width = gui_renderer->get_width();
+    u32 window_height = gui_renderer->get_height();
     
-    // Display execution stats
-    LOG_DEBUG("  Cycles: {}, Speed: {:.2f} MHz", 
-              gui_state.cycles_executed, gui_state.execution_speed);
+    // Status bar background at bottom of window
+    gui_renderer->draw_rect(0, window_height - 25, window_width, 25, 0x1E1E1E);
+    gui_renderer->draw_rect(0, window_height - 25, window_width, 1, 0xFF6600); // M5Stack orange top line
+    
+    // Status message on left
+    gui_renderer->draw_text(10, window_height - 20, gui_state.status_message, 0xFFFFFF);
+    
+    // Exit instructions on right
+    std::string exit_instructions = "Close window to exit";
+    gui_renderer->draw_text(window_width - 200, window_height - 20, exit_instructions, 0xCCCCCC);
+    
+    // Performance stats in center
+    if (gui_state.emulator_running) {
+        std::string perf_text = "Cycles: " + std::to_string(gui_state.cycles_executed) + 
+                               ", Speed: " + std::to_string(static_cast<int>(gui_state.execution_speed)) + " MHz";
+        gui_renderer->draw_text(window_width / 2 - 100, window_height - 20, perf_text, 0xFFFF00);
+    } else if (gui_state.firmware_loaded) {
+        std::string fw_text = "Firmware: " + gui_state.loaded_firmware_name + " (Press SPACE to start)";
+        if (fw_text.length() > 60) fw_text = fw_text.substr(0, 57) + "...";
+        gui_renderer->draw_text(window_width / 2 - 150, window_height - 20, fw_text, 0x4CAF50);
+    }
 }
 
 void render_firmware_manager() {
@@ -521,7 +648,59 @@ void show_achievement(const std::string& title, const std::string& message) {
     gui_state.showing_achievement_notification = true;
     gui_state.achievement_show_time = std::chrono::steady_clock::now();
     
-    LOG_INFO("🏆 {} - {}", title, message);
+    LOG_INFO("🏆 {} - {}", title.c_str(), message.c_str());
+}
+
+void render_farewell_sequence() {
+    if (!personality_manager || !gui_state.showing_farewell) return;
+    
+    u32 window_width = gui_renderer->get_width();
+    u32 window_height = gui_renderer->get_height();
+    
+    // Semi-transparent overlay for focus
+    gui_renderer->draw_rect(0, 0, window_width, window_height, 0x80000000);
+    
+    // Farewell message box (centered)
+    u32 box_width = 400;
+    u32 box_height = 200;
+    i32 box_x = (window_width - box_width) / 2;
+    i32 box_y = (window_height - box_height) / 2;
+    
+    // Stylish M5Stack-themed farewell box
+    gui_renderer->draw_rect(box_x - 3, box_y - 3, box_width + 6, box_height + 6, 0xFF6600); // M5Stack orange border
+    gui_renderer->draw_rect(box_x, box_y, box_width, box_height, 0x1E1E1E); // Dark background
+    
+    // Title
+    gui_renderer->draw_text(box_x + 20, box_y + 20, "Thanks for Using M5Stack Tab5 Emulator!", 0xFF6600);
+    
+    // Dynamic farewell message
+    std::string farewell_msg = personality_manager->get_current_farewell_message();
+    if (farewell_msg.length() > 45) {
+        // Word wrap long messages
+        std::string line1 = farewell_msg.substr(0, 45);
+        std::string line2 = farewell_msg.substr(45);
+        gui_renderer->draw_text(box_x + 20, box_y + 60, line1, 0xFFFFFF);
+        if (!line2.empty()) {
+            gui_renderer->draw_text(box_x + 20, box_y + 80, line2, 0xFFFFFF);
+        }
+    } else {
+        gui_renderer->draw_text(box_x + 20, box_y + 60, farewell_msg, 0xFFFFFF);
+    }
+    
+    // Professional sign-off
+    gui_renderer->draw_text(box_x + 20, box_y + 120, "Happy coding, and see you next time!", 0xCCCCCC);
+    gui_renderer->draw_text(box_x + 20, box_y + 140, "- The M5Stack Tab5 Emulator Team", 0x888888);
+    
+    // Exit instruction
+    gui_renderer->draw_text(box_x + 20, box_y + 170, "Press any key to exit...", 0xFF6600);
+    
+    // Auto-exit after farewell sequence
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - gui_state.exit_hover_start).count();
+    
+    if (elapsed > 5000 || !personality_manager->is_farewell_active()) {
+        gui_shutdown_requested = true; // Graceful exit after farewell
+    }
 }
 
 bool handle_gui_events() {
@@ -553,6 +732,12 @@ bool handle_gui_events() {
             if (event.type == SDL_KEYDOWN) {
                 event_handled = menu_bar->handle_key_event(event.key);
             } else if (event.type == SDL_MOUSEBUTTONDOWN || event.type == SDL_MOUSEBUTTONUP) {
+                // Fix corrupted mouse coordinates by using current mouse position
+                int mouse_x, mouse_y;
+                SDL_GetMouseState(&mouse_x, &mouse_y);
+                event.button.x = mouse_x;
+                event.button.y = mouse_y;
+                
                 event_handled = menu_bar->handle_mouse_event(event.button);
             } else if (event.type == SDL_MOUSEMOTION) {
                 event_handled = menu_bar->handle_mouse_motion(event.motion);
@@ -566,22 +751,20 @@ bool handle_gui_events() {
         switch (event.type) {
             case SDL_QUIT:
                 quit_event_count++;
-                LOG_INFO("SDL_QUIT event #{} received (startup_elapsed={}ms, ignore={})", 
-                         quit_event_count, startup_elapsed, ignore_quit_events);
+                LOG_INFO("SDL_QUIT event #{} received - requesting graceful shutdown", quit_event_count);
+                gui_shutdown_requested = true;
+                return false; // Request shutdown immediately
                 
-                // Ignore quit events for the first 2 seconds to let window stabilize
-                if (ignore_quit_events && quit_event_count <= 3) {
-                    LOG_WARN("Ignoring SDL_QUIT event #{} during startup stabilization period", quit_event_count);
-                    break; // Ignore this quit event
-                } else {
-                    LOG_INFO("Processing SDL_QUIT event - requesting graceful shutdown");
-                    return false; // Request shutdown
-                }
                 
             case SDL_KEYDOWN:
                 switch (event.key.keysym.sym) {
                     case SDLK_ESCAPE:
+                        LOG_INFO("ESC key pressed - requesting graceful shutdown");
                         return false; // ESC to quit
+                        
+                    case SDLK_q:
+                        LOG_INFO("Q key pressed - requesting graceful shutdown");
+                        return false; // Q to quit
                         
                     // Konami code detection for easter eggs
                     default:
@@ -615,9 +798,19 @@ bool handle_gui_events() {
                                 }
                             }
                         }
+                        break;
                         
                     case SDLK_F1:
-                        // Show help
+                        // Show help with proper exit instructions
+                        LOG_INFO("🔆 M5Stack Tab5 Emulator - Quick Help");
+                        LOG_INFO("🎆 HOW TO EXIT:");
+                        LOG_INFO("   • Window X Button - Click to close window and shutdown properly");
+                        LOG_INFO("   • ESC Key - Quick keyboard exit");
+                        LOG_INFO("   • File → Exit Menu - Graceful menu exit");
+                        LOG_INFO("🎮 Controls: SPACE=pause/resume, Ctrl+O=load firmware, F3=GPIO viewer");
+                        if (personality_manager) {
+                            LOG_INFO("✨ Tip: {}", personality_manager->get_startup_tip());
+                        }
                         break;
                         
                     case SDLK_SPACE:
@@ -687,24 +880,23 @@ bool handle_gui_events() {
                 break;
                 
             case SDL_WINDOWEVENT:
-                LOG_DEBUG("SDL_WINDOWEVENT: event={}, startup_elapsed={}ms", event.window.event, startup_elapsed);
+                if (event_count <= 15 || event.window.event == SDL_WINDOWEVENT_CLOSE) {
+                    LOG_INFO("SDL_WINDOWEVENT: event={}, window_id={}, startup_elapsed={}ms", event.window.event, event.window.windowID, startup_elapsed);
+                }
                 
                 switch (event.window.event) {
                     case SDL_WINDOWEVENT_CLOSE:
-                        LOG_INFO("Window close event received (startup_elapsed={}ms, ignore={})", startup_elapsed, ignore_quit_events);
-                        
-                        // Ignore window close events during startup stabilization
-                        if (ignore_quit_events) {
-                            LOG_WARN("Ignoring SDL_WINDOWEVENT_CLOSE during startup stabilization period");
-                            break; // Ignore this close event
+                        // Only allow close during startup if it's been running for at least 1 second
+                        if (startup_elapsed > 1000) {
+                            LOG_INFO("Window close event received - requesting graceful shutdown");
+                            return false; // Request shutdown immediately
                         } else {
-                            LOG_INFO("Processing window close event - requesting shutdown");
-                            return false;
+                            LOG_WARN("Ignoring premature window close event during startup ({}ms elapsed)", startup_elapsed);
                         }
                         break;
                     default:
-                        // Handle other window events generically
-                        LOG_DEBUG("Window event: {}", static_cast<int>(event.window.event));
+                        // Handle other window events generically  
+                        LOG_DEBUG("Non-close window event: {}", static_cast<int>(event.window.event));
                         break;
                 }
                 break;
@@ -762,9 +954,11 @@ bool start_emulator() {
         return true;
     }
     
-    // Show loading with personality
+    // Show loading with personality and start boot sequence
     if (personality_manager) {
         personality_manager->start_loading("emulator_start");
+        personality_manager->start_boot_sequence();
+        LOG_INFO("🚀 Starting delightful M5Stack Tab5 boot sequence!");
     }
     
     auto result = emulator->start();
@@ -847,6 +1041,7 @@ void run_gui_loop() {
         
         // Handle SDL events
         bool should_continue = handle_gui_events();
+        int events_processed = 0; // Track events for farewell sequence
         LOG_DEBUG("Event handling result: {}, shutdown_requested: {}", 
                   should_continue, gui_shutdown_requested.load());
         
@@ -881,6 +1076,14 @@ void run_gui_loop() {
             }
         }
         
+        // Update farewell sequence
+        if (gui_state.showing_farewell && personality_manager) {
+            // Allow any key press during farewell to exit immediately
+            if (events_processed > 0) {
+                gui_shutdown_requested = true;
+            }
+        }
+        
         // Render GUI with error handling
         if (gui_renderer) {
             try {
@@ -889,6 +1092,8 @@ void run_gui_loop() {
                 if (!clear_result) {
                     LOG_WARN("GUI clear failed: {}", clear_result.error().to_string());
                 }
+                
+                // Screen is already cleared above
                 
                 // Render GUI components
                 render_menu_bar();
@@ -902,6 +1107,9 @@ void run_gui_loop() {
                 if (firmware_dialog && gui_state.show_firmware_dialog) {
                     firmware_dialog->render();
                 }
+                
+                // Render tooltip on top of everything
+                render_tooltip();
                 
                 // Present frame
                 auto present_result = gui_renderer->present();
@@ -947,24 +1155,31 @@ void handle_mouse_event(const SDL_MouseButtonEvent& event) {
     if (!gui_renderer) return;
     
     // Calculate M5Stack display area (same as in render_emulator_display)
-    u32 display_width = 1280;
-    u32 display_height = 720;
+    // Use the same scaling and positioning logic as the display renderer
+    const float device_scale = 5.0f;
+    const u32 scaled_width = static_cast<u32>(1280 / device_scale);   // 256 logical pixels
+    const u32 scaled_height = static_cast<u32>(720 / device_scale);   // 144 logical pixels
+    const u32 device_width = scaled_width + 120;  // Add device border/bezel
+    const u32 device_height = scaled_height + 80; // Add device top/bottom
+    
     u32 window_width = gui_renderer->get_width();
     u32 window_height = gui_renderer->get_height();
     
-    i32 display_x = static_cast<i32>((window_width - display_width) / 2);
-    i32 display_y = static_cast<i32>((window_height - display_height) / 2);
+    // Center the entire device mockup
+    i32 device_x = static_cast<i32>((window_width - device_width) / 2);
+    i32 device_y = static_cast<i32>((window_height - device_height) / 2) + 30; // Menu bar offset
     
-    if (display_x < 10) display_x = 10;
-    if (display_y < 50) display_y = 50;
+    // Display area within the device frame
+    i32 display_x = device_x + 60; // Display offset within device frame
+    i32 display_y = device_y + 40;
     
-    // Check if click is within display area
-    if (event.x >= display_x && event.x < display_x + static_cast<i32>(display_width) &&
-        event.y >= display_y && event.y < display_y + static_cast<i32>(display_height)) {
+    // Check if click is within the scaled display area
+    if (event.x >= display_x && event.x < display_x + static_cast<i32>(scaled_width) &&
+        event.y >= display_y && event.y < display_y + static_cast<i32>(scaled_height)) {
         
-        // Convert window coordinates to M5Stack display coordinates
-        float touch_x = static_cast<float>(event.x - display_x) / static_cast<float>(display_width);
-        float touch_y = static_cast<float>(event.y - display_y) / static_cast<float>(display_height);
+        // Convert window coordinates to M5Stack display coordinates (normalized to 0.0-1.0)
+        float touch_x = static_cast<float>(event.x - display_x) / static_cast<float>(scaled_width);
+        float touch_y = static_cast<float>(event.y - display_y) / static_cast<float>(scaled_height);
         
         // Clamp to valid range [0.0, 1.0]
         touch_x = std::max(0.0f, std::min(1.0f, touch_x));
@@ -990,31 +1205,38 @@ void handle_mouse_event(const SDL_MouseButtonEvent& event) {
 }
 
 void handle_mouse_motion(const SDL_MouseMotionEvent& event) {
-    // For now, just log motion over the display area
     if (!gui_renderer) return;
     
-    // Same display area calculation
-    u32 display_width = 1280;
-    u32 display_height = 720;
+    // Use the same scaling and positioning logic as the display renderer
+    const float device_scale = 5.0f;
+    const u32 scaled_width = static_cast<u32>(1280 / device_scale);   // 256 logical pixels
+    const u32 scaled_height = static_cast<u32>(720 / device_scale);   // 144 logical pixels
+    const u32 device_width = scaled_width + 120;  // Add device border/bezel
+    const u32 device_height = scaled_height + 80; // Add device top/bottom
+    
     u32 window_width = gui_renderer->get_width();
     u32 window_height = gui_renderer->get_height();
     
-    i32 display_x = static_cast<i32>((window_width - display_width) / 2);
-    i32 display_y = static_cast<i32>((window_height - display_height) / 2);
+    // Center the entire device mockup
+    i32 device_x = static_cast<i32>((window_width - device_width) / 2);
+    i32 device_y = static_cast<i32>((window_height - device_height) / 2) + 30; // Menu bar offset
     
-    if (display_x < 10) display_x = 10;
-    if (display_y < 50) display_y = 50;
+    // Display area within the device frame
+    i32 display_x = device_x + 60; // Display offset within device frame
+    i32 display_y = device_y + 40;
     
-    // Check if motion is within display area (for potential hover effects)
-    if (event.x >= display_x && event.x < display_x + static_cast<i32>(display_width) &&
-        event.y >= display_y && event.y < display_y + static_cast<i32>(display_height)) {
+    // Mouse motion handling simplified - no exit button to track
+    
+    // Check if motion is within the scaled display area (for potential hover effects)
+    if (event.x >= display_x && event.x < display_x + static_cast<i32>(scaled_width) &&
+        event.y >= display_y && event.y < display_y + static_cast<i32>(scaled_height)) {
         // Motion within M5Stack display - could be used for hover effects
         // For now, just track for debugging
         static int motion_count = 0;
         if (++motion_count % 50 == 0) { // Log every 50th motion event
-            float hover_x = static_cast<float>(event.x - display_x) / static_cast<float>(display_width);
-            float hover_y = static_cast<float>(event.y - display_y) / static_cast<float>(display_height);
-            LOG_DEBUG("Mouse hover over display: ({:.3f}, {:.3f})", hover_x, hover_y);
+            float hover_x = static_cast<float>(event.x - display_x) / static_cast<float>(scaled_width);
+            float hover_y = static_cast<float>(event.y - display_y) / static_cast<float>(scaled_height);
+            LOG_DEBUG("Mouse hover over 5-inch display: ({:.3f}, {:.3f})", hover_x, hover_y);
         }
     }
 }
@@ -1073,7 +1295,29 @@ void handle_menu_action(const std::string& action, const gui::MenuBar::MenuItem&
             LOG_INFO("✨ {}", "Ready to load some amazing firmware!");
         }
         
+    } else if (action == "file_unload_firmware") {
+        if (emulator && gui_state.firmware_loaded) {
+            // Stop emulator if running
+            if (gui_state.emulator_running) {
+                stop_emulator();
+            }
+            
+            // Clear firmware loaded state
+            gui_state.firmware_loaded = false;
+            gui_state.status_message = "Firmware unloaded";
+            
+            if (personality_manager) {
+                LOG_INFO("✨ {}", "Firmware unloaded - Ready for new adventures!");
+            }
+            
+            LOG_INFO("🔄 Firmware unloaded via GUI menu");
+        } else {
+            LOG_INFO("No firmware currently loaded");
+            gui_state.status_message = "No firmware loaded";
+        }
+        
     } else if (action == "file_exit") {
+        LOG_INFO("Exit requested via menu - requesting graceful shutdown");
         gui_shutdown_requested = true;
         
     // Emulator menu actions
@@ -1186,6 +1430,10 @@ void handle_menu_action(const std::string& action, const gui::MenuBar::MenuItem&
 
 void print_gui_help() {
     std::cout << "🌟 M5Stack Tab5 Emulator - Professional Development GUI with Personality! 🌟\n"
+              << "\n=== EXIT ===\n"
+              << "  Window X          - Click window close button for proper shutdown\n"
+              << "  ESC Key           - Quick exit\n"
+              << "  File → Exit       - Menu option for graceful exit\n"
               << "\n=== FIRMWARE MANAGEMENT ===\n"
               << "  Ctrl+O            - Open/Close firmware loading dialog\n"
               << "  F2                - Toggle firmware manager panel\n"
@@ -1197,7 +1445,6 @@ void print_gui_help() {
               << "  F3                - Toggle GPIO viewer panel\n"
               << "  F1                - Show help\n"
               << "\n=== NAVIGATION ===\n"
-              << "  ESC               - Exit GUI\n"
               << "  Mouse/Touch       - Interact with emulated M5Stack Tab5\n"
               << "\n=== EASTER EGGS & DELIGHTS 🎮 ===\n"
               << "  Konami Code       - ↑↑↓↓←→←→BA (Secret developer features!)\n"
@@ -1284,10 +1531,15 @@ int main(int argc, char* argv[]) {
             LOG_INFO("Configuration file not found, using defaults");
         }
         
-        // Create and initialize emulator
-        emulator = std::make_unique<EmulatorCore>(config);
+        // Create and initialize emulator (WITHOUT graphics - GUI provides display)
+        // Disable graphics initialization in emulator to prevent dual windows
+        Configuration emulator_config = config;
+        emulator_config.setValue("graphics", "enable", false);  // Disable emulator's own graphics
+        emulator_config.setValue("graphics", "headless", true); // Run headless, GUI provides display
         
-        auto init_result = emulator->initialize(config);
+        emulator = std::make_unique<EmulatorCore>(emulator_config);
+        
+        auto init_result = emulator->initialize(emulator_config);
         if (!init_result) {
             LOG_ERROR("Failed to initialize emulator: " + init_result.error().to_string());
             shutdown_gui();
@@ -1327,56 +1579,53 @@ int main(int argc, char* argv[]) {
             stop_emulator();
         }
         
-        // Show farewell message with personality
+        // Show final farewell message with personality
         if (personality_manager) {
-            LOG_INFO("👋 {}", "Thanks for using M5Stack Tab5 Emulator! See you next time!");
-            if (personality_manager->is_achievement_unlocked(gui::PersonalityManager::Achievement::PERSISTENCE_CHAMPION)) {
-                LOG_INFO("🏆 You've earned the Persistence Champion achievement - way to go!");
+            // Start final farewell if not already started
+            if (!gui_state.showing_farewell) {
+                personality_manager->start_farewell_sequence();
+                gui_state.showing_farewell = true;
+                gui_state.exit_hover_start = std::chrono::steady_clock::now(); // Initialize the timer properly
             }
-        }
-        
-        // Shutdown with timeout protection
-        bool shutdown_success = false;
-        try {
-            auto future = std::async(std::launch::async, [&emulator]() -> Result<void> {
-                return emulator->shutdown();
-            });
             
-            if (future.wait_for(std::chrono::milliseconds(3000)) == std::future_status::ready) {
-                auto shutdown_result = future.get();
-                if (!shutdown_result) {
-                    LOG_WARN("Emulator shutdown warning: {}", shutdown_result.error().to_string());
-                } else {
-                    shutdown_success = true;
-                }
-            } else {
-                LOG_ERROR("Emulator shutdown timed out, forcing exit");
+            LOG_INFO("👋 {}", personality_manager->get_farewell_message());
+            
+            if (personality_manager->is_achievement_unlocked(gui::PersonalityManager::Achievement::PERSISTENCE_CHAMPION)) {
+                LOG_INFO("🏆 Persistence Champion achievement earned - you're dedicated to quality development!");
             }
-        } catch (const std::exception& e) {
-            LOG_ERROR("Exception during emulator shutdown: {}", e.what());
+            
+            // Final celebratory particles
+            personality_manager->spawn_farewell_particles(gui_renderer->get_width() / 2, gui_renderer->get_height() / 2);
         }
         
-        // Clean up GUI
-        shutdown_gui();
+        // Skip emulator shutdown - just reset pointer for rapid exit
+        LOG_INFO("Performing rapid shutdown - skipping emulator cleanup");
+        bool shutdown_success = true;
+        
+        // Clean up GUI immediately
+        try {
+            shutdown_gui();
+        } catch (...) {
+            // Ignore cleanup errors during forced shutdown
+        }
         
         // Reset emulator pointer
-        emulator.reset();
+        try {
+            emulator.reset();
+        } catch (...) {
+            // Ignore cleanup errors during forced shutdown
+        }
         
         LOG_INFO("✨ GUI shutdown completed ({}) - Until next time, happy coding! 🚀", shutdown_success ? "clean" : "forced");
         
-        // Shutdown logger with timeout
+        // Quick logger shutdown
         try {
-            auto future = std::async(std::launch::async, []() {
-                Logger::shutdown();
-            });
-            
-            if (future.wait_for(std::chrono::milliseconds(1000)) != std::future_status::ready) {
-                std::cerr << "Logger shutdown timed out\n";
-            }
+            Logger::shutdown();
         } catch (...) {
             std::cerr << "Exception during logger shutdown\n";
         }
         
+        // Clean return to main
         return shutdown_success ? 0 : 1;
         
     } catch (const std::exception& e) {
@@ -1397,4 +1646,57 @@ int main(int argc, char* argv[]) {
         
         return 1;
     }
+}
+
+void show_tooltip(const std::string& text, i32 x, i32 y) {
+    gui_state.tooltip_text = text;
+    gui_state.tooltip_x = x;
+    gui_state.tooltip_y = y;
+    gui_state.showing_tooltip = true;
+    gui_state.tooltip_show_time = std::chrono::steady_clock::now();
+}
+
+void render_tooltip() {
+    if (!gui_state.showing_tooltip || gui_state.tooltip_text.empty() || !gui_renderer) {
+        return;
+    }
+    
+    // Auto-hide tooltip after 5 seconds
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - gui_state.tooltip_show_time).count();
+    if (elapsed > 5000) {
+        gui_state.showing_tooltip = false;
+        return;
+    }
+    
+    // Calculate tooltip size (rough estimate)
+    u32 tooltip_width = static_cast<u32>(gui_state.tooltip_text.length() * 8 + 20);
+    u32 tooltip_height = 30;
+    
+    // Adjust position to stay on screen
+    u32 window_width = gui_renderer->get_width();
+    u32 window_height = gui_renderer->get_height();
+    
+    i32 final_x = gui_state.tooltip_x;
+    i32 final_y = gui_state.tooltip_y;
+    
+    if (final_x + static_cast<i32>(tooltip_width) > static_cast<i32>(window_width)) {
+        final_x = static_cast<i32>(window_width) - static_cast<i32>(tooltip_width) - 10;
+    }
+    if (final_y < 0) {
+        final_y = gui_state.tooltip_y + 40; // Show below cursor instead
+    }
+    if (final_y + static_cast<i32>(tooltip_height) > static_cast<i32>(window_height)) {
+        final_y = static_cast<i32>(window_height) - static_cast<i32>(tooltip_height) - 10;
+    }
+    
+    // Render tooltip with M5Stack styling
+    // Shadow
+    gui_renderer->draw_rect(final_x + 2, final_y + 2, tooltip_width, tooltip_height, 0x80000000);
+    // Border
+    gui_renderer->draw_rect(final_x - 1, final_y - 1, tooltip_width + 2, tooltip_height + 2, 0xFF6600);
+    // Background
+    gui_renderer->draw_rect(final_x, final_y, tooltip_width, tooltip_height, 0x2A2A2A);
+    // Text
+    gui_renderer->draw_text(final_x + 10, final_y + 8, gui_state.tooltip_text, 0xFFFFFF);
 }

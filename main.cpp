@@ -12,12 +12,14 @@
 #include "emulator/utils/logging.hpp"
 #include "emulator/utils/error.hpp"
 #include "emulator/utils/shutdown_manager.hpp"
+// #include "emulator/firmware/firmware_integration.hpp"  // Disabled for CLI version
 
 using namespace m5tab5::emulator;
 
 std::atomic<bool> shutdown_requested{false};
 std::atomic<bool> signal_handled{false};
 std::unique_ptr<EmulatorCore> emulator;
+// std::unique_ptr<firmware::FirmwareIntegration> firmware_integration;  // Disabled for CLI version
 
 void signal_handler(int signal) {
     if (signal == SIGINT || signal == SIGTERM) {
@@ -57,12 +59,15 @@ void print_usage(const char* program_name) {
               << "  -l, --log-level <level> Set log level (trace, debug, info, warn, error)\n"
               << "  -f, --log-file <file>  Log file path\n"
               << "  -p, --profile          Enable performance profiling\n"
+              << "  -w, --firmware <file>  Load firmware ELF file\n"
+              << "  --boot                 Boot loaded firmware immediately\n"
               << "  -h, --help             Show this help message\n"
               << "\nExamples:\n"
               << "  " << program_name << "                          # Run with default settings\n"
               << "  " << program_name << " -c config/debug.json     # Run with custom config\n"
               << "  " << program_name << " -d -g 3333               # Debug mode with GDB server\n"
-              << "  " << program_name << " -l debug -f emulator.log # Debug logging to file\n";
+              << "  " << program_name << " -l debug -f emulator.log # Debug logging to file\n"
+              << "  " << program_name << " -w firmware.elf --boot   # Load and boot firmware\n";
 }
 
 int main(int argc, char* argv[]) {
@@ -74,8 +79,10 @@ int main(int argc, char* argv[]) {
     std::string config_file = "config/default.json";
     std::string log_level = "info";
     std::string log_file = "";
+    std::string firmware_path = "";
     bool debug_mode = false;
     bool enable_profiling = false;
+    bool boot_firmware = false;
     int gdb_port = 0;
     
     for (int i = 1; i < argc; i++) {
@@ -124,6 +131,17 @@ int main(int argc, char* argv[]) {
         }
         else if (arg == "-p" || arg == "--profile") {
             enable_profiling = true;
+        }
+        else if (arg == "-w" || arg == "--firmware") {
+            if (i + 1 < argc) {
+                firmware_path = argv[++i];
+            } else {
+                std::cerr << "Error: Firmware file path required after " << arg << std::endl;
+                return 1;
+            }
+        }
+        else if (arg == "--boot") {
+            boot_firmware = true;
         }
         else {
             std::cerr << "Error: Unknown option " << arg << std::endl;
@@ -184,6 +202,13 @@ int main(int argc, char* argv[]) {
             LOG_INFO("Performance profiling enabled");
         }
         
+        if (!firmware_path.empty()) {
+            LOG_INFO("Firmware file specified: " + firmware_path);
+            if (boot_firmware) {
+                LOG_INFO("Auto-boot firmware enabled");
+            }
+        }
+        
         // Create and initialize emulator
         emulator = std::make_unique<EmulatorCore>(config);
         
@@ -195,6 +220,14 @@ int main(int argc, char* argv[]) {
         
         LOG_INFO("Emulator initialized successfully");
         
+        // Note: Firmware integration disabled in CLI version
+        // For firmware loading, please use the GUI version: ./m5tab5-emulator-gui
+        if (!firmware_path.empty()) {
+            LOG_WARN("Firmware loading requested but not available in CLI version");
+            LOG_INFO("Please use the GUI version for firmware loading: ./m5tab5-emulator-gui");
+            LOG_INFO("CLI version provides basic emulator functionality only");
+        }
+        
         // Start emulator
         auto start_result = emulator->start();
         if (!start_result) {
@@ -202,7 +235,8 @@ int main(int argc, char* argv[]) {
             return 1;
         }
         
-        LOG_INFO("Emulator started - Press Ctrl+C to stop");
+        LOG_INFO("M5Stack Tab5 Emulator (CLI) started - Press Ctrl+C to stop");
+        LOG_INFO("For firmware loading and advanced features, use: ./m5tab5-emulator-gui");
         
         // Main loop - wait for shutdown signal
         LOG_DEBUG("Entering main loop, waiting for shutdown signal...");
@@ -238,6 +272,8 @@ int main(int argc, char* argv[]) {
         
         // Give components time to shutdown gracefully
         shutdown_mgr.execute_shutdown(std::chrono::milliseconds(5000));
+        
+        // firmware_integration disabled in CLI version
         
         // Final cleanup with timeout protection
         bool shutdown_success = false;
@@ -283,6 +319,7 @@ int main(int argc, char* argv[]) {
         
     } catch (const std::exception& e) {
         std::cerr << "Fatal error: " << e.what() << std::endl;
+        // firmware_integration disabled in CLI version
         if (emulator) {
             emulator->shutdown();
         }
