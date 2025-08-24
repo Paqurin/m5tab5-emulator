@@ -3,9 +3,13 @@
 #include "emulator/utils/error.hpp"
 #include "emulator/utils/types.hpp"
 #include "emulator/config/configuration.hpp"
+#include "emulator/graphics/framebuffer.hpp"
+#include "emulator/graphics/framebuffer_bridge.hpp"
+#include "emulator/graphics/touch_input.hpp"
 
 #include <memory>
 #include <atomic>
+#include <vector>
 
 namespace m5tab5::emulator {
 
@@ -29,6 +33,7 @@ public:
     Result<void> render_frame();
     Result<void> clear_screen(u32 color);
     Result<void> present();
+    Result<void> update_display();
 
     // Display properties
     u32 get_width() const { return width_; }
@@ -39,10 +44,26 @@ public:
     Result<void> set_pixel(u32 x, u32 y, u32 color);
     Result<u32> get_pixel(u32 x, u32 y) const;
     Result<void> draw_rectangle(u32 x, u32 y, u32 width, u32 height, u32 color);
+    
+    // Direct framebuffer access
+    Framebuffer* get_framebuffer() { return framebuffer_.get(); }
+    const Framebuffer* get_framebuffer() const { return framebuffer_.get(); }
 
     // Performance metrics
     double get_fps() const { return current_fps_; }
     u64 get_frames_rendered() const { return frames_rendered_; }
+    
+    // Touch input integration
+    Result<std::vector<TouchPoint>> get_touch_events() const;
+    Result<void> inject_touch_event(const TouchPoint& touch);
+    
+    // Display bridge access
+    FramebufferBridge* get_display_bridge() { return display_bridge_.get(); }
+    const FramebufferBridge* get_display_bridge() const { return display_bridge_.get(); }
+    
+    // Display state
+    bool is_display_active() const;
+    bool should_close_display() const;
 
 private:
     // Display configuration
@@ -50,8 +71,10 @@ private:
     u32 height_;
     u32 bpp_;
     
-    // Framebuffer
-    std::unique_ptr<u8[]> framebuffer_;
+    // Framebuffer management
+    std::unique_ptr<Framebuffer> framebuffer_;
+    std::unique_ptr<FramebufferBridge> display_bridge_;
+    std::unique_ptr<DisplayAdapter> display_adapter_;
     size_t framebuffer_size_;
     
     // Rendering state

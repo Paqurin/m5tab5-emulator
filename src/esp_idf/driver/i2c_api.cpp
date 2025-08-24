@@ -18,7 +18,7 @@
 
 namespace {
     using namespace m5tab5::emulator;
-    using I2CController = peripherals::I2CController;
+    using I2CController = m5tab5::emulator::I2CController;
     
     /**
      * @brief I2C command structure for queuing operations
@@ -99,14 +99,14 @@ namespace {
     /**
      * @brief Convert ESP-IDF I2C mode to emulator I2C mode
      */
-    I2CController::Mode convert_i2c_mode(i2c_mode_t esp_mode) {
+    m5tab5::emulator::I2CMode convert_i2c_mode(i2c_mode_t esp_mode) {
         switch (esp_mode) {
             case I2C_MODE_MASTER:
-                return I2CController::Mode::MASTER;
+                return m5tab5::emulator::I2CMode::MASTER;
             case I2C_MODE_SLAVE:
-                return I2CController::Mode::SLAVE;
+                return m5tab5::emulator::I2CMode::SLAVE;
             default:
-                return I2CController::Mode::MASTER;
+                return m5tab5::emulator::I2CMode::MASTER;
         }
     }
 }

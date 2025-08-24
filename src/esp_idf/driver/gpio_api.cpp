@@ -14,7 +14,7 @@
 
 namespace {
     using namespace m5tab5::emulator;
-    using GPIOController = peripherals::GPIOController;
+    using GPIOController = m5tab5::emulator::GPIOController;
     
     /**
      * @brief Get GPIO controller instance from emulator core
@@ -43,42 +43,42 @@ namespace {
     /**
      * @brief Convert ESP-IDF GPIO mode to emulator GPIO mode
      */
-    GPIOController::Mode convert_gpio_mode(gpio_mode_t esp_mode) {
+    GPIOController::PinMode convert_gpio_mode(gpio_mode_t esp_mode) {
         switch (esp_mode) {
             case GPIO_MODE_INPUT:
-                return GPIOController::Mode::INPUT;
+                return GPIOController::PinMode::Input;
             case GPIO_MODE_OUTPUT:
-                return GPIOController::Mode::OUTPUT;
+                return GPIOController::PinMode::Output;
             case GPIO_MODE_OUTPUT_OD:
-                return GPIOController::Mode::OUTPUT_OPEN_DRAIN;
+                return GPIOController::PinMode::OpenDrain;
             case GPIO_MODE_INPUT_OUTPUT:
-                return GPIOController::Mode::INPUT_OUTPUT;
+                return GPIOController::PinMode::Output; // Closest match
             case GPIO_MODE_INPUT_OUTPUT_OD:
-                return GPIOController::Mode::INPUT_OUTPUT_OPEN_DRAIN;
+                return GPIOController::PinMode::OpenDrain;
             case GPIO_MODE_DISABLE:
             default:
-                return GPIOController::Mode::DISABLED;
+                return GPIOController::PinMode::Input; // Default to safe mode
         }
     }
     
     /**
      * @brief Convert ESP-IDF interrupt type to emulator interrupt type
      */
-    GPIOController::InterruptType convert_interrupt_type(gpio_int_type_t esp_intr) {
+    GPIOController::InterruptMode convert_interrupt_type(gpio_int_type_t esp_intr) {
         switch (esp_intr) {
             case GPIO_INTR_POSEDGE:
-                return GPIOController::InterruptType::RISING_EDGE;
+                return GPIOController::InterruptMode::Rising;
             case GPIO_INTR_NEGEDGE:
-                return GPIOController::InterruptType::FALLING_EDGE;
+                return GPIOController::InterruptMode::Falling;
             case GPIO_INTR_ANYEDGE:
-                return GPIOController::InterruptType::ANY_EDGE;
+                return GPIOController::InterruptMode::Both;
             case GPIO_INTR_LOW_LEVEL:
-                return GPIOController::InterruptType::LOW_LEVEL;
+                return GPIOController::InterruptMode::Low;
             case GPIO_INTR_HIGH_LEVEL:
-                return GPIOController::InterruptType::HIGH_LEVEL;
+                return GPIOController::InterruptMode::High;
             case GPIO_INTR_DISABLE:
             default:
-                return GPIOController::InterruptType::NONE;
+                return GPIOController::InterruptMode::None;
         }
     }
     
@@ -125,25 +125,28 @@ int gpio_config(const gpio_config_t* pGPIOConfig) {
             
             // Set pin mode
             auto mode = convert_gpio_mode(pGPIOConfig->mode);
-            auto result = controller->configure_pin(pin, mode);
-            if (!result.has_value()) {
+            auto result = controller->setPinMode(pin, mode);
+            if (result != EmulatorError::Success) {
                 LOG_ERROR("gpio_config: failed to configure pin {}", pin);
                 return ESP_FAIL;
             }
             
             // Configure pull resistors
             if (pGPIOConfig->pull_up_en == GPIO_PULLUP_ENABLE) {
-                controller->set_pull_mode(pin, GPIOController::PullMode::PULL_UP);
+                controller->enablePullUp(pin, true);
+                controller->enablePullDown(pin, false);
             } else if (pGPIOConfig->pull_down_en == GPIO_PULLDOWN_ENABLE) {
-                controller->set_pull_mode(pin, GPIOController::PullMode::PULL_DOWN);
+                controller->enablePullUp(pin, false);
+                controller->enablePullDown(pin, true);
             } else {
-                controller->set_pull_mode(pin, GPIOController::PullMode::FLOATING);
+                controller->enablePullUp(pin, false);
+                controller->enablePullDown(pin, false);
             }
             
             // Configure interrupt if needed
             if (pGPIOConfig->intr_type != GPIO_INTR_DISABLE) {
                 auto intr_type = convert_interrupt_type(pGPIOConfig->intr_type);
-                controller->set_interrupt_type(pin, intr_type);
+                controller->setPinInterrupt(pin, intr_type);
             }
         }
     }
@@ -166,14 +169,15 @@ int gpio_reset_pin(gpio_num_t gpio_num) {
     LOG_DEBUG("gpio_reset_pin: resetting GPIO {}", gpio_num);
     
     // Reset pin to default state (input, no pull, no interrupt)
-    auto result = controller->configure_pin(gpio_num, GPIOController::Mode::INPUT);
-    if (!result.has_value()) {
+    auto result = controller->setPinMode(gpio_num, GPIOController::PinMode::Input);
+    if (result != EmulatorError::Success) {
         LOG_ERROR("gpio_reset_pin: failed to reset pin {}", gpio_num);
         return ESP_FAIL;
     }
     
-    controller->set_pull_mode(gpio_num, GPIOController::PullMode::FLOATING);
-    controller->set_interrupt_type(gpio_num, GPIOController::InterruptType::NONE);
+    controller->enablePullUp(gpio_num, false);
+    controller->enablePullDown(gpio_num, false);
+    controller->setPinInterrupt(gpio_num, GPIOController::InterruptMode::None);
     
     return ESP_OK;
 }
@@ -192,8 +196,8 @@ int gpio_set_level(gpio_num_t gpio_num, uint32_t level) {
     
     LOG_DEBUG("gpio_set_level: GPIO {} = {}", gpio_num, level ? "HIGH" : "LOW");
     
-    auto result = controller->digital_write(gpio_num, level != 0);
-    if (!result.has_value()) {
+    auto result = controller->digitalWrite(gpio_num, level != 0);
+    if (result != EmulatorError::Success) {
         LOG_ERROR("gpio_set_level: failed to set GPIO {} level", gpio_num);
         return ESP_FAIL;
     }
@@ -213,13 +217,7 @@ int gpio_get_level(gpio_num_t gpio_num) {
         return ESP_FAIL;
     }
     
-    auto result = controller->digital_read(gpio_num);
-    if (!result.has_value()) {
-        LOG_ERROR("gpio_get_level: failed to read GPIO {} level", gpio_num);
-        return ESP_FAIL;
-    }
-    
-    bool level = result.value();
+    bool level = controller->digitalRead(gpio_num);
     LOG_DEBUG("gpio_get_level: GPIO {} = {}", gpio_num, level ? "HIGH" : "LOW");
     
     return level ? 1 : 0;
@@ -240,8 +238,8 @@ int gpio_set_direction(gpio_num_t gpio_num, gpio_mode_t mode) {
     LOG_DEBUG("gpio_set_direction: GPIO {} mode {}", gpio_num, static_cast<int>(mode));
     
     auto gpio_mode = convert_gpio_mode(mode);
-    auto result = controller->configure_pin(gpio_num, gpio_mode);
-    if (!result.has_value()) {
+    auto result = controller->setPinMode(gpio_num, gpio_mode);
+    if (result != EmulatorError::Success) {
         LOG_ERROR("gpio_set_direction: failed to set GPIO {} direction", gpio_num);
         return ESP_FAIL;
     }
@@ -263,27 +261,28 @@ int gpio_set_pull_mode(gpio_num_t gpio_num, gpio_pull_mode_t pull) {
     
     LOG_DEBUG("gpio_set_pull_mode: GPIO {} pull mode {}", gpio_num, static_cast<int>(pull));
     
-    GPIOController::PullMode pull_mode;
     switch (pull) {
         case GPIO_PULLUP_ONLY:
-            pull_mode = GPIOController::PullMode::PULL_UP;
+            controller->enablePullUp(gpio_num, true);
+            controller->enablePullDown(gpio_num, false);
             break;
         case GPIO_PULLDOWN_ONLY:
-            pull_mode = GPIOController::PullMode::PULL_DOWN;
+            controller->enablePullUp(gpio_num, false);
+            controller->enablePullDown(gpio_num, true);
             break;
         case GPIO_PULLUP_PULLDOWN:
             // Note: Most hardware doesn't support simultaneous pull-up/down
-            // Use pull-up as default
-            pull_mode = GPIOController::PullMode::PULL_UP;
+            // Enable pull-up as default
+            controller->enablePullUp(gpio_num, true);
+            controller->enablePullDown(gpio_num, false);
             LOG_WARN("gpio_set_pull_mode: simultaneous pull-up/down not supported, using pull-up");
             break;
         case GPIO_FLOATING:
         default:
-            pull_mode = GPIOController::PullMode::FLOATING;
+            controller->enablePullUp(gpio_num, false);
+            controller->enablePullDown(gpio_num, false);
             break;
     }
-    
-    controller->set_pull_mode(gpio_num, pull_mode);
     return ESP_OK;
 }
 
@@ -394,7 +393,7 @@ int gpio_intr_disable(gpio_num_t gpio_num) {
         return ESP_FAIL;
     }
     
-    controller->set_interrupt_type(gpio_num, GPIOController::InterruptType::NONE);
+    controller->setPinInterrupt(gpio_num, GPIOController::InterruptMode::None);
     LOG_INFO("gpio_intr_disable: interrupt disabled for GPIO {}", gpio_num);
     return ESP_OK;
 }
@@ -415,7 +414,7 @@ int gpio_set_intr_type(gpio_num_t gpio_num, gpio_int_type_t intr_type) {
     }
     
     auto interrupt_type = convert_interrupt_type(intr_type);
-    controller->set_interrupt_type(gpio_num, interrupt_type);
+    controller->setPinInterrupt(gpio_num, interrupt_type);
     
     return ESP_OK;
 }

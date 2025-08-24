@@ -588,4 +588,58 @@ void I2CController::dump_status() const {
     }
 }
 
+// ESP-IDF compatible methods
+Result<void> I2CController::configure(u32 frequency, I2CMode mode) {
+    // Convert frequency to I2CSpeed enum
+    I2CSpeed speed;
+    if (frequency <= 100000) {
+        speed = I2CSpeed::STANDARD;
+    } else if (frequency <= 400000) {
+        speed = I2CSpeed::FAST;
+    } else if (frequency <= 1000000) {
+        speed = I2CSpeed::FAST_PLUS;
+    } else {
+        speed = I2CSpeed::HIGH_SPEED;
+    }
+    
+    return configure(mode, speed);
+}
+
+Result<std::vector<u8>> I2CController::read(u8 device_addr, u8 reg_addr, size_t len) {
+    // Start write transaction to set register address
+    std::vector<u8> write_data = {reg_addr};
+    auto write_result = start_transaction(device_addr, false, write_data);
+    if (!write_result.has_value()) {
+        return unexpected(write_result.error());
+    }
+    
+    // Wait for transaction to complete
+    update();
+    
+    // Start read transaction
+    auto read_result = start_transaction(device_addr, true, {});
+    if (!read_result.has_value()) {
+        return unexpected(read_result.error());
+    }
+    
+    // Simulate successful read with dummy data for now
+    std::vector<u8> result(len, 0x00);
+    
+    COMPONENT_LOG_DEBUG("I2C read from device 0x{:02x} reg 0x{:02x}: {} bytes", device_addr, reg_addr, len);
+    return result;
+}
+
+Result<void> I2CController::write(u8 device_addr, const std::vector<u8>& data) {
+    auto result = start_transaction(device_addr, false, data);
+    if (!result.has_value()) {
+        return unexpected(result.error());
+    }
+    
+    // Wait for transaction to complete
+    update();
+    
+    COMPONENT_LOG_DEBUG("I2C write to device 0x{:02x}: {} bytes", device_addr, data.size());
+    return {};
+}
+
 }  // namespace m5tab5::emulator

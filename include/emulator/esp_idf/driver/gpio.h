@@ -99,6 +99,16 @@ typedef enum {
 } gpio_int_type_t;
 
 /**
+ * @brief GPIO pull modes
+ */
+typedef enum {
+    GPIO_PULLUP_ONLY,                     ///< Pad pull up
+    GPIO_PULLDOWN_ONLY,                   ///< Pad pull down
+    GPIO_PULLUP_PULLDOWN,                 ///< Pad pull up + pull down
+    GPIO_FLOATING                         ///< Pad floating
+} gpio_pull_mode_t;
+
+/**
  * @brief GPIO configuration structure
  */
 typedef struct {
@@ -256,14 +266,6 @@ int gpio_intr_disable(gpio_num_t gpio_num);
  * @return ESP_OK on success
  */
 int gpio_set_intr_type(gpio_num_t gpio_num, gpio_int_type_t intr_type);
-
-// Missing typedef for gpio_pull_mode_t - let me add it
-typedef enum {
-    GPIO_PULLUP_ONLY,                     ///< Pad pull up
-    GPIO_PULLDOWN_ONLY,                   ///< Pad pull down
-    GPIO_PULLUP_PULLDOWN,                 ///< Pad pull up + pull down
-    GPIO_FLOATING                         ///< Pad floating
-} gpio_pull_mode_t;
 
 #ifdef __cplusplus
 }

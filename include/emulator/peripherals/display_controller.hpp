@@ -5,7 +5,11 @@
 #include "emulator/graphics/touch_input.hpp"
 
 #ifndef NO_GRAPHICS
+#ifdef INTERNAL_SDL2_HEADERS
+#include "emulator/graphics/internal_sdl2.h"
+#else
 #include <SDL2/SDL.h>
+#endif
 #endif
 #include <memory>
 #include <thread>

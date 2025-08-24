@@ -1,0 +1,18 @@
+[2025-08-23 14:47:31.103] [main] [info] Logger initialized with level: 1
+[2025-08-23 14:47:31.103] [main] [info] 🎯 M5Stack Tab5 Emulator - Professional GUI Mode with Personality!
+[2025-08-23 14:47:31.103] [main] [info] 📟 Version: 1.0.0 - Authentic ESP32-P4 Development Environment
+[2025-08-23 14:47:31.103] [main] [info] 🌟 Ready to make embedded development delightful!
+[2025-08-23 14:47:31.103] [main] [info] 🎉 Welcome to M5Stack Tab5 Emulator - Where ESP32-P4 Dreams Come True! 🎉
+[2025-08-23 14:47:31.280] [main] [info] PersonalityManager initializing - preparing delightful experiences!
+[2025-08-23 14:47:31.280] [main] [debug] PersonalityManager initialized with 6 easter eggs and 10 achievements
+[2025-08-23 14:47:31.280] [main] [info] Starting delightful boot sequence!
+[2025-08-23 14:47:31.280] [main] [info] 🚀 Starting delightful M5Stack Tab5 boot sequence!
+[2025-08-23 14:47:31.280] [main] [info] ✨ GUI components initialized with personality and charm!
+[2025-08-23 14:47:31.280] [main] [info] GUI initialized successfully
+[2025-08-23 14:47:31.280] [main] [info] Configuration file not found, using defaults
+[2025-08-23 14:47:31.379] [main] [info] Emulator initialized successfully
+[2025-08-23 14:47:31.379] [main] [info] Starting GUI main loop
+[2025-08-23 14:47:31.380] [main] [info] GUI main loop ended
+[2025-08-23 14:47:31.380] [main] [info] Shutting down GUI emulator...
+[2025-08-23 14:47:31.380] [main] [info] 👋 Thanks for using M5Stack Tab5 Emulator! See you next time!
+[2025-08-23 14:47:34.380] [main] [error] Emulator shutdown timed out, forcing exit

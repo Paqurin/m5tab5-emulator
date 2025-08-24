@@ -36,12 +36,13 @@ public:
 
     void handle_events();
     bool should_close() const;
+    
+    // Additional drawing methods
+    Result<void> draw_rect(i32 x, i32 y, u32 width, u32 height, u32 color);
+    Result<void> draw_text(i32 x, i32 y, const std::string& text, u32 color);
 
 private:
     bool initialized_;
-    u32 width_;
-    u32 height_;
-    bool vsync_enabled_;
     std::string window_title_;
     
 #ifndef NO_GRAPHICS
@@ -54,8 +55,11 @@ private:
     void* texture_;
 #endif
 
+    u32 width_;
+    u32 height_;
     u8* framebuffer_;
     bool should_close_;
+    bool vsync_enabled_;
     
     Result<void> create_window(const std::string& title);
     Result<void> create_renderer();

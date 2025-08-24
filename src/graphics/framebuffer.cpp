@@ -195,6 +195,39 @@ EmulatorError Framebuffer::clear(const Color& color) {
         }
     }
     
+    // Mark entire framebuffer as dirty
+    markDirty(Rectangle(0, 0, width_, height_));
+    
+    return EmulatorError::Success;
+}
+
+EmulatorError Framebuffer::fillRect(const Rectangle& rect, const Color& color) {
+    if (!initialized_.load()) {
+        return EmulatorError::InvalidOperation;
+    }
+    
+    // Clip rectangle to framebuffer bounds
+    uint32_t x_start = std::min(rect.x, width_);
+    uint32_t y_start = std::min(rect.y, height_);
+    uint32_t x_end = std::min(rect.x + rect.width, width_);
+    uint32_t y_end = std::min(rect.y + rect.height, height_);
+    
+    if (x_start >= x_end || y_start >= y_end) {
+        return EmulatorError::Success; // Nothing to fill
+    }
+    
+    // Fill the rectangular region
+    for (uint32_t y = y_start; y < y_end; ++y) {
+        for (uint32_t x = x_start; x < x_end; ++x) {
+            if (auto error = setPixel(x, y, color); error != EmulatorError::Success) {
+                return error;
+            }
+        }
+    }
+    
+    // Mark the region as dirty
+    markDirty(Rectangle(x_start, y_start, x_end - x_start, y_end - y_start));
+    
     return EmulatorError::Success;
 }
 
@@ -207,6 +240,27 @@ EmulatorError Framebuffer::swapBuffers() {
     front_buffer_.swap(back_buffer_);
     
     return EmulatorError::Success;
+}
+
+void Framebuffer::markDirty(const Rectangle& region) {
+    std::lock_guard<std::mutex> lock(dirty_mutex_);
+    
+    if (dirty_region_.isEmpty()) {
+        dirty_region_ = region;
+    } else {
+        // Expand dirty region to include new area
+        uint32_t left = std::min(dirty_region_.x, region.x);
+        uint32_t top = std::min(dirty_region_.y, region.y);
+        uint32_t right = std::max(dirty_region_.x + dirty_region_.width, region.x + region.width);
+        uint32_t bottom = std::max(dirty_region_.y + dirty_region_.height, region.y + region.height);
+        
+        dirty_region_ = Rectangle(left, top, right - left, bottom - top);
+    }
+}
+
+void Framebuffer::markClean() {
+    std::lock_guard<std::mutex> lock(dirty_mutex_);
+    dirty_region_ = Rectangle(); // Empty rectangle
 }
 
 EmulatorError Framebuffer::copyRegion(uint32_t src_x, uint32_t src_y, uint32_t dest_x, uint32_t dest_y,

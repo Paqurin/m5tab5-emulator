@@ -2,6 +2,7 @@
 #include "emulator/utils/logging.hpp"
 #include <thread>
 #include <chrono>
+#include <future>
 
 namespace m5tab5::emulator {
 
@@ -224,13 +225,36 @@ Result<void> EmulatorCore::stop() {
         cpu_manager_->stop();
     }
     
-    // Wait for threads to finish
+    // Wait for threads to finish with timeout
+    const auto thread_timeout = std::chrono::milliseconds(2000);
+    
     if (execution_thread_.joinable()) {
-        execution_thread_.join();
+        COMPONENT_LOG_DEBUG("Waiting for execution thread to finish...");
+        // Wait with timeout pattern
+        auto future = std::async(std::launch::async, [this]() {
+            if (execution_thread_.joinable()) {
+                execution_thread_.join();
+            }
+        });
+        
+        if (future.wait_for(thread_timeout) == std::future_status::timeout) {
+            COMPONENT_LOG_WARN("Execution thread did not finish within timeout, detaching");
+            execution_thread_.detach();
+        }
     }
     
     if (graphics_thread_.joinable()) {
-        graphics_thread_.join();
+        COMPONENT_LOG_DEBUG("Waiting for graphics thread to finish...");
+        auto future = std::async(std::launch::async, [this]() {
+            if (graphics_thread_.joinable()) {
+                graphics_thread_.join();
+            }
+        });
+        
+        if (future.wait_for(thread_timeout) == std::future_status::timeout) {
+            COMPONENT_LOG_WARN("Graphics thread did not finish within timeout, detaching");
+            graphics_thread_.detach();
+        }
     }
     
     state_ = EmulatorState::STOPPED;
@@ -357,13 +381,18 @@ void EmulatorCore::execution_loop() {
     COMPONENT_LOG_DEBUG("Execution loop started");
     
     start_time_ = std::chrono::steady_clock::now();
-    auto last_time = start_time_;
     
     const auto target_frame_time = std::chrono::nanoseconds(1000000000 / 60);  // 60 FPS
+    const auto shutdown_check_interval = std::chrono::milliseconds(10);  // Check shutdown every 10ms
     Cycles cycles_per_frame = target_frequency_ / 60;
     
-    while (running_ && state_ == EmulatorState::RUNNING) {
+    while (running_.load() && state_ == EmulatorState::RUNNING) {
         auto frame_start = std::chrono::steady_clock::now();
+        
+        // Check for shutdown more frequently
+        if (!running_.load() || state_ == EmulatorState::STOPPING) {
+            break;
+        }
         
         // Execute CPU for one frame worth of cycles
         if (cpu_manager_ && state_ == EmulatorState::RUNNING) {
@@ -381,17 +410,23 @@ void EmulatorCore::execution_loop() {
         }
         
         // Update peripherals  
-        if (peripheral_manager_ && state_ == EmulatorState::RUNNING) {
+        if (peripheral_manager_ && state_ == EmulatorState::RUNNING && running_.load()) {
             // Use tick method with current cycle count
             peripheral_manager_->tick(cycles_executed_);
         }
         
-        // Sleep to maintain target frequency
+        // Sleep to maintain target frequency with shutdown responsiveness
         auto frame_end = std::chrono::steady_clock::now();
         auto frame_duration = frame_end - frame_start;
         
-        if (frame_duration < target_frame_time) {
-            std::this_thread::sleep_for(target_frame_time - frame_duration);
+        if (frame_duration < target_frame_time && running_.load()) {
+            auto sleep_time = target_frame_time - frame_duration;
+            // Break sleep into smaller chunks to be responsive to shutdown
+            while (sleep_time > std::chrono::nanoseconds(0) && running_.load()) {
+                auto chunk = std::min(sleep_time, std::chrono::duration_cast<std::chrono::nanoseconds>(shutdown_check_interval));
+                std::this_thread::sleep_for(chunk);
+                sleep_time -= chunk;
+            }
         }
         
         // Log performance statistics periodically
@@ -409,24 +444,37 @@ void EmulatorCore::graphics_loop() {
     COMPONENT_LOG_DEBUG("Graphics loop started");
     
     const auto target_frame_time = std::chrono::nanoseconds(1000000000 / 60);  // 60 FPS
+    const auto shutdown_check_interval = std::chrono::milliseconds(50);  // Check shutdown every 50ms
     
-    while (running_) {
+    while (running_.load()) {
         auto frame_start = std::chrono::steady_clock::now();
+        
+        // Check if we should exit early
+        if (!running_.load() || state_ == EmulatorState::STOPPING) {
+            break;
+        }
         
         if (graphics_engine_ && (state_ == EmulatorState::RUNNING || state_ == EmulatorState::PAUSED)) {
             auto render_result = graphics_engine_->render_frame();
             if (!render_result) {
                 COMPONENT_LOG_ERROR("Graphics rendering error: {}", 
                                    render_result.error().to_string());
+                // Don't exit on render error, just continue
             }
         }
         
-        // Maintain 60 FPS
+        // Maintain 60 FPS with shutdown responsiveness
         auto frame_end = std::chrono::steady_clock::now();
         auto frame_duration = frame_end - frame_start;
         
         if (frame_duration < target_frame_time) {
-            std::this_thread::sleep_for(target_frame_time - frame_duration);
+            auto sleep_time = target_frame_time - frame_duration;
+            // Break sleep into smaller chunks to be responsive to shutdown
+            while (sleep_time > std::chrono::nanoseconds(0) && running_.load()) {
+                auto chunk = std::min(sleep_time, std::chrono::duration_cast<std::chrono::nanoseconds>(shutdown_check_interval));
+                std::this_thread::sleep_for(chunk);
+                sleep_time -= chunk;
+            }
         }
     }
     

@@ -5,25 +5,44 @@
 #include <filesystem>
 #include <thread>
 #include <chrono>
+#include <future>
 
 #include "emulator/core/emulator_core.hpp"
 #include "emulator/config/configuration.hpp"
 #include "emulator/utils/logging.hpp"
 #include "emulator/utils/error.hpp"
+#include "emulator/utils/shutdown_manager.hpp"
 
 using namespace m5tab5::emulator;
 
 std::atomic<bool> shutdown_requested{false};
+std::atomic<bool> signal_handled{false};
 std::unique_ptr<EmulatorCore> emulator;
 
 void signal_handler(int signal) {
     if (signal == SIGINT || signal == SIGTERM) {
+        // Prevent double signal handling
+        bool expected = false;
+        if (!signal_handled.compare_exchange_strong(expected, true)) {
+            return;  // Signal already handled
+        }
+        
         std::cout << "\nShutdown requested...\n";
         shutdown_requested = true;
+        
+        // Use shutdown manager for orderly cleanup
+        auto& shutdown_mgr = utils::ShutdownManager::instance();
+        shutdown_mgr.request_shutdown();
+        
+        // Try to stop emulator quickly in signal handler (async-safe)
         if (emulator) {
-            auto result = emulator->stop();
-            if (!result) {
-                std::cerr << "Failed to stop emulator: " << result.error().to_string() << std::endl;
+            try {
+                auto result = emulator->stop();
+                if (!result) {
+                    std::cerr << "Failed to stop emulator: " << result.error().to_string() << std::endl;
+                }
+            } catch (...) {
+                std::cerr << "Exception during emergency stop\n";
             }
         }
     }
@@ -186,29 +205,81 @@ int main(int argc, char* argv[]) {
         LOG_INFO("Emulator started - Press Ctrl+C to stop");
         
         // Main loop - wait for shutdown signal
-        while (!shutdown_requested && emulator->get_state() == EmulatorState::RUNNING) {
+        LOG_DEBUG("Entering main loop, waiting for shutdown signal...");
+        
+        while (!shutdown_requested.load() && emulator->get_state() == EmulatorState::RUNNING) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             
             // Print periodic status
             static int status_counter = 0;
             if (++status_counter % 100 == 0) {  // Every 10 seconds
-                LOG_INFO("Status: " + std::to_string(emulator->get_cycles_executed()) + 
-                         " cycles executed, " + std::to_string(emulator->get_execution_speed()) + "x speed");
+                try {
+                    LOG_INFO("Status: " + std::to_string(emulator->get_cycles_executed()) + 
+                             " cycles executed, " + std::to_string(emulator->get_execution_speed()) + "x speed");
+                } catch (const std::exception& e) {
+                    LOG_WARN("Error getting emulator status: " + std::string(e.what()));
+                }
+            }
+            
+            // Check emulator state more frequently
+            if (emulator->get_state() != EmulatorState::RUNNING) {
+                LOG_INFO("Emulator state changed, exiting main loop");
+                break;
             }
         }
         
-        // Shutdown emulator
+        LOG_DEBUG("Main loop exited, proceeding with shutdown...");
+        
+        // Shutdown emulator using shutdown manager
         LOG_INFO("Shutting down emulator...");
-        auto shutdown_result = emulator->shutdown();
-        if (!shutdown_result) {
-            LOG_ERROR("Failed to shutdown emulator cleanly: " + shutdown_result.error().to_string());
-            return 1;
+        
+        auto& shutdown_mgr = utils::ShutdownManager::instance();
+        shutdown_mgr.request_shutdown();
+        
+        // Give components time to shutdown gracefully
+        shutdown_mgr.execute_shutdown(std::chrono::milliseconds(5000));
+        
+        // Final cleanup with timeout protection
+        bool shutdown_success = false;
+        try {
+            auto future = std::async(std::launch::async, [&emulator]() -> Result<void> {
+                return emulator->shutdown();
+            });
+            
+            if (future.wait_for(std::chrono::milliseconds(3000)) == std::future_status::ready) {
+                auto shutdown_result = future.get();
+                if (!shutdown_result) {
+                    LOG_WARN("Emulator did not shutdown cleanly: " + shutdown_result.error().to_string());
+                } else {
+                    shutdown_success = true;
+                }
+            } else {
+                LOG_ERROR("Emulator shutdown timed out, forcing exit");
+                // Don't wait for the future, just continue with cleanup
+            }
+        } catch (const std::exception& e) {
+            LOG_ERROR("Exception during emulator shutdown: " + std::string(e.what()));
         }
         
-        LOG_INFO("Emulator shutdown completed");
-        Logger::shutdown();
+        // Ensure emulator pointer is reset
+        emulator.reset();
         
-        return 0;
+        LOG_INFO("Emulator shutdown completed ({})", shutdown_success ? "clean" : "forced");
+        
+        // Shutdown logger with timeout
+        try {
+            auto future = std::async(std::launch::async, []() {
+                Logger::shutdown();
+            });
+            
+            if (future.wait_for(std::chrono::milliseconds(1000)) != std::future_status::ready) {
+                std::cerr << "Logger shutdown timed out\n";
+            }
+        } catch (...) {
+            std::cerr << "Exception during logger shutdown\n";
+        }
+        
+        return shutdown_success ? 0 : 1;
         
     } catch (const std::exception& e) {
         std::cerr << "Fatal error: " << e.what() << std::endl;

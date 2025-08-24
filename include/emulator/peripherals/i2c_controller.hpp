@@ -79,12 +79,17 @@ public:
     Result<void> shutdown();
 
     Result<void> configure(I2CMode mode, I2CSpeed speed);
+    Result<void> configure(u32 frequency, I2CMode mode);  // ESP-IDF compatible overload
     Result<void> set_timeout(u32 timeout_ms);
     
     Result<void> start_transaction(u8 slave_address, bool is_read, const std::vector<u8>& data = {});
     Result<std::vector<u8>> read_data(size_t num_bytes);
     Result<void> write_data(const std::vector<u8>& data);
     Result<void> stop_transaction();
+    
+    // ESP-IDF compatible convenience methods
+    Result<std::vector<u8>> read(u8 device_addr, u8 reg_addr, size_t len);
+    Result<void> write(u8 device_addr, const std::vector<u8>& data);
 
     Result<void> handle_mmio_write(Address address, u32 value);
     Result<u32> handle_mmio_read(Address address);

@@ -24,18 +24,53 @@ find_package(Threads REQUIRED)
 # Try to find PkgConfig (optional)
 find_package(PkgConfig QUIET)
 
-# SDL2 for graphics and input (try multiple approaches)
+# SDL2 for graphics and input (enhanced detection with manual fallback)
 find_package(SDL2 QUIET)
 if(NOT SDL2_FOUND AND PkgConfig_FOUND)
     pkg_check_modules(SDL2 QUIET sdl2)
 endif()
 
-# If SDL2 is not found, provide a fallback or disable graphics
+# Manual SDL2 detection for runtime-only installations
 if(NOT SDL2_FOUND)
-    message(WARNING "SDL2 not found. Building without graphics support.")
-    add_compile_definitions(NO_GRAPHICS=1)
-    set(SDL2_LIBRARIES "")
-    set(SDL2_INCLUDE_DIRS "")
+    # Force search for SDL2 library with specific names and paths
+    find_library(SDL2_LIBRARY_MANUAL 
+        NAMES SDL2 libSDL2 SDL2-2.0 libSDL2-2.0
+        PATHS /usr/lib/x86_64-linux-gnu /usr/lib /usr/local/lib
+        NO_DEFAULT_PATH)
+    
+    find_path(SDL2_INCLUDE_MANUAL SDL.h 
+        PATHS /usr/include/SDL2 /usr/local/include/SDL2 /usr/include
+        NO_DEFAULT_PATH)
+    
+    # Check for library by specific filename pattern
+    if(NOT SDL2_LIBRARY_MANUAL)
+        file(GLOB SDL2_LIB_FILES "/usr/lib/x86_64-linux-gnu/libSDL2*.so*")
+        if(SDL2_LIB_FILES)
+            list(GET SDL2_LIB_FILES 0 SDL2_LIBRARY_MANUAL)
+        endif()
+    endif()
+    
+    if(SDL2_LIBRARY_MANUAL AND SDL2_INCLUDE_MANUAL)
+        message(STATUS "SDL2 found manually with headers: ${SDL2_LIBRARY_MANUAL}")
+        set(SDL2_LIBRARIES ${SDL2_LIBRARY_MANUAL})
+        set(SDL2_INCLUDE_DIRS ${SDL2_INCLUDE_MANUAL})
+        set(SDL2_FOUND TRUE)
+    elseif(SDL2_LIBRARY_MANUAL)
+        # Library found but no headers - use internal declarations
+        message(STATUS "SDL2 library found: ${SDL2_LIBRARY_MANUAL}")
+        message(STATUS "SDL2 headers not found - using internal declarations")
+        set(SDL2_LIBRARIES ${SDL2_LIBRARY_MANUAL})
+        set(SDL2_INCLUDE_DIRS "")
+        set(SDL2_FOUND TRUE)
+        # Enable internal SDL2 headers
+        add_compile_definitions(INTERNAL_SDL2_HEADERS=1)
+        message(STATUS "Building with internal SDL2 header support")
+    else()
+        message(WARNING "SDL2 library not found. Building without graphics support.")
+        add_compile_definitions(NO_GRAPHICS=1)
+        set(SDL2_LIBRARIES "")
+        set(SDL2_INCLUDE_DIRS "")
+    endif()
 endif()
 
 # JSON library for configuration
@@ -78,6 +113,9 @@ file(GLOB_RECURSE DEBUG_SOURCES "src/debug/*.cpp")
 file(GLOB_RECURSE PLUGIN_SOURCES "src/plugin/*.cpp")
 file(GLOB_RECURSE UTILS_SOURCES "src/utils/*.cpp")
 file(GLOB_RECURSE FREERTOS_SOURCES "src/freertos/*.cpp")
+file(GLOB_RECURSE ESP_IDF_SOURCES "src/esp_idf/*.cpp")
+file(GLOB_RECURSE FIRMWARE_SOURCES "src/firmware/*.cpp")
+file(GLOB_RECURSE GUI_SOURCES "src/gui/*.cpp")
 
 set(ALL_SOURCES
     ${CORE_SOURCES}
@@ -91,6 +129,13 @@ set(ALL_SOURCES
     ${PLUGIN_SOURCES}
     ${UTILS_SOURCES}
     ${FREERTOS_SOURCES}
+    ${ESP_IDF_SOURCES}
+    ${FIRMWARE_SOURCES}
+)
+
+# GUI sources (separate for optional GUI builds)
+set(GUI_LIBRARY_SOURCES
+    ${GUI_SOURCES}
 )
 
 # Create static library for core emulator
@@ -121,9 +166,62 @@ target_compile_definitions(m5tab5-emulator-core
         M5TAB5_VERSION_PATCH=${PROJECT_VERSION_PATCH}
 )
 
-# Main executable
+# Main executable (command-line version)
 add_executable(${PROJECT_NAME} main.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE m5tab5-emulator-core)
+
+# 🏆 CHAMPIONSHIP FIX: GUI Library with proper dependency chain
+if(GUI_LIBRARY_SOURCES)
+    add_library(m5tab5-gui-lib STATIC ${GUI_LIBRARY_SOURCES})
+    
+    # CRITICAL: Link order fix for PersonalityManager symbols
+    target_link_libraries(m5tab5-gui-lib 
+        PUBLIC 
+            m5tab5-emulator-core  # GUI lib needs core symbols
+        PRIVATE 
+            ${SDL2_LIBRARIES}     # SDL2 only for GUI implementation
+    )
+    
+    target_include_directories(m5tab5-gui-lib
+        PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+            ${SDL2_INCLUDE_DIRS}
+    )
+    
+    # Enable GUI-specific features
+    target_compile_definitions(m5tab5-gui-lib
+        PUBLIC
+            ENABLE_GUI=1
+    )
+    
+    message(STATUS "GUI library built with ${GUI_LIBRARY_SOURCES}")
+    set(GUI_AVAILABLE TRUE)
+else()
+    message(STATUS "No GUI sources found - GUI library not built")
+    set(GUI_AVAILABLE FALSE)
+endif()
+
+# 🔥 CRITICAL LINKING FIX: GUI executable with correct dependency order
+add_executable(${PROJECT_NAME}-gui main_gui.cpp)
+if(GUI_AVAILABLE)
+    # CHAMPIONSHIP LINKING: GUI lib first, then core (proper dependency resolution)
+    target_link_libraries(${PROJECT_NAME}-gui 
+        PRIVATE 
+            m5tab5-gui-lib          # Contains PersonalityManager symbols
+            m5tab5-emulator-core    # Core provides base functionality
+    )
+    message(STATUS "GUI executable built with full GUI library support")
+else()
+    target_link_libraries(${PROJECT_NAME}-gui PRIVATE m5tab5-emulator-core)
+    message(STATUS "GUI executable built with basic GUI support only")
+endif()
+target_compile_definitions(${PROJECT_NAME}-gui PRIVATE ENABLE_GUI=1)
+
+if(SDL2_FOUND)
+    message(STATUS "Building GUI version with SDL2 support: ${PROJECT_NAME}-gui")
+else()
+    message(STATUS "Building GUI version without graphics (NO_GRAPHICS): ${PROJECT_NAME}-gui")
+endif()
 
 # Plugin support library (temporarily disabled - build success priority)
 # Note: Main emulator works without plugin system
@@ -148,6 +246,31 @@ endif()
 # Testing
 enable_testing()
 add_subdirectory(tests)
+
+# Test executables
+add_executable(test_display_connection
+    test_display_connection.cpp
+)
+
+# Link test with core library
+target_link_libraries(test_display_connection
+    PRIVATE m5tab5-emulator-core
+    PRIVATE Threads::Threads
+)
+
+# Set C++ standard and properties for test
+target_compile_features(test_display_connection PRIVATE cxx_std_20)
+if(SDL2_LIBRARY_MANUAL)
+    target_link_libraries(test_display_connection PRIVATE ${SDL2_LIBRARY_MANUAL})
+    if(SDL2_INCLUDE_MANUAL)
+        target_include_directories(test_display_connection PRIVATE ${SDL2_INCLUDE_MANUAL})
+    endif()
+    target_compile_definitions(test_display_connection PRIVATE INTERNAL_SDL2_HEADERS)
+    message(STATUS "Building test_display_connection with manual SDL2: ${SDL2_LIBRARY_MANUAL}")
+else()
+    target_compile_definitions(test_display_connection PRIVATE NO_GRAPHICS)
+    message(STATUS "Building test_display_connection without SDL2 (NO_GRAPHICS mode)")
+endif()
 
 # Documentation
 option(BUILD_DOCS "Build documentation" OFF)

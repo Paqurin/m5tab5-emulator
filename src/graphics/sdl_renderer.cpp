@@ -1,8 +1,13 @@
 #include "emulator/graphics/sdl_renderer.hpp"
+#include "emulator/graphics/framebuffer.hpp"
 #include "emulator/utils/logging.hpp"
 
 #ifndef NO_GRAPHICS
+#ifdef INTERNAL_SDL2_HEADERS
+#include "emulator/graphics/internal_sdl2.h"
+#else
 #include <SDL2/SDL.h>
+#endif
 #endif
 
 #include <cstring>
@@ -265,6 +270,59 @@ void SdlRenderer::cleanup() {
         window_ = nullptr;
     }
 #endif
+}
+
+// Additional drawing methods for GUI support
+Result<void> SdlRenderer::draw_rect(i32 x, i32 y, u32 width, u32 height, u32 color) {
+    if (!initialized_) {
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+            "SDL renderer not initialized"));
+    }
+    
+#ifndef NO_GRAPHICS
+    if (renderer_) {
+        u8 r = static_cast<u8>((color >> 16) & 0xFF);
+        u8 g = static_cast<u8>((color >> 8) & 0xFF);
+        u8 b = static_cast<u8>(color & 0xFF);
+        
+        SDL_SetRenderDrawColor(renderer_, r, g, b, 255);
+        
+        SDL_Rect rect;
+        rect.x = x;
+        rect.y = y;
+        rect.w = static_cast<int>(width);
+        rect.h = static_cast<int>(height);
+        SDL_RenderFillRect(renderer_, &rect);
+    }
+#else
+    // Manual framebuffer drawing
+    if (framebuffer_) {
+        u32* pixels = reinterpret_cast<u32*>(framebuffer_);
+        for (u32 py = y; py < y + height && py < height_; ++py) {
+            for (u32 px = x; px < x + width && px < width_; ++px) {
+                pixels[py * width_ + px] = color;
+            }
+        }
+    }
+#endif
+    
+    return {};
+}
+
+Result<void> SdlRenderer::draw_text(i32 x, i32 y, const std::string& text, u32 color) {
+    if (!initialized_) {
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED,
+            "SDL renderer not initialized"));
+    }
+    
+    // Simple text rendering stub - in a full implementation would use TTF fonts
+    COMPONENT_LOG_DEBUG("Drawing text at ({}, {}): '{}'", x, y, text);
+    
+    // Draw a simple rectangle as placeholder for text
+    u32 text_width = static_cast<u32>(text.length() * 8); // 8 pixels per char
+    u32 text_height = 12; // 12 pixels tall
+    
+    return draw_rect(x, y, text_width, text_height, color);
 }
 
 }  // namespace m5tab5::emulator

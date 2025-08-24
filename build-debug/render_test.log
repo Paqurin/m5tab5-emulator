@@ -1,0 +1,33 @@
+[2025-08-23 16:12:13.620] [main] [info] Logger initialized with level: 1
+[2025-08-23 16:12:13.620] [main] [info] 🎯 M5Stack Tab5 Emulator - Professional GUI Mode with Personality!
+[2025-08-23 16:12:13.620] [main] [info] 📟 Version: 1.0.0 - Authentic ESP32-P4 Development Environment
+[2025-08-23 16:12:13.620] [main] [info] 🌟 Ready to make embedded development delightful!
+[2025-08-23 16:12:13.620] [main] [info] 🎉 Welcome to M5Stack Tab5 Emulator - Where ESP32-P4 Dreams Come True! 🎉
+[2025-08-23 16:12:13.620] [main] [info] Initializing SDL video and timer subsystems...
+[2025-08-23 16:12:13.645] [main] [info] SDL video and timer subsystems initialized successfully
+[2025-08-23 16:12:13.645] [main] [info] Using internal SDL2 headers - limited driver info available
+[2025-08-23 16:12:13.645] [main] [info] Creating SDL renderer (1400x900)...
+[2025-08-23 16:12:13.804] [main] [info] SDL renderer initialized successfully - Window: 1400x900
+[2025-08-23 16:12:13.804] [main] [info] PersonalityManager initializing - preparing delightful experiences!
+[2025-08-23 16:12:13.804] [main] [debug] PersonalityManager initialized with 6 easter eggs and 10 achievements
+[2025-08-23 16:12:13.804] [main] [info] Starting delightful boot sequence!
+[2025-08-23 16:12:13.804] [main] [info] 🚀 Starting delightful M5Stack Tab5 boot sequence!
+[2025-08-23 16:12:13.804] [main] [info] ✨ GUI components initialized with personality and charm!
+[2025-08-23 16:12:13.804] [main] [info] GUI initialized successfully
+[2025-08-23 16:12:13.804] [main] [info] Configuration file not found, using defaults
+[2025-08-23 16:12:13.917] [main] [info] Emulator initialized successfully
+[2025-08-23 16:12:13.917] [main] [info] Validating GUI state before main loop...
+[2025-08-23 16:12:13.917] [main] [info]   - Emulator initialized: true
+[2025-08-23 16:12:13.917] [main] [info]   - GUI renderer ready: true
+[2025-08-23 16:12:13.917] [main] [info]   - Personality manager: true
+[2025-08-23 16:12:13.917] [main] [info]   - Shutdown requested: false
+[2025-08-23 16:12:13.918] [main] [info] Starting GUI main loop
+[2025-08-23 16:12:13.918] [main] [info] Initial GUI state - shutdown_requested: false, gui_renderer valid: true
+[2025-08-23 16:12:13.918] [main] [info] GUI loop iteration 1, elapsed: 0ms, FPS: inf
+[2025-08-23 16:12:13.919] [main] [info] SDL Event #1: type=512, window_id=1, startup_elapsed=0ms
+[2025-08-23 16:12:13.919] [main] [info] Window close event - requesting shutdown
+[2025-08-23 16:12:13.919] [main] [info] GUI events requested shutdown at iteration 1
+[2025-08-23 16:12:13.919] [main] [info] GUI main loop ended
+[2025-08-23 16:12:13.919] [main] [info] Shutting down GUI emulator...
+[2025-08-23 16:12:13.919] [main] [info] 👋 Thanks for using M5Stack Tab5 Emulator! See you next time!
+[2025-08-23 16:12:16.920] [main] [error] Emulator shutdown timed out, forcing exit
