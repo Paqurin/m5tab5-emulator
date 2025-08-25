@@ -142,10 +142,9 @@ public:
     void trace(const std::string& format, Args&&... args) const {
         if (auto logger = Logger::get_logger()) {
             if constexpr (sizeof...(args) == 0) {
-                logger->trace(fmt::runtime("[{}] {}"), component_name_, format);
+                logger->trace("[{}] {}", component_name_, format);
             } else {
-                auto full_format = "[{}] " + format;
-                logger->trace(fmt::runtime(full_format), component_name_, std::forward<Args>(args)...);
+                logger->trace(("[{}] " + format).c_str(), component_name_, std::forward<Args>(args)...);
             }
         }
     }
@@ -154,11 +153,11 @@ public:
     void debug(const std::string& format, Args&&... args) const {
         if (auto logger = Logger::get_logger()) {
             if constexpr (sizeof...(Args) > 0) {
-                // Has arguments - use two-step logging to avoid temporaries
-                logger->debug(fmt::runtime("[{}] " + format), component_name_, std::forward<Args>(args)...);
+                // Has arguments - use C++20 compatible approach
+                logger->debug(("[{}] " + format).c_str(), component_name_, std::forward<Args>(args)...);
             } else {
                 // No arguments - just print the format as message
-                logger->debug(fmt::runtime("[{}] {}"), component_name_, format);
+                logger->debug("[{}] {}", component_name_, format);
             }
         }
     }
@@ -167,9 +166,9 @@ public:
     void info(const std::string& format, Args&&... args) const {
         if (auto logger = Logger::get_logger()) {
             if constexpr (sizeof...(args) == 0) {
-                logger->info(fmt::runtime("[{}] {}"), component_name_, format);
+                logger->info("[{}] {}", component_name_, format);
             } else {
-                logger->info(fmt::runtime("[{}] " + format), component_name_, std::forward<Args>(args)...);
+                logger->info(("[{}] " + format).c_str(), component_name_, std::forward<Args>(args)...);
             }
         }
     }
@@ -178,9 +177,9 @@ public:
     void warn(const std::string& format, Args&&... args) const {
         if (auto logger = Logger::get_logger()) {
             if constexpr (sizeof...(args) == 0) {
-                logger->warn(fmt::runtime("[{}] {}"), component_name_, format);
+                logger->warn("[{}] {}", component_name_, format);
             } else {
-                logger->warn(fmt::runtime("[{}] " + format), component_name_, std::forward<Args>(args)...);
+                logger->warn(("[{}] " + format).c_str(), component_name_, std::forward<Args>(args)...);
             }
         }
     }
