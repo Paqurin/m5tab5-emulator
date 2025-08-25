@@ -40,4 +40,11 @@ CTestTestfile.cmake
 .Spotlight-V100
 .Trashes
 ehthumbs.db
-Thumbs.db
+Thumbs.db# Build artifacts (large files)
+libm5tab5-emulator-core.a
+libm5tab5-gui-lib.a  
+m5tab5-emulator-gui
+build-debug/
+_deps/
+*.a
+
