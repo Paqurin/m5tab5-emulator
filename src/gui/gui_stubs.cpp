@@ -27,11 +27,6 @@ public:
     ~LogViewer() = default;
 };
 
-// MemoryInspector stub
-class MemoryInspector {
-public:
-    MemoryInspector() = default;
-    ~MemoryInspector() = default;
-};
+// MemoryInspector - implemented in separate file
 
 } // namespace m5tab5::emulator::gui

@@ -2,6 +2,7 @@
 // #include "emulator/utils/logging.hpp" // Temporarily disabled
 #include "emulator/utils/error.hpp"
 #include "emulator/cpu/instruction_decoder.hpp"
+#include "emulator/cpu/syscall_interface.hpp"
 #include <algorithm>
 
 namespace m5tab5::emulator {
@@ -140,6 +141,41 @@ uint32_t CpuCore::getCoreId() const {
     return static_cast<uint32_t>(config_.type);
 }
 
+void CpuCore::setSystemCallInterface(std::shared_ptr<SystemCallInterface> syscall_interface) {
+    syscall_interface_ = syscall_interface;
+}
+
+EmulatorError CpuCore::handleSystemCall() {
+    if (!syscall_interface_) {
+        // COMPONENT_LOG_ERROR("No system call interface available");
+        return EmulatorError::NotImplemented;
+    }
+    
+    // Build system call context from RISC-V registers
+    SystemCallInterface::SystemCallContext context;
+    
+    // System call number from a7 register (x17)
+    context.syscall_number = registers_.read(17);
+    
+    // Arguments from a0-a6 registers (x10-x16) 
+    for (int i = 0; i < 7; i++) {
+        context.args[i] = registers_.read(10 + i);
+    }
+    
+    // Current PC and core information
+    context.return_pc = pc_;
+    context.caller_privilege = 0; // Assume user mode for now
+    context.calling_core_id = getCoreId();
+    
+    // Execute system call
+    int32_t result = syscall_interface_->handle_ecall(context);
+    
+    // Store result in a0 register (x10)
+    registers_.write(10, static_cast<uint32_t>(result));
+    
+    return EmulatorError::Success;
+}
+
 // Private methods
 
 EmulatorError CpuCore::fetch(PipelineStage& stage) {
@@ -153,8 +189,18 @@ EmulatorError CpuCore::decode(const PipelineStage& stage, DecodedInstruction& de
 }
 
 EmulatorError CpuCore::execute(const DecodedInstruction& decoded) {
-    // TODO: Implement instruction execution
-    return EmulatorError::NotImplemented;
+    // Check for ECALL instruction (system call)
+    if (decoded.type == InstructionType::ECALL) {
+        return handleSystemCall();
+    }
+    
+    // For now, just implement basic NOP behavior for other instructions
+    // TODO: Implement full RISC-V instruction execution
+    
+    // Update performance counters
+    perf_counters_.instructions_executed++;
+    
+    return EmulatorError::Success;
 }
 
 EmulatorError CpuCore::writeback(const DecodedInstruction& decoded) {

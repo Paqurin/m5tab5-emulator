@@ -13,6 +13,9 @@
 
 namespace m5tab5::emulator {
 
+// Forward declarations
+class SystemCallInterface;
+
 /**
  * @brief RISC-V CPU core emulation
  * 
@@ -84,6 +87,10 @@ public:
     EmulatorError removeBreakpoint(Address address);
     bool hasBreakpoint(Address address) const;
 
+    // System call support
+    void setSystemCallInterface(std::shared_ptr<SystemCallInterface> syscall_interface);
+    EmulatorError handleSystemCall();
+
     // Core identification
     CoreType getCoreType() const { return config_.type; }
     uint32_t getCoreId() const;
@@ -141,6 +148,9 @@ private:
     // Debug support
     std::set<Address> breakpoints_;
     bool debug_mode_ = false;
+
+    // System call support
+    std::shared_ptr<SystemCallInterface> syscall_interface_;
 
     // Branch prediction table (256 entries, 2-bit saturating counters)
     std::array<uint8_t, 256> branch_predictor_ = {};
