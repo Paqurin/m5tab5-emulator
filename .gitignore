@@ -1,6 +1,7 @@
 # Build directories
 build/
-debug/
+build-debug/
+build-release/
 release/
 
 # IDE files
