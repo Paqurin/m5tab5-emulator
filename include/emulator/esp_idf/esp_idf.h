@@ -44,10 +44,20 @@ extern "C" {
 #endif
 
 /**
- * @brief Initialize all ESP-IDF subsystems for the emulator
+ * @brief Initialize all ESP-IDF subsystems for the emulator with EmulatorCore context
  * 
  * This function initializes all ESP-IDF compatible subsystems provided
  * by the emulator. Call this before using any ESP-IDF APIs.
+ * 
+ * @param emulator_core Pointer to EmulatorCore instance for component access
+ * @return ESP_OK on success
+ */
+esp_err_t esp_idf_init_all_with_core(void* emulator_core);
+
+/**
+ * @brief Initialize all ESP-IDF subsystems for the emulator (stub mode)
+ * 
+ * Version without EmulatorCore context. APIs will work in stub mode.
  * 
  * @return ESP_OK on success
  */
@@ -78,4 +88,17 @@ bool esp_idf_is_emulation(void);
 
 #ifdef __cplusplus
 }
+
+// C++ only functions for internal use
+namespace m5tab5::emulator {
+    class EmulatorCore;
+}
+
+/**
+ * @brief Get the current EmulatorCore instance (C++ internal use)
+ * 
+ * @return Pointer to EmulatorCore or nullptr if not initialized
+ */
+m5tab5::emulator::EmulatorCore* esp_idf_get_emulator_core();
+
 #endif

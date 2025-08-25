@@ -1,7 +1,7 @@
 #include "emulator/gui/firmware_manager.hpp"
 #include "emulator/gui/emulator_gui.hpp"
 #include "emulator/gui/main_window.hpp"
-#include "emulator/firmware/firmware_loader.hpp"
+#include "emulator/firmware/firmware_integration.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -26,7 +26,6 @@ namespace m5tab5::emulator::gui {
 
 FirmwareManager::FirmwareManager(EmulatorGUI& gui)
     : gui_(gui)
-    , firmware_loader_(std::make_shared<firmware::FirmwareLoader>())
     , show_progress_dialog_(false)
     , current_loading_progress_(0.0f)
 {
@@ -37,33 +36,28 @@ FirmwareManager::~FirmwareManager() {
 }
 
 Result<void> FirmwareManager::initialize() {
-    // Initialize firmware loader with emulator core dependencies
+    // Initialize firmware integration with emulator core dependencies
     auto emulator_core = gui_.get_emulator_core();
     if (!emulator_core) {
         return unexpected(Error{ErrorCode::INVALID_STATE, "EmulatorCore not available"});
     }
 
-    // Get memory controller from emulator core
-    auto memory_controller = emulator_core->getMemoryController();
-    if (!memory_controller) {
-        return unexpected(Error{ErrorCode::INVALID_STATE, "MemoryController not available"});
+    // Create firmware integration system using factory
+    auto emulator_core_shared = std::shared_ptr<EmulatorCore>(emulator_core, [](EmulatorCore*){});
+    auto integration_result = firmware::FirmwareManagerFactory::create_firmware_manager(emulator_core_shared);
+    if (!integration_result.has_value()) {
+        return unexpected(integration_result.error());
     }
+    
+    firmware_integration_ = std::move(integration_result.value());
 
-    // Get CPU manager from emulator core
-    auto cpu_manager = emulator_core->getComponent<DualCoreManager>();
-    if (!cpu_manager) {
-        return unexpected(Error{ErrorCode::INVALID_STATE, "DualCoreManager not available"});
-    }
-
-    // Configure firmware loader with dependencies
-    firmware_loader_->set_memory_controller(memory_controller);
-    firmware_loader_->set_cpu_manager(cpu_manager);
-    firmware_loader_->set_emulator_core(std::shared_ptr<EmulatorCore>(emulator_core, [](EmulatorCore*){}));
-
-    auto result = firmware_loader_->initialize();
-    if (!result.has_value()) {
-        return unexpected(result.error());
-    }
+    // Set up event callbacks for GUI updates
+    firmware_integration_->set_event_callback(
+        [this](firmware::FirmwareStatus status, float progress, const std::string& message, 
+               const firmware::FirmwareOperationResult* result) {
+            handle_firmware_event(status, progress, message, result);
+        }
+    );
 
     // Initialize UI components
     progress_dialog_ = std::make_unique<ProgressDialog>(*this);
@@ -78,12 +72,13 @@ Result<void> FirmwareManager::initialize() {
 void FirmwareManager::update() {
     // Update loading state
     if (is_loading()) {
-        auto loading_state = firmware_loader_->get_loading_state();
+        // Check firmware integration status
+        auto status = firmware_integration_->get_status();
         
         // Check if loading completed
-        if (loading_state == firmware::LoadingState::COMPLETED) {
+        if (status == firmware::FirmwareStatus::LOADED) {
             handle_firmware_load_complete(true, "");
-        } else if (loading_state == firmware::LoadingState::FAILED) {
+        } else if (status == firmware::FirmwareStatus::ERROR) {
             handle_firmware_load_complete(false, "Firmware loading failed");
         }
     }
@@ -94,7 +89,7 @@ void FirmwareManager::update() {
         
         // Handle cancel request
         if (progress_dialog_->is_cancel_requested() && is_loading()) {
-            firmware_loader_->cancel_loading();
+            firmware_integration_->cancel_operation();
         }
     }
 }
@@ -111,8 +106,8 @@ void FirmwareManager::render() {
 }
 
 void FirmwareManager::shutdown() {
-    if (firmware_loader_) {
-        firmware_loader_->shutdown();
+    if (firmware_integration_) {
+        firmware_integration_->shutdown();
     }
     
     save_recent_files();
@@ -165,7 +160,7 @@ void FirmwareManager::unload_firmware() {
         return;
     }
     
-    auto result = firmware_loader_->unload_firmware();
+    auto result = firmware_integration_->unload_firmware();
     if (result.has_value()) {
         handle_firmware_unload_complete();
         show_success_notification("Firmware unloaded successfully");
@@ -186,11 +181,11 @@ void FirmwareManager::show_firmware_info() {
 }
 
 bool FirmwareManager::is_loading() const {
-    return firmware_loader_ && firmware_loader_->is_loading();
+    return firmware_integration_ && firmware_integration_->is_operation_in_progress();
 }
 
 bool FirmwareManager::can_load_firmware() const {
-    return firmware_loader_ && !is_loading() && gui_.get_emulator_core();
+    return firmware_integration_ && !is_loading() && gui_.get_emulator_core();
 }
 
 void FirmwareManager::handle_firmware_load_request(const std::string& file_path) {
@@ -207,16 +202,18 @@ void FirmwareManager::handle_firmware_load_request(const std::string& file_path)
     }
     
     // Start async loading
-    auto progress_callback = [this](const std::string& stage, float progress, const std::string& message, bool success) {
-        firmware_progress_callback(stage, progress, message, success);
-    };
-    
-    auto result = firmware_loader_->load_firmware_async(file_path, progress_callback);
+    auto result = firmware_integration_->load_firmware_async(file_path, 
+        [this](firmware::FirmwareStatus status, float progress, const std::string& message, 
+               const firmware::FirmwareOperationResult* result) {
+            handle_firmware_event(status, progress, message, result);
+        }
+    );
     if (!result.has_value()) {
         if (progress_dialog_) {
             progress_dialog_->hide();
         }
-        show_error_dialog("Load Failed", "Failed to start firmware loading", {result.error().message()});
+        std::vector<std::string> details = {result.error().message()};
+        show_error_dialog("Load Failed", "Failed to start firmware loading", details);
     }
 }
 
@@ -234,9 +231,16 @@ void FirmwareManager::handle_firmware_load_complete(bool success, const std::str
     if (success) {
         // Update current state
         current_state_.loaded = true;
-        current_state_.file_path = firmware_loader_->get_loaded_firmware_path();
-        current_state_.file_name = extract_filename(current_state_.file_path);
-        current_state_.info = firmware_loader_->get_firmware_info();
+        auto file_path_result = firmware_integration_->get_loaded_firmware_path();
+        if (file_path_result.has_value()) {
+            current_state_.file_path = file_path_result.value();
+            current_state_.file_name = extract_filename(current_state_.file_path);
+        }
+        
+        auto info_result = firmware_integration_->get_firmware_info();
+        if (info_result.has_value()) {
+            current_state_.info = info_result.value();
+        }
         current_state_.load_time = std::chrono::steady_clock::now();
         
         // Add to recent files

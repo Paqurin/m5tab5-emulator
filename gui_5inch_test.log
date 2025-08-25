@@ -1,0 +1,570 @@
+[2025-08-23 19:37:16.868] [main] [info] Logger initialized with level: 2
+[2025-08-23 19:37:16.868] [main] [info] 🎯 M5Stack Tab5 Emulator - Professional GUI Mode with Personality!
+[2025-08-23 19:37:16.868] [main] [info] 📟 Version: 1.0.0 - Authentic ESP32-P4 Development Environment
+[2025-08-23 19:37:16.868] [main] [info] 🌟 Ready to make embedded development delightful!
+[2025-08-23 19:37:16.868] [main] [info] 🎉 Welcome to M5Stack Tab5 Emulator - Where ESP32-P4 Dreams Come True! 🎉
+[2025-08-23 19:37:16.868] [main] [info] Initializing SDL video and timer subsystems...
+[2025-08-23 19:37:16.894] [main] [info] SDL video and timer subsystems initialized successfully
+[2025-08-23 19:37:16.894] [main] [info] Using internal SDL2 headers - limited driver info available
+[2025-08-23 19:37:16.894] [main] [info] Creating SDL renderer (1400x900)...
+[2025-08-23 19:37:17.075] [main] [info] SDL renderer initialized successfully - Window: 1400x900
+[2025-08-23 19:37:17.075] [main] [info] PersonalityManager initializing - preparing delightful experiences!
+[2025-08-23 19:37:17.075] [main] [info] Starting delightful boot sequence!
+[2025-08-23 19:37:17.075] [main] [info] 🚀 Starting delightful M5Stack Tab5 boot sequence!
+[2025-08-23 19:37:17.075] [main] [info] 🎮 Initializing professional menu bar with M5Stack aesthetic
+[2025-08-23 19:37:17.075] [main] [info] ✨ Menu bar initialized with 7 menus and 21 shortcuts
+[2025-08-23 19:37:17.075] [main] [info] Achievement Unlocked: First Contact - Welcome to the M5Stack Tab5 Emulator! Your journey in ESP32-P4 development begins now.
+[2025-08-23 19:37:17.075] [main] [info] 🎮 Menu bar initialized with professional M5Stack aesthetic
+[2025-08-23 19:37:17.075] [main] [info] ✨ GUI components initialized with personality and charm!
+[2025-08-23 19:37:17.075] [main] [info] GUI initialized successfully
+[2025-08-23 19:37:17.085] [main] [info] Loaded configuration from: config/development.json
+[2025-08-23 19:37:17.310] [main] [info] Emulator initialized successfully
+[2025-08-23 19:37:17.311] [main] [info] Validating GUI state before main loop...
+[2025-08-23 19:37:17.311] [main] [info]   - Emulator initialized: true
+[2025-08-23 19:37:17.311] [main] [info]   - GUI renderer ready: true
+[2025-08-23 19:37:17.311] [main] [info]   - Personality manager: true
+[2025-08-23 19:37:17.311] [main] [info]   - Shutdown requested: false
+[2025-08-23 19:37:17.312] [main] [info] Starting GUI main loop
+[2025-08-23 19:37:17.312] [main] [info] Initial GUI state - shutdown_requested: false, gui_renderer valid: true
+[2025-08-23 19:37:17.312] [main] [info] GUI loop iteration 1, elapsed: 0ms, FPS: inf
+[2025-08-23 19:37:17.312] [main] [info] render_emulator_display() call #1
+[2025-08-23 19:37:17.346] [main] [info] render_emulator_display() call #2
+[2025-08-23 19:37:17.379] [main] [info] render_emulator_display() call #3
+[2025-08-23 19:37:17.413] [main] [info] render_emulator_display() call #4
+[2025-08-23 19:37:17.446] [main] [info] render_emulator_display() call #5
+[2025-08-23 19:37:17.480] [main] [info] render_emulator_display() call #6
+[2025-08-23 19:37:17.513] [main] [info] render_emulator_display() call #7
+[2025-08-23 19:37:17.546] [main] [info] render_emulator_display() call #8
+[2025-08-23 19:37:17.580] [main] [info] render_emulator_display() call #9
+[2025-08-23 19:37:17.613] [main] [info] render_emulator_display() call #10
+[2025-08-23 19:37:17.880] [main] [info] Boot stage 1: Initializing ESP32-P4 dual cores @ 400MHz...
+[2025-08-23 19:37:18.114] [main] [info] 🚀 Boot progress: 12% complete
+[2025-08-23 19:37:18.683] [main] [info] Boot stage 2: Calibrating 768KB SRAM + 32MB PSRAM...
+[2025-08-23 19:37:18.917] [main] [info] 🚀 Boot progress: 21% complete
+[2025-08-23 19:37:19.317] [main] [info] GUI loop iteration 61, elapsed: 2004ms, FPS: 30.4
+[2025-08-23 19:37:19.484] [main] [info] Boot stage 3: Configuring 1280x720 IPS display...
+[2025-08-23 19:37:19.718] [main] [info] 🚀 Boot progress: 30% complete
+[2025-08-23 19:37:20.287] [main] [info] Boot stage 4: Warming up GPIO pins 0-47...
+[2025-08-23 19:37:21.090] [main] [info] Boot stage 5: Syncing I2C, SPI, UART peripherals...
+[2025-08-23 19:37:21.325] [main] [info] GUI loop iteration 121, elapsed: 4012ms, FPS: 30.2
+[2025-08-23 19:37:21.325] [main] [info] 🚀 Boot progress: 48% complete
+[2025-08-23 19:37:21.892] [main] [info] Boot stage 6: Loading ES8388 audio codec...
+[2025-08-23 19:37:22.126] [main] [info] 🚀 Boot progress: 57% complete
+[2025-08-23 19:37:22.126] [main] [info] ✨ Tip: Pro tip: F3 toggles the GPIO viewer for real-time pin monitoring.
+[2025-08-23 19:37:22.696] [main] [info] Boot stage 7: Initializing BMI270 6-axis IMU...
+[2025-08-23 19:37:22.931] [main] [info] 🚀 Boot progress: 67% complete
+[2025-08-23 19:37:23.342] [main] [info] GUI loop iteration 181, elapsed: 6029ms, FPS: 30.0
+[2025-08-23 19:37:23.476] [main] [info] Boot stage 8: Connecting SC2356 2MP camera...
+[2025-08-23 19:37:23.744] [main] [info] 🚀 Boot progress: 76% complete
+[2025-08-23 19:37:24.279] [main] [info] Boot stage 9: Enabling WiFi 6 + Bluetooth LE...
+[2025-08-23 19:37:24.547] [main] [info] 🚀 Boot progress: 85% complete
+[2025-08-23 19:37:24.547] [main] [info] 💡 All systems nominal - ready for embedded adventures!
+[2025-08-23 19:37:25.082] [main] [info] Boot stage 10: Ready for authentic ESP32-P4 development!
+[2025-08-23 19:37:25.349] [main] [info] GUI loop iteration 241, elapsed: 8036ms, FPS: 30.0
+[2025-08-23 19:37:25.349] [main] [info] 🚀 Boot progress: 94% complete
+[2025-08-23 19:37:25.884] [main] [info] Boot sequence completed - M5Stack Tab5 Emulator ready for awesome development!
+[2025-08-23 19:37:27.354] [main] [info] GUI loop iteration 301, elapsed: 10042ms, FPS: 30.0
+[2025-08-23 19:37:28.324] [main] [warning] No SDL events received for 11 seconds - may be running headless
+[2025-08-23 19:37:28.358] [main] [warning] No SDL events received for 11 seconds - may be running headless
+[2025-08-23 19:37:28.391] [main] [warning] No SDL events received for 11 seconds - may be running headless
+[2025-08-23 19:37:29.366] [main] [info] GUI loop iteration 361, elapsed: 12053ms, FPS: 30.0
+[2025-08-23 19:37:31.380] [main] [info] GUI loop iteration 421, elapsed: 14067ms, FPS: 29.9
+[2025-08-23 19:37:33.389] [main] [info] GUI loop iteration 481, elapsed: 16076ms, FPS: 29.9
+[2025-08-23 19:37:35.413] [main] [info] GUI loop iteration 541, elapsed: 18101ms, FPS: 29.9
+[2025-08-23 19:37:37.426] [main] [info] GUI loop iteration 601, elapsed: 20113ms, FPS: 29.9
+[2025-08-23 19:37:39.435] [main] [info] GUI loop iteration 661, elapsed: 22123ms, FPS: 29.9
+[2025-08-23 19:37:41.448] [main] [info] GUI loop iteration 721, elapsed: 24135ms, FPS: 29.9
+[2025-08-23 19:37:43.462] [main] [info] GUI loop iteration 781, elapsed: 26149ms, FPS: 29.9
+[2025-08-23 19:37:45.479] [main] [info] GUI loop iteration 841, elapsed: 28167ms, FPS: 29.9
+[2025-08-23 19:37:47.493] [main] [info] GUI loop iteration 901, elapsed: 30180ms, FPS: 29.9
+[2025-08-23 19:37:49.503] [main] [info] GUI loop iteration 961, elapsed: 32190ms, FPS: 29.9
+[2025-08-23 19:37:51.514] [main] [info] GUI loop iteration 1021, elapsed: 34201ms, FPS: 29.9
+[2025-08-23 19:37:53.528] [main] [info] GUI loop iteration 1081, elapsed: 36216ms, FPS: 29.8
+[2025-08-23 19:37:55.550] [main] [info] GUI loop iteration 1141, elapsed: 38237ms, FPS: 29.8
+[2025-08-23 19:37:57.562] [main] [info] GUI loop iteration 1201, elapsed: 40249ms, FPS: 29.8
+[2025-08-23 19:37:59.580] [main] [info] GUI loop iteration 1261, elapsed: 42267ms, FPS: 29.8
+[2025-08-23 19:38:01.586] [main] [info] GUI loop iteration 1321, elapsed: 44274ms, FPS: 29.8
+[2025-08-23 19:38:03.593] [main] [info] GUI loop iteration 1381, elapsed: 46280ms, FPS: 29.8
+[2025-08-23 19:38:05.612] [main] [info] GUI loop iteration 1441, elapsed: 48300ms, FPS: 29.8
+[2025-08-23 19:38:07.624] [main] [info] GUI loop iteration 1501, elapsed: 50311ms, FPS: 29.8
+[2025-08-23 19:38:09.637] [main] [info] GUI loop iteration 1561, elapsed: 52325ms, FPS: 29.8
+[2025-08-23 19:38:11.648] [main] [info] GUI loop iteration 1621, elapsed: 54336ms, FPS: 29.8
+[2025-08-23 19:38:13.662] [main] [info] GUI loop iteration 1681, elapsed: 56349ms, FPS: 29.8
+[2025-08-23 19:38:15.683] [main] [info] GUI loop iteration 1741, elapsed: 58370ms, FPS: 29.8
+[2025-08-23 19:38:17.695] [main] [info] GUI loop iteration 1801, elapsed: 60382ms, FPS: 29.8
+[2025-08-23 19:38:19.717] [main] [info] GUI loop iteration 1861, elapsed: 62404ms, FPS: 29.8
+[2025-08-23 19:38:21.727] [main] [info] GUI loop iteration 1921, elapsed: 64414ms, FPS: 29.8
+[2025-08-23 19:38:23.741] [main] [info] GUI loop iteration 1981, elapsed: 66428ms, FPS: 29.8
+[2025-08-23 19:38:25.751] [main] [info] GUI loop iteration 2041, elapsed: 68438ms, FPS: 29.8
+[2025-08-23 19:38:27.762] [main] [info] GUI loop iteration 2101, elapsed: 70449ms, FPS: 29.8
+[2025-08-23 19:38:29.782] [main] [info] GUI loop iteration 2161, elapsed: 72469ms, FPS: 29.8
+[2025-08-23 19:38:31.798] [main] [info] GUI loop iteration 2221, elapsed: 74485ms, FPS: 29.8
+[2025-08-23 19:38:33.811] [main] [info] GUI loop iteration 2281, elapsed: 76498ms, FPS: 29.8
+[2025-08-23 19:38:35.829] [main] [info] GUI loop iteration 2341, elapsed: 78516ms, FPS: 29.8
+[2025-08-23 19:38:37.853] [main] [info] GUI loop iteration 2401, elapsed: 80540ms, FPS: 29.8
+[2025-08-23 19:38:39.869] [main] [info] GUI loop iteration 2461, elapsed: 82556ms, FPS: 29.8
+[2025-08-23 19:38:41.889] [main] [info] GUI loop iteration 2521, elapsed: 84576ms, FPS: 29.8
+[2025-08-23 19:38:43.902] [main] [info] GUI loop iteration 2581, elapsed: 86589ms, FPS: 29.8
+[2025-08-23 19:38:45.922] [main] [info] GUI loop iteration 2641, elapsed: 88609ms, FPS: 29.8
+[2025-08-23 19:38:47.937] [main] [info] GUI loop iteration 2701, elapsed: 90625ms, FPS: 29.8
+[2025-08-23 19:38:49.958] [main] [info] GUI loop iteration 2761, elapsed: 92645ms, FPS: 29.8
+[2025-08-23 19:38:51.973] [main] [info] GUI loop iteration 2821, elapsed: 94660ms, FPS: 29.8
+[2025-08-23 19:38:53.988] [main] [info] GUI loop iteration 2881, elapsed: 96675ms, FPS: 29.8
+[2025-08-23 19:38:56.001] [main] [info] GUI loop iteration 2941, elapsed: 98689ms, FPS: 29.8
+[2025-08-23 19:38:58.024] [main] [info] GUI loop iteration 3001, elapsed: 100711ms, FPS: 29.8
+[2025-08-23 19:39:00.031] [main] [info] GUI loop iteration 3061, elapsed: 102718ms, FPS: 29.8
+[2025-08-23 19:39:02.045] [main] [info] GUI loop iteration 3121, elapsed: 104732ms, FPS: 29.8
+[2025-08-23 19:39:04.060] [main] [info] GUI loop iteration 3181, elapsed: 106748ms, FPS: 29.8
+[2025-08-23 19:39:06.073] [main] [info] GUI loop iteration 3241, elapsed: 108761ms, FPS: 29.8
+[2025-08-23 19:39:08.092] [main] [info] GUI loop iteration 3301, elapsed: 110779ms, FPS: 29.8
+[2025-08-23 19:39:10.103] [main] [info] GUI loop iteration 3361, elapsed: 112791ms, FPS: 29.8
+[2025-08-23 19:39:12.128] [main] [info] GUI loop iteration 3421, elapsed: 114816ms, FPS: 29.8
+[2025-08-23 19:39:14.144] [main] [info] GUI loop iteration 3481, elapsed: 116831ms, FPS: 29.8
+[2025-08-23 19:39:16.156] [main] [info] GUI loop iteration 3541, elapsed: 118843ms, FPS: 29.8
+[2025-08-23 19:39:18.173] [main] [info] GUI loop iteration 3601, elapsed: 120860ms, FPS: 29.8
+[2025-08-23 19:39:20.191] [main] [info] GUI loop iteration 3661, elapsed: 122878ms, FPS: 29.8
+[2025-08-23 19:39:22.198] [main] [info] GUI loop iteration 3721, elapsed: 124885ms, FPS: 29.8
+[2025-08-23 19:39:24.213] [main] [info] GUI loop iteration 3781, elapsed: 126900ms, FPS: 29.8
+[2025-08-23 19:39:26.224] [main] [info] GUI loop iteration 3841, elapsed: 128911ms, FPS: 29.8
+[2025-08-23 19:39:28.238] [main] [info] GUI loop iteration 3901, elapsed: 130925ms, FPS: 29.8
+[2025-08-23 19:39:30.263] [main] [info] GUI loop iteration 3961, elapsed: 132950ms, FPS: 29.8
+[2025-08-23 19:39:32.275] [main] [info] GUI loop iteration 4021, elapsed: 134962ms, FPS: 29.8
+[2025-08-23 19:39:34.297] [main] [info] GUI loop iteration 4081, elapsed: 136984ms, FPS: 29.8
+[2025-08-23 19:39:36.311] [main] [info] GUI loop iteration 4141, elapsed: 138998ms, FPS: 29.8
+[2025-08-23 19:39:38.329] [main] [info] GUI loop iteration 4201, elapsed: 141016ms, FPS: 29.8
+[2025-08-23 19:39:40.344] [main] [info] GUI loop iteration 4261, elapsed: 143032ms, FPS: 29.8
+[2025-08-23 19:39:42.360] [main] [info] GUI loop iteration 4321, elapsed: 145047ms, FPS: 29.8
+[2025-08-23 19:39:44.376] [main] [info] GUI loop iteration 4381, elapsed: 147063ms, FPS: 29.8
+[2025-08-23 19:39:46.400] [main] [info] GUI loop iteration 4441, elapsed: 149087ms, FPS: 29.8
+[2025-08-23 19:39:48.412] [main] [info] GUI loop iteration 4501, elapsed: 151100ms, FPS: 29.8
+[2025-08-23 19:39:50.430] [main] [info] GUI loop iteration 4561, elapsed: 153117ms, FPS: 29.8
+[2025-08-23 19:39:52.446] [main] [info] GUI loop iteration 4621, elapsed: 155133ms, FPS: 29.8
+[2025-08-23 19:39:54.466] [main] [info] GUI loop iteration 4681, elapsed: 157153ms, FPS: 29.8
+[2025-08-23 19:39:56.476] [main] [info] GUI loop iteration 4741, elapsed: 159163ms, FPS: 29.8
+[2025-08-23 19:39:58.497] [main] [info] GUI loop iteration 4801, elapsed: 161184ms, FPS: 29.8
+[2025-08-23 19:40:00.140] [main] [info] SDL Event #1: type=512, window_id=1, startup_elapsed=162827ms
+[2025-08-23 19:40:00.241] [main] [info] SDL Event #2: type=1024, window_id=0, startup_elapsed=162928ms
+[2025-08-23 19:40:00.275] [main] [info] SDL Event #3: type=1024, window_id=0, startup_elapsed=162962ms
+[2025-08-23 19:40:00.342] [main] [info] SDL Event #4: type=1024, window_id=0, startup_elapsed=163029ms
+[2025-08-23 19:40:00.510] [main] [info] GUI loop iteration 4861, elapsed: 163197ms, FPS: 29.8
+[2025-08-23 19:40:01.190] [main] [info] SDL Event #5: type=769, window_id=0, startup_elapsed=163878ms
+[2025-08-23 19:40:02.532] [main] [info] GUI loop iteration 4921, elapsed: 165219ms, FPS: 29.8
+[2025-08-23 19:40:04.544] [main] [info] GUI loop iteration 4981, elapsed: 167231ms, FPS: 29.8
+[2025-08-23 19:40:06.564] [main] [info] GUI loop iteration 5041, elapsed: 169251ms, FPS: 29.8
+[2025-08-23 19:40:07.706] [main] [info] SDL Event #6: type=512, window_id=1, startup_elapsed=170393ms
+[2025-08-23 19:40:07.706] [main] [info] SDL Event #7: type=512, window_id=1, startup_elapsed=170393ms
+[2025-08-23 19:40:07.706] [main] [info] SDL Event #8: type=1024, window_id=0, startup_elapsed=170393ms
+[2025-08-23 19:40:07.706] [main] [info] SDL Event #9: type=1024, window_id=0, startup_elapsed=170393ms
+[2025-08-23 19:40:07.706] [main] [info] SDL Event #10: type=512, window_id=1, startup_elapsed=170393ms
+[2025-08-23 19:40:08.580] [main] [info] GUI loop iteration 5101, elapsed: 171267ms, FPS: 29.8
+[2025-08-23 19:40:10.595] [main] [info] GUI loop iteration 5161, elapsed: 173282ms, FPS: 29.8
+[2025-08-23 19:40:12.609] [main] [info] GUI loop iteration 5221, elapsed: 175296ms, FPS: 29.8
+[2025-08-23 19:40:14.620] [main] [info] GUI loop iteration 5281, elapsed: 177307ms, FPS: 29.8
+[2025-08-23 19:40:16.632] [main] [info] GUI loop iteration 5341, elapsed: 179319ms, FPS: 29.8
+[2025-08-23 19:40:18.644] [main] [info] GUI loop iteration 5401, elapsed: 181331ms, FPS: 29.8
+[2025-08-23 19:40:20.664] [main] [info] GUI loop iteration 5461, elapsed: 183351ms, FPS: 29.8
+[2025-08-23 19:40:22.679] [main] [info] GUI loop iteration 5521, elapsed: 185366ms, FPS: 29.8
+[2025-08-23 19:40:24.701] [main] [info] GUI loop iteration 5581, elapsed: 187388ms, FPS: 29.8
+[2025-08-23 19:40:26.711] [main] [info] GUI loop iteration 5641, elapsed: 189399ms, FPS: 29.8
+[2025-08-23 19:40:28.729] [main] [info] GUI loop iteration 5701, elapsed: 191416ms, FPS: 29.8
+[2025-08-23 19:40:30.741] [main] [info] GUI loop iteration 5761, elapsed: 193428ms, FPS: 29.8
+[2025-08-23 19:40:32.755] [main] [info] GUI loop iteration 5821, elapsed: 195442ms, FPS: 29.8
+[2025-08-23 19:40:34.771] [main] [info] GUI loop iteration 5881, elapsed: 197458ms, FPS: 29.8
+[2025-08-23 19:40:36.781] [main] [info] GUI loop iteration 5941, elapsed: 199468ms, FPS: 29.8
+[2025-08-23 19:40:38.801] [main] [info] GUI loop iteration 6001, elapsed: 201488ms, FPS: 29.8
+[2025-08-23 19:40:40.811] [main] [info] GUI loop iteration 6061, elapsed: 203498ms, FPS: 29.8
+[2025-08-23 19:40:42.834] [main] [info] GUI loop iteration 6121, elapsed: 205521ms, FPS: 29.8
+[2025-08-23 19:40:44.850] [main] [info] GUI loop iteration 6181, elapsed: 207538ms, FPS: 29.8
+[2025-08-23 19:40:46.867] [main] [info] GUI loop iteration 6241, elapsed: 209554ms, FPS: 29.8
+[2025-08-23 19:40:48.882] [main] [info] GUI loop iteration 6301, elapsed: 211569ms, FPS: 29.8
+[2025-08-23 19:40:50.905] [main] [info] GUI loop iteration 6361, elapsed: 213592ms, FPS: 29.8
+[2025-08-23 19:40:52.916] [main] [info] GUI loop iteration 6421, elapsed: 215603ms, FPS: 29.8
+[2025-08-23 19:40:54.936] [main] [info] GUI loop iteration 6481, elapsed: 217623ms, FPS: 29.8
+[2025-08-23 19:40:56.949] [main] [info] GUI loop iteration 6541, elapsed: 219636ms, FPS: 29.8
+[2025-08-23 19:40:58.969] [main] [info] GUI loop iteration 6601, elapsed: 221657ms, FPS: 29.8
+[2025-08-23 19:41:00.985] [main] [info] GUI loop iteration 6661, elapsed: 223673ms, FPS: 29.8
+[2025-08-23 19:41:03.007] [main] [info] GUI loop iteration 6721, elapsed: 225694ms, FPS: 29.8
+[2025-08-23 19:41:05.027] [main] [info] GUI loop iteration 6781, elapsed: 227714ms, FPS: 29.8
+[2025-08-23 19:41:07.040] [main] [info] GUI loop iteration 6841, elapsed: 229727ms, FPS: 29.8
+[2025-08-23 19:41:09.062] [main] [info] GUI loop iteration 6901, elapsed: 231749ms, FPS: 29.8
+[2025-08-23 19:41:11.073] [main] [info] GUI loop iteration 6961, elapsed: 233760ms, FPS: 29.8
+[2025-08-23 19:41:13.091] [main] [info] GUI loop iteration 7021, elapsed: 235779ms, FPS: 29.8
+[2025-08-23 19:41:15.101] [main] [info] GUI loop iteration 7081, elapsed: 237788ms, FPS: 29.8
+[2025-08-23 19:41:17.111] [main] [info] GUI loop iteration 7141, elapsed: 239799ms, FPS: 29.8
+[2025-08-23 19:41:19.125] [main] [info] GUI loop iteration 7201, elapsed: 241812ms, FPS: 29.8
+[2025-08-23 19:41:21.137] [main] [info] GUI loop iteration 7261, elapsed: 243824ms, FPS: 29.8
+[2025-08-23 19:41:23.149] [main] [info] GUI loop iteration 7321, elapsed: 245836ms, FPS: 29.8
+[2025-08-23 19:41:25.163] [main] [info] GUI loop iteration 7381, elapsed: 247850ms, FPS: 29.8
+[2025-08-23 19:41:27.172] [main] [info] GUI loop iteration 7441, elapsed: 249859ms, FPS: 29.8
+[2025-08-23 19:41:29.183] [main] [info] GUI loop iteration 7501, elapsed: 251870ms, FPS: 29.8
+[2025-08-23 19:41:31.197] [main] [info] GUI loop iteration 7561, elapsed: 253884ms, FPS: 29.8
+[2025-08-23 19:41:33.205] [main] [info] GUI loop iteration 7621, elapsed: 255892ms, FPS: 29.8
+[2025-08-23 19:41:35.227] [main] [info] GUI loop iteration 7681, elapsed: 257914ms, FPS: 29.8
+[2025-08-23 19:41:37.240] [main] [info] GUI loop iteration 7741, elapsed: 259928ms, FPS: 29.8
+[2025-08-23 19:41:39.252] [main] [info] GUI loop iteration 7801, elapsed: 261939ms, FPS: 29.8
+[2025-08-23 19:41:41.263] [main] [info] GUI loop iteration 7861, elapsed: 263950ms, FPS: 29.8
+[2025-08-23 19:41:43.274] [main] [info] GUI loop iteration 7921, elapsed: 265961ms, FPS: 29.8
+[2025-08-23 19:41:45.299] [main] [info] GUI loop iteration 7981, elapsed: 267987ms, FPS: 29.8
+[2025-08-23 19:41:47.304] [main] [info] GUI loop iteration 8041, elapsed: 269991ms, FPS: 29.8
+[2025-08-23 19:41:49.315] [main] [info] GUI loop iteration 8101, elapsed: 272003ms, FPS: 29.8
+[2025-08-23 19:41:51.327] [main] [info] GUI loop iteration 8161, elapsed: 274015ms, FPS: 29.8
+[2025-08-23 19:41:53.333] [main] [info] GUI loop iteration 8221, elapsed: 276020ms, FPS: 29.8
+[2025-08-23 19:41:55.339] [main] [info] GUI loop iteration 8281, elapsed: 278026ms, FPS: 29.8
+[2025-08-23 19:41:57.345] [main] [info] GUI loop iteration 8341, elapsed: 280033ms, FPS: 29.8
+[2025-08-23 19:41:59.348] [main] [info] GUI loop iteration 8401, elapsed: 282036ms, FPS: 29.8
+[2025-08-23 19:42:01.354] [main] [info] GUI loop iteration 8461, elapsed: 284041ms, FPS: 29.8
+[2025-08-23 19:42:03.369] [main] [info] GUI loop iteration 8521, elapsed: 286056ms, FPS: 29.8
+[2025-08-23 19:42:05.377] [main] [info] GUI loop iteration 8581, elapsed: 288064ms, FPS: 29.8
+[2025-08-23 19:42:07.382] [main] [info] GUI loop iteration 8641, elapsed: 290070ms, FPS: 29.8
+[2025-08-23 19:42:09.386] [main] [info] GUI loop iteration 8701, elapsed: 292073ms, FPS: 29.8
+[2025-08-23 19:42:11.402] [main] [info] GUI loop iteration 8761, elapsed: 294090ms, FPS: 29.8
+[2025-08-23 19:42:13.409] [main] [info] GUI loop iteration 8821, elapsed: 296096ms, FPS: 29.8
+[2025-08-23 19:42:15.419] [main] [info] GUI loop iteration 8881, elapsed: 298106ms, FPS: 29.8
+[2025-08-23 19:42:17.432] [main] [info] GUI loop iteration 8941, elapsed: 300119ms, FPS: 29.8
+[2025-08-23 19:42:19.442] [main] [info] GUI loop iteration 9001, elapsed: 302129ms, FPS: 29.8
+[2025-08-23 19:42:21.449] [main] [info] GUI loop iteration 9061, elapsed: 304136ms, FPS: 29.8
+[2025-08-23 19:42:23.466] [main] [info] GUI loop iteration 9121, elapsed: 306154ms, FPS: 29.8
+[2025-08-23 19:42:25.478] [main] [info] GUI loop iteration 9181, elapsed: 308165ms, FPS: 29.8
+[2025-08-23 19:42:27.487] [main] [info] GUI loop iteration 9241, elapsed: 310174ms, FPS: 29.8
+[2025-08-23 19:42:29.492] [main] [info] GUI loop iteration 9301, elapsed: 312179ms, FPS: 29.8
+[2025-08-23 19:42:31.504] [main] [info] GUI loop iteration 9361, elapsed: 314191ms, FPS: 29.8
+[2025-08-23 19:42:33.513] [main] [info] GUI loop iteration 9421, elapsed: 316201ms, FPS: 29.8
+[2025-08-23 19:42:35.512] [main] [info] GUI loop iteration 9481, elapsed: 318199ms, FPS: 29.8
+[2025-08-23 19:42:37.513] [main] [info] GUI loop iteration 9541, elapsed: 320200ms, FPS: 29.8
+[2025-08-23 19:42:39.522] [main] [info] GUI loop iteration 9601, elapsed: 322209ms, FPS: 29.8
+[2025-08-23 19:42:41.539] [main] [info] GUI loop iteration 9661, elapsed: 324226ms, FPS: 29.8
+[2025-08-23 19:42:43.553] [main] [info] GUI loop iteration 9721, elapsed: 326240ms, FPS: 29.8
+[2025-08-23 19:42:45.570] [main] [info] GUI loop iteration 9781, elapsed: 328257ms, FPS: 29.8
+[2025-08-23 19:42:47.583] [main] [info] GUI loop iteration 9841, elapsed: 330270ms, FPS: 29.8
+[2025-08-23 19:42:49.598] [main] [info] GUI loop iteration 9901, elapsed: 332285ms, FPS: 29.8
+[2025-08-23 19:42:51.608] [main] [info] GUI loop iteration 9961, elapsed: 334295ms, FPS: 29.8
+[2025-08-23 19:42:53.620] [main] [info] GUI loop iteration 10021, elapsed: 336308ms, FPS: 29.8
+[2025-08-23 19:42:55.639] [main] [info] GUI loop iteration 10081, elapsed: 338326ms, FPS: 29.8
+[2025-08-23 19:42:57.649] [main] [info] GUI loop iteration 10141, elapsed: 340336ms, FPS: 29.8
+[2025-08-23 19:42:59.661] [main] [info] GUI loop iteration 10201, elapsed: 342348ms, FPS: 29.8
+[2025-08-23 19:43:01.671] [main] [info] GUI loop iteration 10261, elapsed: 344358ms, FPS: 29.8
+[2025-08-23 19:43:03.684] [main] [info] GUI loop iteration 10321, elapsed: 346372ms, FPS: 29.8
+[2025-08-23 19:43:05.707] [main] [info] GUI loop iteration 10381, elapsed: 348394ms, FPS: 29.8
+[2025-08-23 19:43:07.717] [main] [info] GUI loop iteration 10441, elapsed: 350404ms, FPS: 29.8
+[2025-08-23 19:43:09.727] [main] [info] GUI loop iteration 10501, elapsed: 352414ms, FPS: 29.8
+[2025-08-23 19:43:11.742] [main] [info] GUI loop iteration 10561, elapsed: 354429ms, FPS: 29.8
+[2025-08-23 19:43:13.753] [main] [info] GUI loop iteration 10621, elapsed: 356440ms, FPS: 29.8
+[2025-08-23 19:43:15.764] [main] [info] GUI loop iteration 10681, elapsed: 358451ms, FPS: 29.8
+[2025-08-23 19:43:17.774] [main] [info] GUI loop iteration 10741, elapsed: 360461ms, FPS: 29.8
+[2025-08-23 19:43:19.778] [main] [info] GUI loop iteration 10801, elapsed: 362466ms, FPS: 29.8
+[2025-08-23 19:43:21.783] [main] [info] GUI loop iteration 10861, elapsed: 364470ms, FPS: 29.8
+[2025-08-23 19:43:23.787] [main] [info] GUI loop iteration 10921, elapsed: 366474ms, FPS: 29.8
+[2025-08-23 19:43:25.791] [main] [info] GUI loop iteration 10981, elapsed: 368478ms, FPS: 29.8
+[2025-08-23 19:43:27.793] [main] [info] GUI loop iteration 11041, elapsed: 370480ms, FPS: 29.8
+[2025-08-23 19:43:29.796] [main] [info] GUI loop iteration 11101, elapsed: 372483ms, FPS: 29.8
+[2025-08-23 19:43:31.808] [main] [info] GUI loop iteration 11161, elapsed: 374495ms, FPS: 29.8
+[2025-08-23 19:43:33.808] [main] [info] GUI loop iteration 11221, elapsed: 376495ms, FPS: 29.8
+[2025-08-23 19:43:35.811] [main] [info] GUI loop iteration 11281, elapsed: 378499ms, FPS: 29.8
+[2025-08-23 19:43:37.819] [main] [info] GUI loop iteration 11341, elapsed: 380506ms, FPS: 29.8
+[2025-08-23 19:43:39.827] [main] [info] GUI loop iteration 11401, elapsed: 382514ms, FPS: 29.8
+[2025-08-23 19:43:41.843] [main] [info] GUI loop iteration 11461, elapsed: 384530ms, FPS: 29.8
+[2025-08-23 19:43:43.847] [main] [info] GUI loop iteration 11521, elapsed: 386534ms, FPS: 29.8
+[2025-08-23 19:43:45.851] [main] [info] GUI loop iteration 11581, elapsed: 388538ms, FPS: 29.8
+[2025-08-23 19:43:47.864] [main] [info] GUI loop iteration 11641, elapsed: 390551ms, FPS: 29.8
+[2025-08-23 19:43:49.879] [main] [info] GUI loop iteration 11701, elapsed: 392566ms, FPS: 29.8
+[2025-08-23 19:43:51.885] [main] [info] GUI loop iteration 11761, elapsed: 394572ms, FPS: 29.8
+[2025-08-23 19:43:53.887] [main] [info] GUI loop iteration 11821, elapsed: 396574ms, FPS: 29.8
+[2025-08-23 19:43:55.886] [main] [info] GUI loop iteration 11881, elapsed: 398573ms, FPS: 29.8
+[2025-08-23 19:43:57.895] [main] [info] GUI loop iteration 11941, elapsed: 400582ms, FPS: 29.8
+[2025-08-23 19:43:59.908] [main] [info] GUI loop iteration 12001, elapsed: 402596ms, FPS: 29.8
+[2025-08-23 19:44:01.909] [main] [info] GUI loop iteration 12061, elapsed: 404596ms, FPS: 29.8
+[2025-08-23 19:44:03.920] [main] [info] GUI loop iteration 12121, elapsed: 406607ms, FPS: 29.8
+[2025-08-23 19:44:05.925] [main] [info] GUI loop iteration 12181, elapsed: 408612ms, FPS: 29.8
+[2025-08-23 19:44:07.940] [main] [info] GUI loop iteration 12241, elapsed: 410627ms, FPS: 29.8
+[2025-08-23 19:44:09.948] [main] [info] GUI loop iteration 12301, elapsed: 412635ms, FPS: 29.8
+[2025-08-23 19:44:11.958] [main] [info] GUI loop iteration 12361, elapsed: 414645ms, FPS: 29.8
+[2025-08-23 19:44:13.966] [main] [info] GUI loop iteration 12421, elapsed: 416653ms, FPS: 29.8
+[2025-08-23 19:44:15.982] [main] [info] GUI loop iteration 12481, elapsed: 418669ms, FPS: 29.8
+[2025-08-23 19:44:17.986] [main] [info] GUI loop iteration 12541, elapsed: 420673ms, FPS: 29.8
+[2025-08-23 19:44:19.992] [main] [info] GUI loop iteration 12601, elapsed: 422679ms, FPS: 29.8
+[2025-08-23 19:44:22.000] [main] [info] GUI loop iteration 12661, elapsed: 424687ms, FPS: 29.8
+[2025-08-23 19:44:24.015] [main] [info] GUI loop iteration 12721, elapsed: 426702ms, FPS: 29.8
+[2025-08-23 19:44:26.020] [main] [info] GUI loop iteration 12781, elapsed: 428708ms, FPS: 29.8
+[2025-08-23 19:44:28.024] [main] [info] GUI loop iteration 12841, elapsed: 430711ms, FPS: 29.8
+[2025-08-23 19:44:30.031] [main] [info] GUI loop iteration 12901, elapsed: 432719ms, FPS: 29.8
+[2025-08-23 19:44:32.048] [main] [info] GUI loop iteration 12961, elapsed: 434735ms, FPS: 29.8
+[2025-08-23 19:44:34.059] [main] [info] GUI loop iteration 13021, elapsed: 436746ms, FPS: 29.8
+[2025-08-23 19:44:36.065] [main] [info] GUI loop iteration 13081, elapsed: 438753ms, FPS: 29.8
+[2025-08-23 19:44:38.082] [main] [info] GUI loop iteration 13141, elapsed: 440770ms, FPS: 29.8
+[2025-08-23 19:44:40.088] [main] [info] GUI loop iteration 13201, elapsed: 442775ms, FPS: 29.8
+[2025-08-23 19:44:42.097] [main] [info] GUI loop iteration 13261, elapsed: 444784ms, FPS: 29.8
+[2025-08-23 19:44:44.100] [main] [info] GUI loop iteration 13321, elapsed: 446787ms, FPS: 29.8
+[2025-08-23 19:44:46.104] [main] [info] GUI loop iteration 13381, elapsed: 448791ms, FPS: 29.8
+[2025-08-23 19:44:48.116] [main] [info] GUI loop iteration 13441, elapsed: 450803ms, FPS: 29.8
+[2025-08-23 19:44:50.119] [main] [info] GUI loop iteration 13501, elapsed: 452807ms, FPS: 29.8
+[2025-08-23 19:44:52.127] [main] [info] GUI loop iteration 13561, elapsed: 454814ms, FPS: 29.8
+[2025-08-23 19:44:54.129] [main] [info] GUI loop iteration 13621, elapsed: 456816ms, FPS: 29.8
+[2025-08-23 19:44:56.136] [main] [info] GUI loop iteration 13681, elapsed: 458823ms, FPS: 29.8
+[2025-08-23 19:44:58.148] [main] [info] GUI loop iteration 13741, elapsed: 460836ms, FPS: 29.8
+[2025-08-23 19:45:00.151] [main] [info] GUI loop iteration 13801, elapsed: 462839ms, FPS: 29.8
+[2025-08-23 19:45:02.160] [main] [info] GUI loop iteration 13861, elapsed: 464847ms, FPS: 29.8
+[2025-08-23 19:45:04.169] [main] [info] GUI loop iteration 13921, elapsed: 466856ms, FPS: 29.8
+[2025-08-23 19:45:06.183] [main] [info] GUI loop iteration 13981, elapsed: 468870ms, FPS: 29.8
+[2025-08-23 19:45:08.184] [main] [info] GUI loop iteration 14041, elapsed: 470871ms, FPS: 29.8
+[2025-08-23 19:45:10.188] [main] [info] GUI loop iteration 14101, elapsed: 472875ms, FPS: 29.8
+[2025-08-23 19:45:12.192] [main] [info] GUI loop iteration 14161, elapsed: 474879ms, FPS: 29.8
+[2025-08-23 19:45:14.205] [main] [info] GUI loop iteration 14221, elapsed: 476893ms, FPS: 29.8
+[2025-08-23 19:45:16.211] [main] [info] GUI loop iteration 14281, elapsed: 478898ms, FPS: 29.8
+[2025-08-23 19:45:18.218] [main] [info] GUI loop iteration 14341, elapsed: 480905ms, FPS: 29.8
+[2025-08-23 19:45:20.228] [main] [info] GUI loop iteration 14401, elapsed: 482915ms, FPS: 29.8
+[2025-08-23 19:45:22.236] [main] [info] GUI loop iteration 14461, elapsed: 484923ms, FPS: 29.8
+[2025-08-23 19:45:24.244] [main] [info] GUI loop iteration 14521, elapsed: 486931ms, FPS: 29.8
+[2025-08-23 19:45:26.246] [main] [info] GUI loop iteration 14581, elapsed: 488933ms, FPS: 29.8
+[2025-08-23 19:45:28.248] [main] [info] GUI loop iteration 14641, elapsed: 490935ms, FPS: 29.8
+[2025-08-23 19:45:30.260] [main] [info] GUI loop iteration 14701, elapsed: 492947ms, FPS: 29.8
+[2025-08-23 19:45:32.269] [main] [info] GUI loop iteration 14761, elapsed: 494957ms, FPS: 29.8
+[2025-08-23 19:45:34.288] [main] [info] GUI loop iteration 14821, elapsed: 496975ms, FPS: 29.8
+[2025-08-23 19:45:36.296] [main] [info] GUI loop iteration 14881, elapsed: 498983ms, FPS: 29.8
+[2025-08-23 19:45:38.298] [main] [info] GUI loop iteration 14941, elapsed: 500985ms, FPS: 29.8
+[2025-08-23 19:45:40.298] [main] [info] GUI loop iteration 15001, elapsed: 502985ms, FPS: 29.8
+[2025-08-23 19:45:42.297] [main] [info] GUI loop iteration 15061, elapsed: 504984ms, FPS: 29.8
+[2025-08-23 19:45:44.295] [main] [info] GUI loop iteration 15121, elapsed: 506982ms, FPS: 29.8
+[2025-08-23 19:45:46.293] [main] [info] GUI loop iteration 15181, elapsed: 508980ms, FPS: 29.8
+[2025-08-23 19:45:48.292] [main] [info] GUI loop iteration 15241, elapsed: 510980ms, FPS: 29.8
+[2025-08-23 19:45:50.297] [main] [info] GUI loop iteration 15301, elapsed: 512984ms, FPS: 29.8
+[2025-08-23 19:45:52.303] [main] [info] GUI loop iteration 15361, elapsed: 514990ms, FPS: 29.8
+[2025-08-23 19:45:54.311] [main] [info] GUI loop iteration 15421, elapsed: 516999ms, FPS: 29.8
+[2025-08-23 19:45:56.325] [main] [info] GUI loop iteration 15481, elapsed: 519013ms, FPS: 29.8
+[2025-08-23 19:45:58.327] [main] [info] GUI loop iteration 15541, elapsed: 521014ms, FPS: 29.8
+[2025-08-23 19:46:00.335] [main] [info] GUI loop iteration 15601, elapsed: 523022ms, FPS: 29.8
+[2025-08-23 19:46:02.337] [main] [info] GUI loop iteration 15661, elapsed: 525024ms, FPS: 29.8
+[2025-08-23 19:46:04.355] [main] [info] GUI loop iteration 15721, elapsed: 527042ms, FPS: 29.8
+[2025-08-23 19:46:06.362] [main] [info] GUI loop iteration 15781, elapsed: 529049ms, FPS: 29.8
+[2025-08-23 19:46:08.365] [main] [info] GUI loop iteration 15841, elapsed: 531052ms, FPS: 29.8
+[2025-08-23 19:46:10.377] [main] [info] GUI loop iteration 15901, elapsed: 533064ms, FPS: 29.8
+[2025-08-23 19:46:12.383] [main] [info] GUI loop iteration 15961, elapsed: 535071ms, FPS: 29.8
+[2025-08-23 19:46:14.392] [main] [info] GUI loop iteration 16021, elapsed: 537079ms, FPS: 29.8
+[2025-08-23 19:46:16.404] [main] [info] GUI loop iteration 16081, elapsed: 539091ms, FPS: 29.8
+[2025-08-23 19:46:18.416] [main] [info] GUI loop iteration 16141, elapsed: 541104ms, FPS: 29.8
+[2025-08-23 19:46:20.421] [main] [info] GUI loop iteration 16201, elapsed: 543109ms, FPS: 29.8
+[2025-08-23 19:46:22.427] [main] [info] GUI loop iteration 16261, elapsed: 545114ms, FPS: 29.8
+[2025-08-23 19:46:24.433] [main] [info] GUI loop iteration 16321, elapsed: 547120ms, FPS: 29.8
+[2025-08-23 19:46:26.437] [main] [info] GUI loop iteration 16381, elapsed: 549124ms, FPS: 29.8
+[2025-08-23 19:46:28.444] [main] [info] GUI loop iteration 16441, elapsed: 551131ms, FPS: 29.8
+[2025-08-23 19:46:30.492] [main] [info] GUI loop iteration 16501, elapsed: 553180ms, FPS: 29.8
+[2025-08-23 19:46:32.500] [main] [info] GUI loop iteration 16561, elapsed: 555188ms, FPS: 29.8
+[2025-08-23 19:46:34.514] [main] [info] GUI loop iteration 16621, elapsed: 557201ms, FPS: 29.8
+[2025-08-23 19:46:36.523] [main] [info] GUI loop iteration 16681, elapsed: 559211ms, FPS: 29.8
+[2025-08-23 19:46:38.532] [main] [info] GUI loop iteration 16741, elapsed: 561219ms, FPS: 29.8
+[2025-08-23 19:46:40.540] [main] [info] GUI loop iteration 16801, elapsed: 563227ms, FPS: 29.8
+[2025-08-23 19:46:42.557] [main] [info] GUI loop iteration 16861, elapsed: 565244ms, FPS: 29.8
+[2025-08-23 19:46:44.567] [main] [info] GUI loop iteration 16921, elapsed: 567254ms, FPS: 29.8
+[2025-08-23 19:46:47.759] [main] [info] GUI loop iteration 16981, elapsed: 570446ms, FPS: 29.8
+[2025-08-23 19:46:50.426] [main] [info] GUI loop iteration 17041, elapsed: 573113ms, FPS: 29.7
+[2025-08-23 19:47:28.673] [main] [info] GUI loop iteration 17101, elapsed: 611360ms, FPS: 28.0
+[2025-08-23 19:47:30.684] [main] [info] GUI loop iteration 17161, elapsed: 613372ms, FPS: 28.0
+[2025-08-23 19:47:32.698] [main] [info] GUI loop iteration 17221, elapsed: 615385ms, FPS: 28.0
+[2025-08-23 19:47:34.711] [main] [info] GUI loop iteration 17281, elapsed: 617399ms, FPS: 28.0
+[2025-08-23 19:48:09.494] [main] [info] GUI loop iteration 17341, elapsed: 652181ms, FPS: 26.6
+[2025-08-23 19:48:11.501] [main] [info] GUI loop iteration 17401, elapsed: 654189ms, FPS: 26.6
+[2025-08-23 19:48:13.515] [main] [info] GUI loop iteration 17461, elapsed: 656202ms, FPS: 26.6
+[2025-08-23 19:48:15.527] [main] [info] GUI loop iteration 17521, elapsed: 658214ms, FPS: 26.6
+[2025-08-23 19:48:17.536] [main] [info] GUI loop iteration 17581, elapsed: 660223ms, FPS: 26.6
+[2025-08-23 19:48:19.547] [main] [info] GUI loop iteration 17641, elapsed: 662234ms, FPS: 26.6
+[2025-08-23 19:48:21.571] [main] [info] GUI loop iteration 17701, elapsed: 664258ms, FPS: 26.6
+[2025-08-23 19:48:23.583] [main] [info] GUI loop iteration 17761, elapsed: 666270ms, FPS: 26.7
+[2025-08-23 19:48:25.598] [main] [info] GUI loop iteration 17821, elapsed: 668285ms, FPS: 26.7
+[2025-08-23 19:48:27.608] [main] [info] GUI loop iteration 17881, elapsed: 670295ms, FPS: 26.7
+[2025-08-23 19:48:29.619] [main] [info] GUI loop iteration 17941, elapsed: 672307ms, FPS: 26.7
+[2025-08-23 19:48:31.629] [main] [info] GUI loop iteration 18001, elapsed: 674317ms, FPS: 26.7
+[2025-08-23 19:48:33.637] [main] [info] GUI loop iteration 18061, elapsed: 676324ms, FPS: 26.7
+[2025-08-23 19:48:35.650] [main] [info] GUI loop iteration 18121, elapsed: 678337ms, FPS: 26.7
+[2025-08-23 19:48:37.665] [main] [info] GUI loop iteration 18181, elapsed: 680353ms, FPS: 26.7
+[2025-08-23 19:48:39.674] [main] [info] GUI loop iteration 18241, elapsed: 682361ms, FPS: 26.7
+[2025-08-23 19:48:41.686] [main] [info] GUI loop iteration 18301, elapsed: 684373ms, FPS: 26.7
+[2025-08-23 19:48:43.697] [main] [info] GUI loop iteration 18361, elapsed: 686384ms, FPS: 26.8
+[2025-08-23 19:48:45.709] [main] [info] GUI loop iteration 18421, elapsed: 688396ms, FPS: 26.8
+[2025-08-23 19:48:47.733] [main] [info] GUI loop iteration 18481, elapsed: 690420ms, FPS: 26.8
+[2025-08-23 19:48:49.742] [main] [info] GUI loop iteration 18541, elapsed: 692429ms, FPS: 26.8
+[2025-08-23 19:48:51.754] [main] [info] GUI loop iteration 18601, elapsed: 694441ms, FPS: 26.8
+[2025-08-23 19:48:53.767] [main] [info] GUI loop iteration 18661, elapsed: 696455ms, FPS: 26.8
+[2025-08-23 19:48:55.777] [main] [info] GUI loop iteration 18721, elapsed: 698464ms, FPS: 26.8
+[2025-08-23 19:48:57.789] [main] [info] GUI loop iteration 18781, elapsed: 700476ms, FPS: 26.8
+[2025-08-23 19:48:59.801] [main] [info] GUI loop iteration 18841, elapsed: 702488ms, FPS: 26.8
+[2025-08-23 19:49:01.813] [main] [info] GUI loop iteration 18901, elapsed: 704500ms, FPS: 26.8
+[2025-08-23 19:49:03.835] [main] [info] GUI loop iteration 18961, elapsed: 706522ms, FPS: 26.8
+[2025-08-23 19:49:05.843] [main] [info] GUI loop iteration 19021, elapsed: 708531ms, FPS: 26.8
+[2025-08-23 19:49:07.852] [main] [info] GUI loop iteration 19081, elapsed: 710539ms, FPS: 26.9
+[2025-08-23 19:49:09.871] [main] [info] GUI loop iteration 19141, elapsed: 712558ms, FPS: 26.9
+[2025-08-23 19:49:11.876] [main] [info] GUI loop iteration 19201, elapsed: 714563ms, FPS: 26.9
+[2025-08-23 19:49:13.887] [main] [info] GUI loop iteration 19261, elapsed: 716575ms, FPS: 26.9
+[2025-08-23 19:49:15.905] [main] [info] GUI loop iteration 19321, elapsed: 718592ms, FPS: 26.9
+[2025-08-23 19:49:17.918] [main] [info] GUI loop iteration 19381, elapsed: 720605ms, FPS: 26.9
+[2025-08-23 19:49:19.938] [main] [info] GUI loop iteration 19441, elapsed: 722626ms, FPS: 26.9
+[2025-08-23 19:49:21.946] [main] [info] GUI loop iteration 19501, elapsed: 724633ms, FPS: 26.9
+[2025-08-23 19:49:23.955] [main] [info] GUI loop iteration 19561, elapsed: 726642ms, FPS: 26.9
+[2025-08-23 19:49:25.969] [main] [info] GUI loop iteration 19621, elapsed: 728657ms, FPS: 26.9
+[2025-08-23 19:49:27.978] [main] [info] GUI loop iteration 19681, elapsed: 730665ms, FPS: 26.9
+[2025-08-23 19:49:29.989] [main] [info] GUI loop iteration 19741, elapsed: 732676ms, FPS: 26.9
+[2025-08-23 19:49:32.004] [main] [info] GUI loop iteration 19801, elapsed: 734691ms, FPS: 27.0
+[2025-08-23 19:49:34.017] [main] [info] GUI loop iteration 19861, elapsed: 736705ms, FPS: 27.0
+[2025-08-23 19:49:36.040] [main] [info] GUI loop iteration 19921, elapsed: 738728ms, FPS: 27.0
+[2025-08-23 19:49:38.049] [main] [info] GUI loop iteration 19981, elapsed: 740736ms, FPS: 27.0
+[2025-08-23 19:49:40.060] [main] [info] GUI loop iteration 20041, elapsed: 742748ms, FPS: 27.0
+[2025-08-23 19:49:42.070] [main] [info] GUI loop iteration 20101, elapsed: 744757ms, FPS: 27.0
+[2025-08-23 19:49:44.078] [main] [info] GUI loop iteration 20161, elapsed: 746765ms, FPS: 27.0
+[2025-08-23 19:49:46.093] [main] [info] GUI loop iteration 20221, elapsed: 748780ms, FPS: 27.0
+[2025-08-23 19:49:48.101] [main] [info] GUI loop iteration 20281, elapsed: 750789ms, FPS: 27.0
+[2025-08-23 19:49:50.116] [main] [info] GUI loop iteration 20341, elapsed: 752803ms, FPS: 27.0
+[2025-08-23 19:49:52.125] [main] [info] GUI loop iteration 20401, elapsed: 754812ms, FPS: 27.0
+[2025-08-23 19:49:54.136] [main] [info] GUI loop iteration 20461, elapsed: 756824ms, FPS: 27.0
+[2025-08-23 19:49:56.147] [main] [info] GUI loop iteration 20521, elapsed: 758834ms, FPS: 27.0
+[2025-08-23 19:49:58.158] [main] [info] GUI loop iteration 20581, elapsed: 760845ms, FPS: 27.1
+[2025-08-23 19:50:00.175] [main] [info] GUI loop iteration 20641, elapsed: 762862ms, FPS: 27.1
+[2025-08-23 19:50:02.187] [main] [info] GUI loop iteration 20701, elapsed: 764874ms, FPS: 27.1
+[2025-08-23 19:50:04.207] [main] [info] GUI loop iteration 20761, elapsed: 766895ms, FPS: 27.1
+[2025-08-23 19:50:06.217] [main] [info] GUI loop iteration 20821, elapsed: 768905ms, FPS: 27.1
+[2025-08-23 19:50:08.242] [main] [info] GUI loop iteration 20881, elapsed: 770929ms, FPS: 27.1
+[2025-08-23 19:50:10.253] [main] [info] GUI loop iteration 20941, elapsed: 772941ms, FPS: 27.1
+[2025-08-23 19:50:12.277] [main] [info] GUI loop iteration 21001, elapsed: 774964ms, FPS: 27.1
+[2025-08-23 19:50:14.286] [main] [info] GUI loop iteration 21061, elapsed: 776973ms, FPS: 27.1
+[2025-08-23 19:50:16.295] [main] [info] GUI loop iteration 21121, elapsed: 778983ms, FPS: 27.1
+[2025-08-23 19:50:18.311] [main] [info] GUI loop iteration 21181, elapsed: 780998ms, FPS: 27.1
+[2025-08-23 19:50:20.322] [main] [info] GUI loop iteration 21241, elapsed: 783009ms, FPS: 27.1
+[2025-08-23 19:50:22.333] [main] [info] GUI loop iteration 21301, elapsed: 785020ms, FPS: 27.1
+[2025-08-23 19:50:24.345] [main] [info] GUI loop iteration 21361, elapsed: 787032ms, FPS: 27.1
+[2025-08-23 19:50:26.353] [main] [info] GUI loop iteration 21421, elapsed: 789040ms, FPS: 27.1
+[2025-08-23 19:50:28.365] [main] [info] GUI loop iteration 21481, elapsed: 791052ms, FPS: 27.2
+[2025-08-23 19:50:30.378] [main] [info] GUI loop iteration 21541, elapsed: 793066ms, FPS: 27.2
+[2025-08-23 19:50:32.382] [main] [info] GUI loop iteration 21601, elapsed: 795069ms, FPS: 27.2
+[2025-08-23 19:50:34.389] [main] [info] GUI loop iteration 21661, elapsed: 797076ms, FPS: 27.2
+[2025-08-23 19:50:36.394] [main] [info] GUI loop iteration 21721, elapsed: 799081ms, FPS: 27.2
+[2025-08-23 19:50:38.413] [main] [info] GUI loop iteration 21781, elapsed: 801100ms, FPS: 27.2
+[2025-08-23 19:50:40.420] [main] [info] GUI loop iteration 21841, elapsed: 803108ms, FPS: 27.2
+[2025-08-23 19:50:42.428] [main] [info] GUI loop iteration 21901, elapsed: 805115ms, FPS: 27.2
+[2025-08-23 19:50:44.447] [main] [info] GUI loop iteration 21961, elapsed: 807134ms, FPS: 27.2
+[2025-08-23 19:50:46.459] [main] [info] GUI loop iteration 22021, elapsed: 809146ms, FPS: 27.2
+[2025-08-23 19:50:48.476] [main] [info] GUI loop iteration 22081, elapsed: 811163ms, FPS: 27.2
+[2025-08-23 19:50:50.485] [main] [info] GUI loop iteration 22141, elapsed: 813172ms, FPS: 27.2
+[2025-08-23 19:50:52.492] [main] [info] GUI loop iteration 22201, elapsed: 815180ms, FPS: 27.2
+[2025-08-23 19:50:54.512] [main] [info] GUI loop iteration 22261, elapsed: 817199ms, FPS: 27.2
+[2025-08-23 19:50:56.524] [main] [info] GUI loop iteration 22321, elapsed: 819212ms, FPS: 27.2
+[2025-08-23 19:50:58.532] [main] [info] GUI loop iteration 22381, elapsed: 821219ms, FPS: 27.3
+[2025-08-23 19:51:00.549] [main] [info] GUI loop iteration 22441, elapsed: 823236ms, FPS: 27.3
+[2025-08-23 19:51:02.559] [main] [info] GUI loop iteration 22501, elapsed: 825246ms, FPS: 27.3
+[2025-08-23 19:51:04.571] [main] [info] GUI loop iteration 22561, elapsed: 827259ms, FPS: 27.3
+[2025-08-23 19:51:06.583] [main] [info] GUI loop iteration 22621, elapsed: 829270ms, FPS: 27.3
+[2025-08-23 19:51:08.593] [main] [info] GUI loop iteration 22681, elapsed: 831281ms, FPS: 27.3
+[2025-08-23 19:51:10.619] [main] [info] GUI loop iteration 22741, elapsed: 833306ms, FPS: 27.3
+[2025-08-23 19:51:12.629] [main] [info] GUI loop iteration 22801, elapsed: 835316ms, FPS: 27.3
+[2025-08-23 19:51:14.646] [main] [info] GUI loop iteration 22861, elapsed: 837333ms, FPS: 27.3
+[2025-08-23 19:51:16.659] [main] [info] GUI loop iteration 22921, elapsed: 839346ms, FPS: 27.3
+[2025-08-23 19:51:18.680] [main] [info] GUI loop iteration 22981, elapsed: 841368ms, FPS: 27.3
+[2025-08-23 19:51:20.690] [main] [info] GUI loop iteration 23041, elapsed: 843377ms, FPS: 27.3
+[2025-08-23 19:51:22.700] [main] [info] GUI loop iteration 23101, elapsed: 845387ms, FPS: 27.3
+[2025-08-23 19:51:24.714] [main] [info] GUI loop iteration 23161, elapsed: 847401ms, FPS: 27.3
+[2025-08-23 19:51:26.726] [main] [info] GUI loop iteration 23221, elapsed: 849413ms, FPS: 27.3
+[2025-08-23 19:51:28.736] [main] [info] GUI loop iteration 23281, elapsed: 851423ms, FPS: 27.3
+[2025-08-23 19:51:30.749] [main] [info] GUI loop iteration 23341, elapsed: 853436ms, FPS: 27.3
+[2025-08-23 19:51:32.760] [main] [info] GUI loop iteration 23401, elapsed: 855447ms, FPS: 27.4
+[2025-08-23 19:51:34.774] [main] [info] GUI loop iteration 23461, elapsed: 857461ms, FPS: 27.4
+[2025-08-23 19:51:36.783] [main] [info] GUI loop iteration 23521, elapsed: 859470ms, FPS: 27.4
+[2025-08-23 19:51:38.793] [main] [info] GUI loop iteration 23581, elapsed: 861480ms, FPS: 27.4
+[2025-08-23 19:51:40.800] [main] [info] GUI loop iteration 23641, elapsed: 863487ms, FPS: 27.4
+[2025-08-23 19:51:42.817] [main] [info] GUI loop iteration 23701, elapsed: 865504ms, FPS: 27.4
+[2025-08-23 19:51:44.831] [main] [info] GUI loop iteration 23761, elapsed: 867519ms, FPS: 27.4
+[2025-08-23 19:51:46.851] [main] [info] GUI loop iteration 23821, elapsed: 869539ms, FPS: 27.4
+[2025-08-23 19:51:48.860] [main] [info] GUI loop iteration 23881, elapsed: 871547ms, FPS: 27.4
+[2025-08-23 19:51:50.871] [main] [info] GUI loop iteration 23941, elapsed: 873559ms, FPS: 27.4
+[2025-08-23 19:51:52.889] [main] [info] GUI loop iteration 24001, elapsed: 875576ms, FPS: 27.4
+[2025-08-23 19:51:54.897] [main] [info] GUI loop iteration 24061, elapsed: 877585ms, FPS: 27.4
+[2025-08-23 19:51:56.907] [main] [info] GUI loop iteration 24121, elapsed: 879594ms, FPS: 27.4
+[2025-08-23 19:51:58.922] [main] [info] GUI loop iteration 24181, elapsed: 881609ms, FPS: 27.4
+[2025-08-23 19:52:00.933] [main] [info] GUI loop iteration 24241, elapsed: 883620ms, FPS: 27.4
+[2025-08-23 19:52:02.954] [main] [info] GUI loop iteration 24301, elapsed: 885641ms, FPS: 27.4
+[2025-08-23 19:52:04.968] [main] [info] GUI loop iteration 24361, elapsed: 887656ms, FPS: 27.4
+[2025-08-23 19:52:06.987] [main] [info] GUI loop iteration 24421, elapsed: 889674ms, FPS: 27.4
+[2025-08-23 19:52:08.996] [main] [info] GUI loop iteration 24481, elapsed: 891683ms, FPS: 27.5
+[2025-08-23 19:52:11.009] [main] [info] GUI loop iteration 24541, elapsed: 893696ms, FPS: 27.5
+[2025-08-23 19:52:13.019] [main] [info] GUI loop iteration 24601, elapsed: 895706ms, FPS: 27.5
+[2025-08-23 19:52:15.029] [main] [info] GUI loop iteration 24661, elapsed: 897716ms, FPS: 27.5
+[2025-08-23 19:52:17.040] [main] [info] GUI loop iteration 24721, elapsed: 899727ms, FPS: 27.5
+[2025-08-23 19:52:19.057] [main] [info] GUI loop iteration 24781, elapsed: 901744ms, FPS: 27.5
+[2025-08-23 19:52:21.067] [main] [info] GUI loop iteration 24841, elapsed: 903754ms, FPS: 27.5
+[2025-08-23 19:52:23.079] [main] [info] GUI loop iteration 24901, elapsed: 905766ms, FPS: 27.5
+[2025-08-23 19:52:25.087] [main] [info] GUI loop iteration 24961, elapsed: 907774ms, FPS: 27.5
+[2025-08-23 19:52:27.097] [main] [info] GUI loop iteration 25021, elapsed: 909784ms, FPS: 27.5
+[2025-08-23 19:52:29.113] [main] [info] GUI loop iteration 25081, elapsed: 911801ms, FPS: 27.5
+[2025-08-23 19:52:31.123] [main] [info] GUI loop iteration 25141, elapsed: 913810ms, FPS: 27.5
+[2025-08-23 19:52:33.144] [main] [info] GUI loop iteration 25201, elapsed: 915831ms, FPS: 27.5
+[2025-08-23 19:52:35.154] [main] [info] GUI loop iteration 25261, elapsed: 917841ms, FPS: 27.5
+[2025-08-23 19:52:37.161] [main] [info] GUI loop iteration 25321, elapsed: 919848ms, FPS: 27.5
+[2025-08-23 19:52:39.182] [main] [info] GUI loop iteration 25381, elapsed: 921869ms, FPS: 27.5
+[2025-08-23 19:52:41.188] [main] [info] GUI loop iteration 25441, elapsed: 923875ms, FPS: 27.5
+[2025-08-23 19:52:43.198] [main] [info] GUI loop iteration 25501, elapsed: 925885ms, FPS: 27.5
+[2025-08-23 19:52:45.214] [main] [info] GUI loop iteration 25561, elapsed: 927901ms, FPS: 27.5
+[2025-08-23 19:52:47.222] [main] [info] GUI loop iteration 25621, elapsed: 929910ms, FPS: 27.6
+[2025-08-23 19:52:49.245] [main] [info] GUI loop iteration 25681, elapsed: 931933ms, FPS: 27.6
+[2025-08-23 19:52:51.254] [main] [info] GUI loop iteration 25741, elapsed: 933942ms, FPS: 27.6
+[2025-08-23 19:52:53.266] [main] [info] GUI loop iteration 25801, elapsed: 935953ms, FPS: 27.6
+[2025-08-23 19:52:55.284] [main] [info] GUI loop iteration 25861, elapsed: 937971ms, FPS: 27.6
+[2025-08-23 19:52:57.293] [main] [info] GUI loop iteration 25921, elapsed: 939980ms, FPS: 27.6
+[2025-08-23 19:52:59.304] [main] [info] GUI loop iteration 25981, elapsed: 941991ms, FPS: 27.6
+[2025-08-23 19:53:01.318] [main] [info] GUI loop iteration 26041, elapsed: 944005ms, FPS: 27.6
+[2025-08-23 19:53:03.328] [main] [info] GUI loop iteration 26101, elapsed: 946016ms, FPS: 27.6
+[2025-08-23 19:53:05.337] [main] [info] GUI loop iteration 26161, elapsed: 948024ms, FPS: 27.6
+[2025-08-23 19:53:07.351] [main] [info] GUI loop iteration 26221, elapsed: 950038ms, FPS: 27.6
+[2025-08-23 19:53:09.364] [main] [info] GUI loop iteration 26281, elapsed: 952051ms, FPS: 27.6
+[2025-08-23 19:53:11.384] [main] [info] GUI loop iteration 26341, elapsed: 954072ms, FPS: 27.6
+[2025-08-23 19:53:13.393] [main] [info] GUI loop iteration 26401, elapsed: 956081ms, FPS: 27.6
+[2025-08-23 19:53:15.421] [main] [info] GUI loop iteration 26461, elapsed: 958108ms, FPS: 27.6
+[2025-08-23 19:53:17.435] [main] [info] GUI loop iteration 26521, elapsed: 960123ms, FPS: 27.6
+[2025-08-23 19:53:19.456] [main] [info] GUI loop iteration 26581, elapsed: 962143ms, FPS: 27.6
+[2025-08-23 19:53:21.472] [main] [info] GUI loop iteration 26641, elapsed: 964159ms, FPS: 27.6
+[2025-08-23 19:53:23.486] [main] [info] GUI loop iteration 26701, elapsed: 966173ms, FPS: 27.6
+[2025-08-23 19:53:25.500] [main] [info] GUI loop iteration 26761, elapsed: 968187ms, FPS: 27.6
+[2025-08-23 19:53:27.523] [main] [info] GUI loop iteration 26821, elapsed: 970210ms, FPS: 27.6
+[2025-08-23 19:53:29.532] [main] [info] GUI loop iteration 26881, elapsed: 972219ms, FPS: 27.6
+[2025-08-23 19:53:31.555] [main] [info] GUI loop iteration 26941, elapsed: 974242ms, FPS: 27.7
+[2025-08-23 19:53:33.570] [main] [info] GUI loop iteration 27001, elapsed: 976257ms, FPS: 27.7
+[2025-08-23 19:53:35.592] [main] [info] GUI loop iteration 27061, elapsed: 978279ms, FPS: 27.7
+[2025-08-23 19:53:37.607] [main] [info] GUI loop iteration 27121, elapsed: 980295ms, FPS: 27.7
+[2025-08-23 19:53:39.619] [main] [info] GUI loop iteration 27181, elapsed: 982306ms, FPS: 27.7
+[2025-08-23 19:53:41.636] [main] [info] GUI loop iteration 27241, elapsed: 984323ms, FPS: 27.7
+[2025-08-23 19:53:43.658] [main] [info] GUI loop iteration 27301, elapsed: 986345ms, FPS: 27.7
+[2025-08-23 19:53:45.670] [main] [info] GUI loop iteration 27361, elapsed: 988358ms, FPS: 27.7
+[2025-08-23 19:53:47.691] [main] [info] GUI loop iteration 27421, elapsed: 990378ms, FPS: 27.7
+[2025-08-23 19:53:49.697] [main] [info] GUI loop iteration 27481, elapsed: 992384ms, FPS: 27.7
+[2025-08-23 19:53:51.707] [main] [info] GUI loop iteration 27541, elapsed: 994394ms, FPS: 27.7
+[2025-08-23 19:53:53.723] [main] [info] GUI loop iteration 27601, elapsed: 996411ms, FPS: 27.7
+[2025-08-23 19:53:55.728] [main] [info] GUI loop iteration 27661, elapsed: 998415ms, FPS: 27.7
+[2025-08-23 19:53:57.738] [main] [info] GUI loop iteration 27721, elapsed: 1000426ms, FPS: 27.7
+[2025-08-23 19:53:59.744] [main] [info] GUI loop iteration 27781, elapsed: 1002432ms, FPS: 27.7
+[2025-08-23 19:54:01.758] [main] [info] GUI loop iteration 27841, elapsed: 1004445ms, FPS: 27.7
+[2025-08-23 19:54:03.768] [main] [info] GUI loop iteration 27901, elapsed: 1006455ms, FPS: 27.7
+[2025-08-23 19:54:05.788] [main] [info] GUI loop iteration 27961, elapsed: 1008475ms, FPS: 27.7
+[2025-08-23 19:54:07.798] [main] [info] GUI loop iteration 28021, elapsed: 1010486ms, FPS: 27.7
+[2025-08-23 19:54:09.810] [main] [info] GUI loop iteration 28081, elapsed: 1012497ms, FPS: 27.7
+[2025-08-23 19:54:11.821] [main] [info] GUI loop iteration 28141, elapsed: 1014508ms, FPS: 27.7
+[2025-08-23 19:54:13.834] [main] [info] GUI loop iteration 28201, elapsed: 1016521ms, FPS: 27.7
+[2025-08-23 19:54:15.847] [main] [info] GUI loop iteration 28261, elapsed: 1018535ms, FPS: 27.7
+[2025-08-23 19:54:17.858] [main] [info] GUI loop iteration 28321, elapsed: 1020545ms, FPS: 27.8
+[2025-08-23 19:54:19.872] [main] [info] GUI loop iteration 28381, elapsed: 1022560ms, FPS: 27.8
+[2025-08-23 19:54:21.883] [main] [info] GUI loop iteration 28441, elapsed: 1024570ms, FPS: 27.8
+[2025-08-23 19:54:23.891] [main] [info] GUI loop iteration 28501, elapsed: 1026578ms, FPS: 27.8
+[2025-08-23 19:54:25.897] [main] [info] GUI loop iteration 28561, elapsed: 1028584ms, FPS: 27.8
+[2025-08-23 19:54:27.904] [main] [info] GUI loop iteration 28621, elapsed: 1030592ms, FPS: 27.8
+[2025-08-23 19:54:29.924] [main] [info] GUI loop iteration 28681, elapsed: 1032611ms, FPS: 27.8
+[2025-08-23 19:54:31.935] [main] [info] GUI loop iteration 28741, elapsed: 1034622ms, FPS: 27.8
+[2025-08-23 19:54:33.943] [main] [info] GUI loop iteration 28801, elapsed: 1036630ms, FPS: 27.8
+[2025-08-23 19:54:35.961] [main] [info] GUI loop iteration 28861, elapsed: 1038648ms, FPS: 27.8
+[2025-08-23 19:54:37.975] [main] [info] GUI loop iteration 28921, elapsed: 1040663ms, FPS: 27.8
+[2025-08-23 19:54:39.993] [main] [info] GUI loop iteration 28981, elapsed: 1042680ms, FPS: 27.8
+[2025-08-23 19:54:42.004] [main] [info] GUI loop iteration 29041, elapsed: 1044691ms, FPS: 27.8
+[2025-08-23 19:54:44.015] [main] [info] GUI loop iteration 29101, elapsed: 1046702ms, FPS: 27.8
+[2025-08-23 19:54:46.031] [main] [info] GUI loop iteration 29161, elapsed: 1048718ms, FPS: 27.8
+[2025-08-23 19:54:48.040] [main] [info] GUI loop iteration 29221, elapsed: 1050727ms, FPS: 27.8
+[2025-08-23 19:54:50.048] [main] [info] GUI loop iteration 29281, elapsed: 1052735ms, FPS: 27.8
+[2025-08-23 19:54:52.066] [main] [info] GUI loop iteration 29341, elapsed: 1054753ms, FPS: 27.8
+[2025-08-23 19:54:54.077] [main] [info] GUI loop iteration 29401, elapsed: 1056764ms, FPS: 27.8
+
+GUI shutdown requested...
+[2025-08-23 19:54:55.853] [main] [info] GUI main loop ended
+[2025-08-23 19:54:55.853] [main] [info] Shutting down GUI emulator...
+[2025-08-23 19:54:55.853] [main] [info] 👋 Thanks for using M5Stack Tab5 Emulator! See you next time!
+[2025-08-23 19:54:58.853] [main] [error] Emulator shutdown timed out, forcing exit

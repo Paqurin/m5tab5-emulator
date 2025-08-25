@@ -11,6 +11,7 @@
 #include "emulator/peripherals/i2c_controller.hpp"
 #include "emulator/core/emulator_core.hpp"
 #include "emulator/utils/logging.hpp"
+#include "emulator/esp_idf/esp_idf.h"
 #include <vector>
 #include <memory>
 #include <mutex>
@@ -72,18 +73,22 @@ namespace {
         }
         
         if (!i2c_drivers[i2c_num].controller) {
-            // Get emulator core instance and retrieve I2C controller
-            LOG_DEBUG("Getting I2C controller instance for port {}", i2c_num);
-            
-            // TODO: Implement proper EmulatorCore integration
-            // For now, we'll use a placeholder - this needs integration with EmulatorCore
-            // auto emulator = EmulatorCore::get_instance();
-            // if (emulator) {
-            //     auto result = emulator->get_component<I2CController>();
-            //     if (result.has_value()) {
-            //         i2c_drivers[i2c_num].controller = result.value();
-            //     }
-            // }
+            // Get emulator core instance from ESP-IDF context
+            auto emulator = esp_idf_get_emulator_core();
+            if (emulator) {
+                LOG_DEBUG("Getting I2C controller instance for port {}", static_cast<int>(i2c_num));
+                
+                // Get I2C controller component from emulator core
+                auto i2c_shared = emulator->getComponent<I2CController>();
+                if (i2c_shared) {
+                    i2c_drivers[i2c_num].controller = i2c_shared.get();
+                    LOG_DEBUG("Successfully retrieved I2C controller from EmulatorCore");
+                } else {
+                    LOG_WARN("I2C controller not available from EmulatorCore");
+                }
+            } else {
+                LOG_WARN("EmulatorCore not available - ESP-IDF not properly initialized");
+            }
         }
         
         return i2c_drivers[i2c_num].controller;
@@ -120,19 +125,19 @@ extern "C" {
 int i2c_driver_install(i2c_port_t i2c_num, i2c_mode_t mode, size_t slv_rx_buf_len, 
                        size_t slv_tx_buf_len, int intr_alloc_flags) {
     if (!is_valid_i2c_port(i2c_num)) {
-        LOG_ERROR("i2c_driver_install: invalid I2C port {}", i2c_num);
+        LOG_ERROR("i2c_driver_install: invalid I2C port {}", static_cast<int>(i2c_num));
         return ESP_ERR_INVALID_ARG;
     }
     
     std::lock_guard<std::mutex> lock(global_i2c_mutex);
     
     if (i2c_drivers[i2c_num].installed) {
-        LOG_ERROR("i2c_driver_install: I2C driver already installed for port {}", i2c_num);
+        LOG_ERROR("i2c_driver_install: I2C driver already installed for port {}", static_cast<int>(i2c_num));
         return ESP_ERR_INVALID_STATE;
     }
     
     LOG_DEBUG("i2c_driver_install: port={}, mode={}, slv_rx_buf={}, slv_tx_buf={}, intr_flags=0x{:x}",
-              i2c_num, static_cast<int>(mode), slv_rx_buf_len, slv_tx_buf_len, intr_alloc_flags);
+              static_cast<int>(i2c_num), static_cast<int>(mode), slv_rx_buf_len, slv_tx_buf_len, intr_alloc_flags);
     
     // Initialize driver state
     i2c_drivers[i2c_num].installed = true;
@@ -140,40 +145,40 @@ int i2c_driver_install(i2c_port_t i2c_num, i2c_mode_t mode, size_t slv_rx_buf_le
     i2c_drivers[i2c_num].controller = get_i2c_controller(i2c_num);
     
     if (!i2c_drivers[i2c_num].controller) {
-        LOG_WARN("i2c_driver_install: I2C controller not available for port {} (emulation mode)", i2c_num);
+        LOG_WARN("i2c_driver_install: I2C controller not available for port {} (emulation mode)", static_cast<int>(i2c_num));
         // Continue anyway for API compatibility - actual hardware calls will be stubbed
     }
     
-    LOG_INFO("i2c_driver_install: I2C driver installed for port {}", i2c_num);
+    LOG_INFO("i2c_driver_install: I2C driver installed for port {}", static_cast<int>(i2c_num));
     return ESP_OK;
 }
 
 int i2c_driver_delete(i2c_port_t i2c_num) {
     if (!is_valid_i2c_port(i2c_num)) {
-        LOG_ERROR("i2c_driver_delete: invalid I2C port {}", i2c_num);
+        LOG_ERROR("i2c_driver_delete: invalid I2C port {}", static_cast<int>(i2c_num));
         return ESP_ERR_INVALID_ARG;
     }
     
     std::lock_guard<std::mutex> lock(global_i2c_mutex);
     
     if (!i2c_drivers[i2c_num].installed) {
-        LOG_ERROR("i2c_driver_delete: I2C driver not installed for port {}", i2c_num);
+        LOG_ERROR("i2c_driver_delete: I2C driver not installed for port {}", static_cast<int>(i2c_num));
         return ESP_ERR_INVALID_STATE;
     }
     
-    LOG_DEBUG("i2c_driver_delete: deleting I2C driver for port {}", i2c_num);
+    LOG_DEBUG("i2c_driver_delete: deleting I2C driver for port {}", static_cast<int>(i2c_num));
     
     // Reset driver state
     i2c_drivers[i2c_num].installed = false;
     i2c_drivers[i2c_num].controller = nullptr;
     
-    LOG_INFO("i2c_driver_delete: I2C driver deleted for port {}", i2c_num);
+    LOG_INFO("i2c_driver_delete: I2C driver deleted for port {}", static_cast<int>(i2c_num));
     return ESP_OK;
 }
 
 int i2c_param_config(i2c_port_t i2c_num, const i2c_config_t* i2c_conf) {
     if (!is_valid_i2c_port(i2c_num)) {
-        LOG_ERROR("i2c_param_config: invalid I2C port {}", i2c_num);
+        LOG_ERROR("i2c_param_config: invalid I2C port {}", static_cast<int>(i2c_num));
         return ESP_ERR_INVALID_ARG;
     }
     
@@ -185,7 +190,7 @@ int i2c_param_config(i2c_port_t i2c_num, const i2c_config_t* i2c_conf) {
     std::lock_guard<std::mutex> lock(i2c_drivers[i2c_num].mutex);
     
     LOG_DEBUG("i2c_param_config: port={}, mode={}, sda={}, scl={}, sda_pullup={}, scl_pullup={}",
-              i2c_num, static_cast<int>(i2c_conf->mode), i2c_conf->sda_io_num, i2c_conf->scl_io_num,
+              static_cast<int>(i2c_num), static_cast<int>(i2c_conf->mode), i2c_conf->sda_io_num, i2c_conf->scl_io_num,
               i2c_conf->sda_pullup_en, i2c_conf->scl_pullup_en);
     
     // Store configuration
@@ -200,7 +205,7 @@ int i2c_param_config(i2c_port_t i2c_num, const i2c_config_t* i2c_conf) {
         
         auto result = controller->configure(frequency, mode);
         if (!result.has_value()) {
-            LOG_ERROR("i2c_param_config: failed to configure I2C controller for port {}", i2c_num);
+            LOG_ERROR("i2c_param_config: failed to configure I2C controller for port {}", static_cast<int>(i2c_num));
             return ESP_FAIL;
         }
         
@@ -326,7 +331,7 @@ int i2c_master_read_byte(i2c_cmd_handle_t cmd_handle, uint8_t* data, i2c_ack_typ
 
 int i2c_master_cmd_begin(i2c_port_t i2c_num, i2c_cmd_handle_t cmd_handle, uint32_t ticks_to_wait) {
     if (!is_valid_i2c_port(i2c_num)) {
-        LOG_ERROR("i2c_master_cmd_begin: invalid I2C port {}", i2c_num);
+        LOG_ERROR("i2c_master_cmd_begin: invalid I2C port {}", static_cast<int>(i2c_num));
         return ESP_ERR_INVALID_ARG;
     }
     
@@ -336,7 +341,7 @@ int i2c_master_cmd_begin(i2c_port_t i2c_num, i2c_cmd_handle_t cmd_handle, uint32
     }
     
     if (!i2c_drivers[i2c_num].installed) {
-        LOG_ERROR("i2c_master_cmd_begin: I2C driver not installed for port {}", i2c_num);
+        LOG_ERROR("i2c_master_cmd_begin: I2C driver not installed for port {}", static_cast<int>(i2c_num));
         return ESP_ERR_INVALID_STATE;
     }
     
@@ -345,11 +350,11 @@ int i2c_master_cmd_begin(i2c_port_t i2c_num, i2c_cmd_handle_t cmd_handle, uint32
     auto cmd_link = reinterpret_cast<I2CCommandLink*>(cmd_handle);
     
     LOG_DEBUG("i2c_master_cmd_begin: executing {} commands on port {}, timeout={}", 
-              cmd_link->commands.size(), i2c_num, ticks_to_wait);
+              cmd_link->commands.size(), static_cast<int>(i2c_num), ticks_to_wait);
     
     I2CController* controller = get_i2c_controller(i2c_num);
     if (!controller) {
-        LOG_WARN("i2c_master_cmd_begin: I2C controller not available for port {} (emulated)", i2c_num);
+        LOG_WARN("i2c_master_cmd_begin: I2C controller not available for port {} (emulated)", static_cast<int>(i2c_num));
         // Simulate successful operation for API compatibility
         return ESP_OK;
     }
@@ -398,17 +403,17 @@ int i2c_master_cmd_begin(i2c_port_t i2c_num, i2c_cmd_handle_t cmd_handle, uint32
 
 int i2c_reset_tx_fifo(i2c_port_t i2c_num) {
     if (!is_valid_i2c_port(i2c_num)) {
-        LOG_ERROR("i2c_reset_tx_fifo: invalid I2C port {}", i2c_num);
+        LOG_ERROR("i2c_reset_tx_fifo: invalid I2C port {}", static_cast<int>(i2c_num));
         return ESP_ERR_INVALID_ARG;
     }
     
-    LOG_DEBUG("i2c_reset_tx_fifo: resetting TX FIFO for port {}", i2c_num);
+    LOG_DEBUG("i2c_reset_tx_fifo: resetting TX FIFO for port {}", static_cast<int>(i2c_num));
     
     // Reset TX FIFO in I2C controller if available
     I2CController* controller = get_i2c_controller(i2c_num);
     if (controller) {
         // TODO: Implement FIFO reset in I2C controller
-        LOG_DEBUG("i2c_reset_tx_fifo: TX FIFO reset completed for port {}", i2c_num);
+        LOG_DEBUG("i2c_reset_tx_fifo: TX FIFO reset completed for port {}", static_cast<int>(i2c_num));
     }
     
     return ESP_OK;
@@ -416,17 +421,17 @@ int i2c_reset_tx_fifo(i2c_port_t i2c_num) {
 
 int i2c_reset_rx_fifo(i2c_port_t i2c_num) {
     if (!is_valid_i2c_port(i2c_num)) {
-        LOG_ERROR("i2c_reset_rx_fifo: invalid I2C port {}", i2c_num);
+        LOG_ERROR("i2c_reset_rx_fifo: invalid I2C port {}", static_cast<int>(i2c_num));
         return ESP_ERR_INVALID_ARG;
     }
     
-    LOG_DEBUG("i2c_reset_rx_fifo: resetting RX FIFO for port {}", i2c_num);
+    LOG_DEBUG("i2c_reset_rx_fifo: resetting RX FIFO for port {}", static_cast<int>(i2c_num));
     
     // Reset RX FIFO in I2C controller if available
     I2CController* controller = get_i2c_controller(i2c_num);
     if (controller) {
         // TODO: Implement FIFO reset in I2C controller
-        LOG_DEBUG("i2c_reset_rx_fifo: RX FIFO reset completed for port {}", i2c_num);
+        LOG_DEBUG("i2c_reset_rx_fifo: RX FIFO reset completed for port {}", static_cast<int>(i2c_num));
     }
     
     return ESP_OK;
@@ -435,7 +440,7 @@ int i2c_reset_rx_fifo(i2c_port_t i2c_num) {
 int i2c_set_pin(i2c_port_t i2c_num, int sda_io_num, int scl_io_num, 
                 bool sda_pullup_en, bool scl_pullup_en, i2c_mode_t mode) {
     if (!is_valid_i2c_port(i2c_num)) {
-        LOG_ERROR("i2c_set_pin: invalid I2C port {}", i2c_num);
+        LOG_ERROR("i2c_set_pin: invalid I2C port {}", static_cast<int>(i2c_num));
         return ESP_ERR_INVALID_ARG;
     }
     
@@ -463,7 +468,7 @@ int i2c_set_pin(i2c_port_t i2c_num, int sda_io_num, int scl_io_num,
 int i2c_master_read_from_device(i2c_port_t i2c_num, uint8_t device_addr,
                                 uint8_t data_addr, uint8_t* data, size_t data_len) {
     if (!is_valid_i2c_port(i2c_num)) {
-        LOG_ERROR("i2c_master_read_from_device: invalid I2C port {}", i2c_num);
+        LOG_ERROR("i2c_master_read_from_device: invalid I2C port {}", static_cast<int>(i2c_num));
         return ESP_ERR_INVALID_ARG;
     }
     
@@ -515,7 +520,7 @@ int i2c_master_read_from_device(i2c_port_t i2c_num, uint8_t device_addr,
 int i2c_master_write_to_device(i2c_port_t i2c_num, uint8_t device_addr,
                                uint8_t data_addr, const uint8_t* data, size_t data_len) {
     if (!is_valid_i2c_port(i2c_num)) {
-        LOG_ERROR("i2c_master_write_to_device: invalid I2C port {}", i2c_num);
+        LOG_ERROR("i2c_master_write_to_device: invalid I2C port {}", static_cast<int>(i2c_num));
         return ESP_ERR_INVALID_ARG;
     }
     

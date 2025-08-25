@@ -4,6 +4,7 @@ Core Archon Workflow Principles
 The Golden Rule: Task-Driven Development with Archon
 
 MANDATORY: Always complete the full Archon task cycle before any coding:
+check for prior unfinished tasks.
 Check Current Task → Review task details and requirements
 Research for Task → Search relevant documentation and examples
 Implement the Task → Write code based on research
@@ -16,9 +17,11 @@ Update all actions to Archon
 Move tasks from "todo" → "doing" → "review" (not directly to complete)
 Maintain task descriptions and add implementation notes
 DO NOT MAKE ASSUMPTIONS - check project documentation for questions
-use the correct agents to properly repair the issues. 
+read claude.md prd.md and implementation.md for overarching goals and program structure 
+begin connecting the buttons in the menus to their proper functions
+break the task down into smaller sprints.
+use exa and ref mcp servers for any needed research
+use the appropriate team of agents to accomplish the tasks 
 if there is a function missing, attempt to create it.
-document all the related files and add the issues to archon to critical backlog, prioritize the bugs and errors relative to the operating systems core requirements.
-update claude.md when do, use exa and ref mcp servers to research
-
-
+document all related file changes made during the task. 
+cleanup the file structure and code changes when done.

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "emulator/firmware/firmware_loader.hpp"
+#include "emulator/firmware/firmware_integration.hpp"
 #include "emulator/gui/emulator_gui.hpp"
 #include "emulator/utils/types.hpp"
 #include "emulator/utils/error.hpp"
@@ -95,10 +95,15 @@ public:
 
 private:
     EmulatorGUI& gui_;
-    std::shared_ptr<firmware::FirmwareLoader> firmware_loader_;
+    std::unique_ptr<firmware::FirmwareIntegration> firmware_integration_;
     
     // Current state
     FirmwareState current_state_;
+    
+    // Event handling
+    void handle_firmware_event(firmware::FirmwareStatus status, float progress, 
+                              const std::string& message, 
+                              const firmware::FirmwareOperationResult* result);
     
     // UI components
     std::unique_ptr<ProgressDialog> progress_dialog_;

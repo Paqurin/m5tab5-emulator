@@ -24,8 +24,21 @@ namespace m5tab5::emulator {
 namespace m5tab5::emulator::firmware {
 
 // Forward declarations
-class ELFBinary;
+class ELFParser;
 class BootLoader;
+struct ParsedELF;
+struct ParsedSegment;
+
+// Forward declarations and types
+struct MappingResult {
+    Address target_address;
+    size_t size;
+    std::string region_name;
+    bool success;
+    std::string error_message;
+};
+
+class MemoryMapper;
 
 /**
  * @brief Firmware loading progress callback
@@ -166,8 +179,9 @@ private:
     std::shared_ptr<::m5tab5::emulator::EmulatorCore> emulator_core_;
 
     // Internal components
-    std::unique_ptr<ELFBinary> current_elf_binary_;
+    std::unique_ptr<ParsedELF> parsed_elf_data_;
     std::unique_ptr<BootLoader> boot_loader_;
+    std::vector<MappingResult> segment_mappings_;
 
     // State management
     std::atomic<LoadingState> loading_state_{LoadingState::IDLE};

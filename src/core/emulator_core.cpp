@@ -91,12 +91,21 @@ Result<void> EmulatorCore::initialize(const Configuration& config) {
             return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED, "Failed to initialize peripheral manager"));
         }
         
-        // Initialize graphics engine if display is enabled
+        // Initialize graphics engine if display is enabled and graphics are not disabled
         auto display_config = config.getDisplayConfig();
-        if (display_config.width > 0 && display_config.height > 0) {
+        bool graphics_enabled = true;
+        try {
+            graphics_enabled = config.getValue<bool>("graphics", "enable", true);
+        } catch (...) {
+            graphics_enabled = true; // Default to enabled if setting not found
+        }
+        
+        if (graphics_enabled && display_config.width > 0 && display_config.height > 0) {
             COMPONENT_LOG_DEBUG("Initializing graphics engine");
             graphics_engine_ = std::make_unique<GraphicsEngine>();
             RETURN_IF_ERROR(graphics_engine_->initialize(config));
+        } else {
+            COMPONENT_LOG_INFO("Graphics engine disabled - running in headless mode");
         }
         
         // Initialize plugin manager

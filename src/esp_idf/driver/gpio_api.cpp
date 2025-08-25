@@ -11,6 +11,7 @@
 #include "emulator/peripherals/gpio_controller.hpp"
 #include "emulator/core/emulator_core.hpp"
 #include "emulator/utils/logging.hpp"
+#include "emulator/esp_idf/esp_idf.h"
 
 namespace {
     using namespace m5tab5::emulator;
@@ -23,18 +24,22 @@ namespace {
         static GPIOController* gpio_controller = nullptr;
         
         if (!gpio_controller) {
-            // Get emulator core instance (this would be set up by the emulator)
-            // For now, we'll use a placeholder - this needs integration with EmulatorCore
-            LOG_DEBUG("Getting GPIO controller instance from EmulatorCore");
-            
-            // TODO: Implement proper EmulatorCore integration
-            // auto emulator = EmulatorCore::get_instance();
-            // if (emulator) {
-            //     auto result = emulator->get_component<GPIOController>();
-            //     if (result.has_value()) {
-            //         gpio_controller = result.value();
-            //     }
-            // }
+            // Get emulator core instance from ESP-IDF context
+            auto emulator = esp_idf_get_emulator_core();
+            if (emulator) {
+                LOG_DEBUG("Getting GPIO controller instance from EmulatorCore");
+                
+                // Get GPIO controller component from emulator core
+                auto gpio_shared = emulator->getComponent<GPIOController>();
+                if (gpio_shared) {
+                    gpio_controller = gpio_shared.get();
+                    LOG_DEBUG("Successfully retrieved GPIO controller from EmulatorCore");
+                } else {
+                    LOG_WARN("GPIO controller not available from EmulatorCore");
+                }
+            } else {
+                LOG_WARN("EmulatorCore not available - ESP-IDF not properly initialized");
+            }
         }
         
         return gpio_controller;

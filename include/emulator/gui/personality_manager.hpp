@@ -92,6 +92,13 @@ public:
     std::string get_idle_message() const;
     std::string get_success_celebration() const;
     
+    // Exit Experience with Delight
+    std::string get_farewell_message() const;
+    std::string get_exit_confirmation_message() const;
+    void start_farewell_sequence();
+    bool is_farewell_active() const { return farewell_active_; }
+    std::string get_current_farewell_message() const { return current_farewell_message_; };
+    
     // Animation Hooks for UI
     struct Particle {
         float x, y;
@@ -103,6 +110,7 @@ public:
     
     std::vector<Particle> get_celebration_particles() const { return celebration_particles_; }
     void clear_particles() { celebration_particles_.clear(); }
+    void spawn_farewell_particles(float x, float y);
     
 private:
     // Boot sequence state
@@ -130,6 +138,12 @@ private:
     std::chrono::steady_clock::time_point loading_start_time_;
     size_t loading_message_index_ = 0;
     
+    // Farewell sequence state
+    bool farewell_active_ = false;
+    std::string current_farewell_message_;
+    std::chrono::steady_clock::time_point farewell_start_time_;
+    size_t farewell_stage_ = 0;
+    
     std::vector<std::string> firmware_loading_messages_ = {
         "Examining ELF headers with a magnifying glass...",
         "Teaching RISC-V instructions to the CPU...",
@@ -148,6 +162,33 @@ private:
         "Translating binary to human intentions...",
         "Optimizing for maximum developer happiness...",
         "Loading with the power of positive thinking..."
+    };
+    
+    // Farewell messages for delightful exits
+    std::vector<std::string> farewell_messages_ = {
+        "Thanks for spending time with the M5Stack Tab5 Emulator!",
+        "Your code adventures were epic - see you next time!",
+        "The ESP32-P4 cores will miss you - until next boot!",
+        "Farewell, embedded explorer! Happy coding out there!",
+        "Thanks for making development delightful today!",
+        "The GPIO pins are waving goodbye! Come back soon!",
+        "May your pull-up resistors always be strong!",
+        "Until next time - keep the silicon spirits high!"
+    };
+    
+    std::vector<std::string> exit_confirmation_messages_ = {
+        "Ready to wrap up this coding session?",
+        "Time to save your progress and head out?",
+        "All done with embedded adventures for now?",
+        "Finished debugging the universe today?",
+        "Ready to let the ESP32-P4 rest?",
+        "Time to close this chapter of silicon magic?",
+        "Heading out? Thanks for the great session!",
+        "Done exploring the hardware today?",
+        "Ready to compile your memories?",
+        "Time for the GPIO pins to take a break?",
+        "Finished your embedded masterpiece?",
+        "Ready to power down gracefully?"
     };
     
     // Achievement tracking
@@ -237,6 +278,7 @@ private:
     std::string get_random_message(const std::vector<std::string>& messages) const;
     float calculate_boot_progress() const;
     void advance_loading_stage();
+    void update_farewell_sequence();
 };
 
 } // namespace m5tab5::emulator::gui

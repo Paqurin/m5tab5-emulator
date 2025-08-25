@@ -8,21 +8,35 @@
 
 #include "emulator/esp_idf/esp_idf.h"
 #include "emulator/utils/logging.hpp"
+#include "emulator/core/emulator_core.hpp"
 
 using namespace m5tab5::emulator;
 
-// Static state for tracking initialization
+// Static state for tracking initialization and EmulatorCore context
 static bool esp_idf_initialized = false;
+static EmulatorCore* global_emulator_core = nullptr;
+
+/**
+ * @brief Get the current EmulatorCore instance for ESP-IDF APIs
+ * 
+ * @return Pointer to EmulatorCore or nullptr if not initialized
+ */
+EmulatorCore* esp_idf_get_emulator_core() {
+    return global_emulator_core;
+}
 
 extern "C" {
 
-esp_err_t esp_idf_init_all(void) {
+esp_err_t esp_idf_init_all_with_core(void* emulator_core) {
     if (esp_idf_initialized) {
         LOG_WARN("esp_idf_init_all: ESP-IDF already initialized");
         return ESP_OK;
     }
     
-    LOG_INFO("esp_idf_init_all: initializing ESP-IDF emulation layer");
+    LOG_INFO("esp_idf_init_all: initializing ESP-IDF emulation layer with EmulatorCore context");
+    
+    // Store EmulatorCore instance for API access
+    global_emulator_core = static_cast<EmulatorCore*>(emulator_core);
     
     esp_err_t ret;
     
@@ -54,6 +68,11 @@ esp_err_t esp_idf_init_all(void) {
     LOG_INFO("ESP-IDF Emulation Version: {}", esp_idf_get_emulation_version());
     
     return ESP_OK;
+}
+
+esp_err_t esp_idf_init_all(void) {
+    LOG_WARN("esp_idf_init_all: initializing without EmulatorCore context - APIs will work in stub mode");
+    return esp_idf_init_all_with_core(nullptr);
 }
 
 esp_err_t esp_idf_deinit_all(void) {

@@ -40,6 +40,7 @@ public:
     // Additional drawing methods
     Result<void> draw_rect(i32 x, i32 y, u32 width, u32 height, u32 color);
     Result<void> draw_text(i32 x, i32 y, const std::string& text, u32 color);
+    Result<void> render_framebuffer(i32 x, i32 y, u32 dest_width, u32 dest_height, const Framebuffer* framebuffer);
 
 private:
     bool initialized_;
@@ -65,6 +66,7 @@ private:
     Result<void> create_renderer();
     Result<void> create_texture();
     void cleanup();
+    void draw_bitmap_char(i32 x, i32 y, char c, u32 color);
 };
 
 }  // namespace m5tab5::emulator

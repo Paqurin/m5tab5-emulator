@@ -597,13 +597,19 @@ u32 MenuBar::calculate_text_width(const std::string& text) {
 }
 
 void MenuBar::draw_text_centered(const std::string& text, u32 x, u32 y, u32 width, u32 color) {
-    if (!renderer_) return;
+    if (!renderer_) {
+        LOG_ERROR("*** MENU draw_text_centered: renderer is null!");
+        return;
+    }
     
     u32 text_width = calculate_text_width(text);
     u32 text_x = x + (width - text_width) / 2;
     u32 text_y = y + (MENU_HEIGHT - 12) / 2; // Center vertically
     
-    renderer_->draw_text(text_x, text_y, text, color);
+    auto result = renderer_->draw_text(text_x, text_y, text, color);
+    if (!result.has_value()) {
+        LOG_WARN("Menu text render failed for '{}': {}", text, result.error().to_string());
+    }
 }
 
 bool MenuBar::is_point_in_rect(i32 px, i32 py, i32 x, i32 y, u32 w, u32 h) {

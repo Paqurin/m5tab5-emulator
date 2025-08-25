@@ -1,0 +1,109 @@
+[  9%] Built target spdlog
+[ 87%] Built target m5tab5-emulator-core
+[ 97%] Built target m5tab5-gui-lib
+[ 98%] Building CXX object CMakeFiles/m5tab5-emulator-gui.dir/main_gui.cpp.o
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/main_gui.cpp: In function ‘bool initialize_gui(int, int)’:
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/main_gui.cpp:215:11: warning: attribute ignored in declaration of ‘struct initialize_gui(int, int)::DummyMainWindow’ [-Wattributes]
+  215 |         } [[maybe_unused]] dummy_window;
+      |           ^
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/main_gui.cpp:215:11: note: attribute for ‘struct initialize_gui(int, int)::DummyMainWindow’ must follow the ‘struct’ keyword
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/main_gui.cpp:215:28: warning: unused variable ‘dummy_window’ [-Wunused-variable]
+  215 |         } [[maybe_unused]] dummy_window;
+      |                            ^~~~~~~~~~~~
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/main_gui.cpp: In function ‘int main(int, char**)’:
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/main_gui.cpp:1711:60: warning: capture of variable ‘emulator’ with non-automatic storage duration
+ 1711 |             auto future = std::async(std::launch::async, [&emulator]() -> Result<void> {
+      |                                                            ^~~~~~~~
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/main_gui.cpp:36:31: note: ‘std::unique_ptr<m5tab5::emulator::EmulatorCore> emulator’ declared here
+   36 | std::unique_ptr<EmulatorCore> emulator;
+      |                               ^~~~~~~~
+In file included from /home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/build-debug/_deps/spdlog-src/include/spdlog/fmt/fmt.h:27,
+                 from /home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/build-debug/_deps/spdlog-src/include/spdlog/common.h:50,
+                 from /home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/build-debug/_deps/spdlog-src/include/spdlog/spdlog.h:12,
+                 from /home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/include/emulator/utils/logging.hpp:5,
+                 from /home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/main_gui.cpp:14:
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/build-debug/_deps/spdlog-src/include/spdlog/fmt/bundled/core.h: In instantiation of ‘constexpr fmt::v9::detail::value<Context> fmt::v9::detail::make_value(T&&) [with Context = fmt::v9::basic_format_context<fmt::v9::appender, char>; T = std::__cxx11::basic_string<char>&]’:
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/build-debug/_deps/spdlog-src/include/spdlog/fmt/bundled/core.h:1777:29:   required from ‘constexpr fmt::v9::detail::value<Context> fmt::v9::detail::make_arg(T&&) [with bool IS_PACKED = true; Context = fmt::v9::basic_format_context<fmt::v9::appender, char>; type <anonymous> = fmt::v9::detail::type::string_type; T = std::__cxx11::basic_string<char>&; typename std::enable_if<IS_PACKED, int>::type <anonymous> = 0]’
+ 1777 |   return make_value<Context>(val);
+      |          ~~~~~~~~~~~~~~~~~~~^~~~~
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/build-debug/_deps/spdlog-src/include/spdlog/fmt/bundled/core.h:1901:77:   required from ‘constexpr fmt::v9::format_arg_store<Context, Args>::format_arg_store(T&& ...) [with T = {std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&}; Context = fmt::v9::basic_format_context<fmt::v9::appender, char>; Args = {std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >}]’
+ 1899 |         data_{detail::make_arg<
+      |               ~~~~~~~~~~~~~~~~~                                              
+ 1900 |             is_packed, Context,
+      |             ~~~~~~~~~~~~~~~~~~~                                              
+ 1901 |             detail::mapped_type_constant<remove_cvref_t<T>, Context>::value>(
+      |             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+ 1902 |             FMT_FORWARD(args))...} {
+      |             ~~~~~~~~~~~~~~~~~~                                               
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/build-debug/_deps/spdlog-src/include/spdlog/fmt/bundled/core.h:1918:31:   required from ‘void spdlog::logger::log_(spdlog::source_loc, spdlog::level::level_enum, spdlog::string_view_t, Args&& ...) [with Args = {std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&}; spdlog::string_view_t = fmt::v9::basic_string_view<char>]’
+ 1918 |   return {FMT_FORWARD(args)...};
+      |                               ^
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/build-debug/_deps/spdlog-src/include/spdlog/logger.h:90:13:   required from ‘void spdlog::logger::log(spdlog::source_loc, spdlog::level::level_enum, fmt::v9::format_string<T ...>, Args&& ...) [with Args = {std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&}; fmt::v9::format_string<T ...> = fmt::v9::basic_format_string<char, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&>]’
+   90 |         log_(loc, lvl, details::to_string_view(fmt), std::forward<Args>(args)...);
+      |         ~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/build-debug/_deps/spdlog-src/include/spdlog/logger.h:96:12:   required from ‘void spdlog::logger::log(spdlog::level::level_enum, fmt::v9::format_string<T ...>, Args&& ...) [with Args = {std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&}; fmt::v9::format_string<T ...> = fmt::v9::basic_format_string<char, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&>]’
+   96 |         log(source_loc{}, lvl, fmt, std::forward<Args>(args)...);
+      |         ~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/build-debug/_deps/spdlog-src/include/spdlog/logger.h:170:12:   required from ‘void spdlog::logger::error(fmt::v9::format_string<T ...>, Args&& ...) [with Args = {std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&}; fmt::v9::format_string<T ...> = fmt::v9::basic_format_string<char, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&>]’
+  170 |         log(level::err, fmt, std::forward<Args>(args)...);
+      |         ~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/include/emulator/utils/logging.hpp:94:26:   required from ‘static void m5tab5::emulator::Logger::error(const std::string&, Args&& ...) [with Args = {std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&}; std::string = std::__cxx11::basic_string<char>]’
+   94 |             logger->error(fmt::runtime(format), std::forward<Args>(args)...);
+      |             ~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/main_gui.cpp:138:9:   required from here
+  132 | #define LOG_ERROR(...) ::m5tab5::emulator::Logger::error(__VA_ARGS__)
+      |                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/build-debug/_deps/spdlog-src/include/spdlog/logger.h:374:75:   in ‘constexpr’ expansion of ‘fmt::v9::make_format_args<>(args#0)’
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/build-debug/_deps/spdlog-src/include/spdlog/fmt/bundled/core.h:1735:15: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+ 1735 |   const auto& arg = arg_mapper<Context>().map(FMT_FORWARD(val));
+      |               ^~~
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/build-debug/_deps/spdlog-src/include/spdlog/fmt/bundled/core.h:1735:46: note: the temporary was destroyed at the end of the full expression ‘fmt::v9::detail::arg_mapper<fmt::v9::basic_format_context<fmt::v9::appender, char> >().fmt::v9::detail::arg_mapper<fmt::v9::basic_format_context<fmt::v9::appender, char> >::map<std::__cxx11::basic_string<char> >((*(const std::__cxx11::basic_string<char>*)(& val)))’
+ 1735 |   const auto& arg = arg_mapper<Context>().map(FMT_FORWARD(val));
+      |                     ~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/build-debug/_deps/spdlog-src/include/spdlog/fmt/bundled/core.h: In instantiation of ‘constexpr fmt::v9::detail::value<Context> fmt::v9::detail::make_value(T&&) [with Context = fmt::v9::basic_format_context<fmt::v9::appender, char>; T = const std::__cxx11::basic_string<char>&]’:
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/build-debug/_deps/spdlog-src/include/spdlog/fmt/bundled/core.h:1777:29:   required from ‘constexpr fmt::v9::detail::value<Context> fmt::v9::detail::make_arg(T&&) [with bool IS_PACKED = true; Context = fmt::v9::basic_format_context<fmt::v9::appender, char>; type <anonymous> = fmt::v9::detail::type::string_type; T = const std::__cxx11::basic_string<char>&; typename std::enable_if<IS_PACKED, int>::type <anonymous> = 0]’
+ 1777 |   return make_value<Context>(val);
+      |          ~~~~~~~~~~~~~~~~~~~^~~~~
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/build-debug/_deps/spdlog-src/include/spdlog/fmt/bundled/core.h:1901:77:   required from ‘constexpr fmt::v9::format_arg_store<Context, Args>::format_arg_store(T&& ...) [with T = {const std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, const std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&}; Context = fmt::v9::basic_format_context<fmt::v9::appender, char>; Args = {std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >}]’
+ 1899 |         data_{detail::make_arg<
+      |               ~~~~~~~~~~~~~~~~~                                              
+ 1900 |             is_packed, Context,
+      |             ~~~~~~~~~~~~~~~~~~~                                              
+ 1901 |             detail::mapped_type_constant<remove_cvref_t<T>, Context>::value>(
+      |             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+ 1902 |             FMT_FORWARD(args))...} {
+      |             ~~~~~~~~~~~~~~~~~~                                               
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/build-debug/_deps/spdlog-src/include/spdlog/fmt/bundled/core.h:1918:31:   required from ‘void spdlog::logger::log_(spdlog::source_loc, spdlog::level::level_enum, spdlog::string_view_t, Args&& ...) [with Args = {const std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, const std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&}; spdlog::string_view_t = fmt::v9::basic_string_view<char>]’
+ 1918 |   return {FMT_FORWARD(args)...};
+      |                               ^
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/build-debug/_deps/spdlog-src/include/spdlog/logger.h:90:13:   required from ‘void spdlog::logger::log(spdlog::source_loc, spdlog::level::level_enum, fmt::v9::format_string<T ...>, Args&& ...) [with Args = {const std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, const std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&}; fmt::v9::format_string<T ...> = fmt::v9::basic_format_string<char, const std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, const std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&>]’
+   90 |         log_(loc, lvl, details::to_string_view(fmt), std::forward<Args>(args)...);
+      |         ~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/build-debug/_deps/spdlog-src/include/spdlog/logger.h:96:12:   required from ‘void spdlog::logger::log(spdlog::level::level_enum, fmt::v9::format_string<T ...>, Args&& ...) [with Args = {const std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, const std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&}; fmt::v9::format_string<T ...> = fmt::v9::basic_format_string<char, const std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, const std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&>]’
+   96 |         log(source_loc{}, lvl, fmt, std::forward<Args>(args)...);
+      |         ~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/build-debug/_deps/spdlog-src/include/spdlog/logger.h:158:12:   required from ‘void spdlog::logger::info(fmt::v9::format_string<T ...>, Args&& ...) [with Args = {const std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, const std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&}; fmt::v9::format_string<T ...> = fmt::v9::basic_format_string<char, const std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, const std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&>]’
+  158 |         log(level::info, fmt, std::forward<Args>(args)...);
+      |         ~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/include/emulator/utils/logging.hpp:66:25:   required from ‘static void m5tab5::emulator::Logger::info(const std::string&, Args&& ...) [with Args = {const std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, const std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&}; std::string = std::__cxx11::basic_string<char>]’
+   66 |             logger->info(fmt::runtime(format), std::forward<Args>(args)...);
+      |             ~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/main_gui.cpp:1397:5:   required from here
+  130 | #define LOG_INFO(...) ::m5tab5::emulator::Logger::info(__VA_ARGS__)
+      |                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/build-debug/_deps/spdlog-src/include/spdlog/logger.h:374:75:   in ‘constexpr’ expansion of ‘fmt::v9::make_format_args<>(args#0, args#1)’
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/build-debug/_deps/spdlog-src/include/spdlog/fmt/bundled/core.h:1735:15: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+ 1735 |   const auto& arg = arg_mapper<Context>().map(FMT_FORWARD(val));
+      |               ^~~
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/build-debug/_deps/spdlog-src/include/spdlog/fmt/bundled/core.h:1735:46: note: the temporary was destroyed at the end of the full expression ‘fmt::v9::detail::arg_mapper<fmt::v9::basic_format_context<fmt::v9::appender, char> >().fmt::v9::detail::arg_mapper<fmt::v9::basic_format_context<fmt::v9::appender, char> >::map<std::__cxx11::basic_string<char> >((* & val))’
+ 1735 |   const auto& arg = arg_mapper<Context>().map(FMT_FORWARD(val));
+      |                     ~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/main_gui.cpp: In function ‘bool handle_gui_events()’:
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/main_gui.cpp:854:25: warning: this statement may fall through [-Wimplicit-fallthrough=]
+  854 |                         }
+      |                         ^
+/home/paqurin/Documents/PlatformIO/Projects/m5tab5-emulator/main_gui.cpp:856:21: note: here
+  856 |                     case SDLK_F1:
+      |                     ^~~~
+[100%] Linking CXX executable m5tab5-emulator-gui
+[100%] Built target m5tab5-emulator-gui

@@ -43,6 +43,10 @@ void PersonalityManager::update() {
         update_loading_message();
     }
     
+    if (farewell_active_) {
+        update_farewell_sequence();
+    }
+    
     update_particles();
 }
 
@@ -311,6 +315,30 @@ std::string PersonalityManager::get_success_celebration() const {
     return get_random_message(success_messages_);
 }
 
+// Exit Experience with Delightful Farewell
+std::string PersonalityManager::get_farewell_message() const {
+    return get_random_message(farewell_messages_);
+}
+
+std::string PersonalityManager::get_exit_confirmation_message() const {
+    return get_random_message(exit_confirmation_messages_);
+}
+
+void PersonalityManager::start_farewell_sequence() {
+    farewell_active_ = true;
+    farewell_start_time_ = std::chrono::steady_clock::now();
+    farewell_stage_ = 0;
+    current_farewell_message_ = get_farewell_message();
+    
+    LOG_INFO("Starting delightful farewell sequence: {}", current_farewell_message_);
+    
+    // Spawn farewell particles for a memorable exit
+    spawn_farewell_particles(700.0f, 350.0f);
+    
+    // Check for persistence achievement
+    unlock_achievement(Achievement::PERSISTENCE_CHAMPION);
+}
+
 // Particle System for Celebrations
 void PersonalityManager::spawn_celebration_particles(float x, float y, u32 color) {
     const int particle_count = 20;
@@ -337,6 +365,36 @@ void PersonalityManager::spawn_celebration_particles(float x, float y, u32 color
     }
     
     LOG_DEBUG("Spawned {} celebration particles at ({}, {})", particle_count, x, y);
+}
+
+void PersonalityManager::spawn_farewell_particles(float x, float y) {
+    const int particle_count = 30; // More particles for a memorable farewell
+    
+    // Use M5Stack colors for the farewell: Orange, Blue, and White
+    std::vector<u32> farewell_colors = {0xFF6600, 0x0066CC, 0xFFFFFF, 0x4CAF50};
+    
+    for (int i = 0; i < particle_count; ++i) {
+        Particle particle;
+        
+        // Create a gentle upward fountain effect
+        float angle = (float_dist_(rng_) * 0.8f + 0.1f) * M_PI; // 0.1π to 0.9π (upward arc)
+        float speed = 50.0f + float_dist_(rng_) * 100.0f;
+        
+        particle.x = x + (float_dist_(rng_) - 0.5f) * 40.0f; // Spread around spawn point
+        particle.y = y;
+        
+        particle.vx = std::cos(angle) * speed;
+        particle.vy = -std::abs(std::sin(angle) * speed); // Ensure upward motion
+        
+        // Cycle through farewell colors
+        particle.color = farewell_colors[i % farewell_colors.size()];
+        particle.life = 2.0f + float_dist_(rng_) * 2.0f; // Longer life for farewell
+        particle.size = 3.0f + float_dist_(rng_) * 3.0f; // Bigger particles
+        
+        celebration_particles_.push_back(particle);
+    }
+    
+    LOG_DEBUG("Spawned {} farewell particles for a delightful goodbye", particle_count);
 }
 
 void PersonalityManager::update_particles() {
@@ -367,6 +425,31 @@ void PersonalityManager::update_particles() {
         std::remove_if(celebration_particles_.begin(), celebration_particles_.end(),
             [](const Particle& p) { return p.life <= 0.0f; }),
         celebration_particles_.end());
+}
+
+void PersonalityManager::update_farewell_sequence() {
+    if (!farewell_active_) return;
+    
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - farewell_start_time_).count();
+    
+    // Update farewell message every 1.5 seconds for variety
+    size_t target_stage = elapsed / 1500;
+    if (target_stage > farewell_stage_ && target_stage < 3) {
+        farewell_stage_ = target_stage;
+        current_farewell_message_ = get_farewell_message();
+        
+        // Spawn additional particles for each stage
+        spawn_farewell_particles(600.0f + farewell_stage_ * 50.0f, 300.0f);
+        
+        LOG_INFO("Farewell stage {}: {}", farewell_stage_, current_farewell_message_);
+    }
+    
+    // Complete farewell after 4.5 seconds
+    if (elapsed > 4500) {
+        farewell_active_ = false;
+        LOG_INFO("Farewell sequence completed - it's been wonderful!");
+    }
 }
 
 // Helper Functions

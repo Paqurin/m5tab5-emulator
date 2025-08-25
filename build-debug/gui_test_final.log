@@ -1,33 +1,1195 @@
-[2025-08-23 16:09:45.120] [main] [info] Logger initialized with level: 1
-[2025-08-23 16:09:45.120] [main] [info] 🎯 M5Stack Tab5 Emulator - Professional GUI Mode with Personality!
-[2025-08-23 16:09:45.120] [main] [info] 📟 Version: 1.0.0 - Authentic ESP32-P4 Development Environment
-[2025-08-23 16:09:45.120] [main] [info] 🌟 Ready to make embedded development delightful!
-[2025-08-23 16:09:45.120] [main] [info] 🎉 Welcome to M5Stack Tab5 Emulator - Where ESP32-P4 Dreams Come True! 🎉
-[2025-08-23 16:09:45.120] [main] [info] Initializing SDL video and timer subsystems...
-[2025-08-23 16:09:45.151] [main] [info] SDL video and timer subsystems initialized successfully
-[2025-08-23 16:09:45.151] [main] [info] Using internal SDL2 headers - limited driver info available
-[2025-08-23 16:09:45.151] [main] [info] Creating SDL renderer (1400x900)...
-[2025-08-23 16:09:45.326] [main] [info] SDL renderer initialized successfully - Window: 1400x900
-[2025-08-23 16:09:45.326] [main] [info] PersonalityManager initializing - preparing delightful experiences!
-[2025-08-23 16:09:45.326] [main] [debug] PersonalityManager initialized with 6 easter eggs and 10 achievements
-[2025-08-23 16:09:45.326] [main] [info] Starting delightful boot sequence!
-[2025-08-23 16:09:45.326] [main] [info] 🚀 Starting delightful M5Stack Tab5 boot sequence!
-[2025-08-23 16:09:45.326] [main] [info] ✨ GUI components initialized with personality and charm!
-[2025-08-23 16:09:45.326] [main] [info] GUI initialized successfully
-[2025-08-23 16:09:45.327] [main] [info] Configuration file not found, using defaults
-[2025-08-23 16:09:45.450] [main] [info] Emulator initialized successfully
-[2025-08-23 16:09:45.450] [main] [info] Validating GUI state before main loop...
-[2025-08-23 16:09:45.450] [main] [info]   - Emulator initialized: true
-[2025-08-23 16:09:45.450] [main] [info]   - GUI renderer ready: true
-[2025-08-23 16:09:45.450] [main] [info]   - Personality manager: true
-[2025-08-23 16:09:45.450] [main] [info]   - Shutdown requested: false
-[2025-08-23 16:09:45.454] [main] [info] Starting GUI main loop
-[2025-08-23 16:09:45.455] [main] [info] Initial GUI state - shutdown_requested: false, gui_renderer valid: true
-[2025-08-23 16:09:45.455] [main] [info] GUI loop iteration 1, elapsed: 0ms, FPS: inf
-[2025-08-23 16:09:45.456] [main] [info] SDL Event #1: type=512, window_id=1
-[2025-08-23 16:09:45.456] [main] [info] Window close event - requesting shutdown
-[2025-08-23 16:09:45.456] [main] [info] GUI events requested shutdown at iteration 1
-[2025-08-23 16:09:45.456] [main] [info] GUI main loop ended
-[2025-08-23 16:09:45.456] [main] [info] Shutting down GUI emulator...
-[2025-08-23 16:09:45.456] [main] [info] 👋 Thanks for using M5Stack Tab5 Emulator! See you next time!
-[2025-08-23 16:09:48.456] [main] [error] Emulator shutdown timed out, forcing exit
+[2025-08-24 11:30:44.930] [main] [info] Logger initialized with level: 2
+[2025-08-24 11:30:44.930] [main] [info] 🎯 M5Stack Tab5 Emulator - Professional GUI Mode with Personality!
+[2025-08-24 11:30:44.930] [main] [info] 📟 Version: 1.0.0 - Authentic ESP32-P4 Development Environment
+[2025-08-24 11:30:44.930] [main] [info] 🌟 Ready to make embedded development delightful!
+[2025-08-24 11:30:44.930] [main] [info] 🎉 Welcome to M5Stack Tab5 Emulator - Where ESP32-P4 Dreams Come True! 🎉
+[2025-08-24 11:30:44.930] [main] [info] Initializing SDL video and timer subsystems...
+[2025-08-24 11:30:44.955] [main] [info] SDL video and timer subsystems initialized successfully
+[2025-08-24 11:30:44.955] [main] [info] Using internal SDL2 headers - limited driver info available
+[2025-08-24 11:30:44.955] [main] [info] Creating SDL renderer (1400x900)...
+[2025-08-24 11:30:45.110] [main] [info] SDL renderer initialized successfully - Window: 1400x900
+[2025-08-24 11:30:45.110] [main] [info] PersonalityManager initializing - preparing delightful experiences!
+[2025-08-24 11:30:45.110] [main] [info] Starting delightful boot sequence!
+[2025-08-24 11:30:45.110] [main] [info] 🚀 Starting delightful M5Stack Tab5 boot sequence!
+[2025-08-24 11:30:45.110] [main] [info] 🎮 Initializing professional menu bar with M5Stack aesthetic
+[2025-08-24 11:30:45.110] [main] [info] ✨ Menu bar initialized with 7 menus and 21 shortcuts
+[2025-08-24 11:30:45.110] [main] [info] Achievement Unlocked: First Contact - Welcome to the M5Stack Tab5 Emulator! Your journey in ESP32-P4 development begins now.
+[2025-08-24 11:30:45.110] [main] [info] 🎮 Menu bar initialized with professional M5Stack aesthetic
+[2025-08-24 11:30:45.110] [main] [info] ✨ GUI components initialized with personality and charm!
+[2025-08-24 11:30:45.110] [main] [info] GUI initialized successfully
+[2025-08-24 11:30:45.110] [main] [info] Configuration file not found, using defaults
+[2025-08-24 11:30:45.203] [main] [info] Emulator initialized successfully
+[2025-08-24 11:30:45.203] [main] [info] Validating GUI state before main loop...
+[2025-08-24 11:30:45.203] [main] [info]   - Emulator initialized: true
+[2025-08-24 11:30:45.203] [main] [info]   - GUI renderer ready: true
+[2025-08-24 11:30:45.203] [main] [info]   - Personality manager: true
+[2025-08-24 11:30:45.203] [main] [info]   - Shutdown requested: false
+[2025-08-24 11:30:45.204] [main] [info] Starting GUI main loop
+[2025-08-24 11:30:45.204] [main] [info] Initial GUI state - shutdown_requested: false, gui_renderer valid: true
+[2025-08-24 11:30:45.204] [main] [info] GUI loop iteration 1, elapsed: 0ms, FPS: inf
+[2025-08-24 11:30:45.206] [main] [info] SDL Event #1: type=512, window_id=1, startup_elapsed=0ms
+[2025-08-24 11:30:45.206] [main] [info] SDL Event #2: type=512, window_id=1, startup_elapsed=0ms
+[2025-08-24 11:30:45.206] [main] [info] SDL Event #3: type=512, window_id=1, startup_elapsed=0ms
+[2025-08-24 11:30:45.206] [main] [info] SDL Event #4: type=512, window_id=1, startup_elapsed=0ms
+[2025-08-24 11:30:45.206] [main] [info] SDL Event #5: type=512, window_id=1, startup_elapsed=0ms
+[2025-08-24 11:30:45.206] [main] [info] SDL Event #6: type=512, window_id=1, startup_elapsed=0ms
+[2025-08-24 11:30:45.206] [main] [info] SDL Event #7: type=512, window_id=1, startup_elapsed=0ms
+[2025-08-24 11:30:45.206] [main] [info] SDL Event #8: type=512, window_id=1, startup_elapsed=0ms
+[2025-08-24 11:30:45.206] [main] [info] SDL Event #9: type=512, window_id=1, startup_elapsed=0ms
+[2025-08-24 11:30:45.206] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.206] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.206] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.206] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.206] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:45.206] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.206] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.206] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.206] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.206] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.206] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.206] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.206] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.206] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.206] [main] [info] render_emulator_display() call #1
+[2025-08-24 11:30:45.238] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.238] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.238] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.238] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.238] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:45.238] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.238] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.238] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.238] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.238] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.238] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.238] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.238] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.238] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.238] [main] [info] render_emulator_display() call #2
+[2025-08-24 11:30:45.271] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.271] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.271] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.271] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.271] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:45.271] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.271] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.271] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.271] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.271] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.271] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.271] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.271] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.271] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.271] [main] [info] render_emulator_display() call #3
+[2025-08-24 11:30:45.305] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.305] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.305] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.305] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.305] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:45.305] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.305] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.305] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.305] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.305] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.305] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.305] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.305] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.305] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.305] [main] [info] render_emulator_display() call #4
+[2025-08-24 11:30:45.339] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.339] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.339] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.339] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.339] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:45.339] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.339] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.339] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.339] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.339] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.339] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.339] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.339] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.339] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.339] [main] [info] render_emulator_display() call #5
+[2025-08-24 11:30:45.373] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.373] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.373] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.373] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.373] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:45.373] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.373] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.373] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.373] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.373] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.373] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.373] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.373] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.373] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.373] [main] [info] render_emulator_display() call #6
+[2025-08-24 11:30:45.407] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.407] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.407] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.407] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.407] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:45.407] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.407] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.407] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.407] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.407] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.407] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.407] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.407] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.407] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.407] [main] [info] render_emulator_display() call #7
+[2025-08-24 11:30:45.441] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.441] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.441] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.441] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.441] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:45.441] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.441] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.441] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.441] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.441] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.441] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.441] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.441] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.441] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.441] [main] [info] render_emulator_display() call #8
+[2025-08-24 11:30:45.475] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.475] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.475] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.475] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.475] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:45.475] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.475] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.475] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.475] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.475] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.475] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.475] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.475] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.475] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.475] [main] [info] render_emulator_display() call #9
+[2025-08-24 11:30:45.509] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.509] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.509] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.509] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.509] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:45.509] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.509] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.509] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.509] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.509] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.509] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.509] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.509] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.509] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.509] [main] [info] render_emulator_display() call #10
+[2025-08-24 11:30:45.542] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.542] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.542] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.542] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.542] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:45.542] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.542] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.543] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.543] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.543] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.543] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.543] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.543] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.543] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.576] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.576] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.576] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.576] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.576] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:45.576] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.576] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.576] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.576] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.576] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.576] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.576] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.576] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.576] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.610] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.610] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.610] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.610] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.610] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:45.610] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.610] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.610] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.610] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.610] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.610] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.610] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.610] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.610] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.644] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.644] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.644] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.644] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.644] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:45.644] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.644] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.644] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.644] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.644] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.644] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.644] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.644] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.644] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.679] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.679] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.679] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.679] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.679] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:45.679] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.679] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.679] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.679] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.679] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.679] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.679] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.679] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.679] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.712] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.712] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.712] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.712] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.712] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:45.712] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.712] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.712] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.712] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.712] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.712] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.712] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.712] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.712] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.745] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.745] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.745] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.745] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.745] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:45.745] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.745] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.745] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.745] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.745] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.745] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.745] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.745] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.745] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.778] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.779] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.779] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.779] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.779] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:45.779] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.779] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.779] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.779] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.779] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.779] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.779] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.779] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.779] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.812] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.812] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.812] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.812] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.812] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:45.812] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.812] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.812] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.812] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.812] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.812] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.812] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.812] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.812] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.846] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.846] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.846] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.846] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.846] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:45.846] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.846] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.846] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.846] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.846] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.846] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.846] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.846] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.846] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.880] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.880] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.880] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.880] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.880] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:45.880] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.880] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.880] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.880] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.880] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.880] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.880] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.880] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.880] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.913] [main] [info] Boot stage 1: Initializing ESP32-P4 dual cores @ 400MHz...
+[2025-08-24 11:30:45.913] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.913] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.913] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.913] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.913] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:45.913] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.913] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.913] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.913] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.913] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.913] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.913] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.913] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.913] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.947] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.947] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.947] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.947] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.947] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:45.947] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.947] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.947] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.947] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.948] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.948] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.948] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.948] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.948] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.981] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.981] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.981] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.981] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.981] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:45.981] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.981] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.981] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.981] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.981] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.981] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:45.981] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:45.981] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:45.981] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.015] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.015] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.015] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.015] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.015] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.015] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.015] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.015] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.015] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.015] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.015] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.015] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.015] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.015] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.048] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.048] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.048] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.048] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.048] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.048] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.048] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.048] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.048] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.048] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.048] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.048] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.048] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.048] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.081] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.082] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.082] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.082] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.082] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.082] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.082] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.082] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.082] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.082] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.082] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.082] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.082] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.082] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.115] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.115] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.115] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.115] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.115] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.115] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.115] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.115] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.115] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.115] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.115] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.115] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.115] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.115] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.148] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.148] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.148] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.148] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.148] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.148] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.148] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.148] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.148] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.148] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.148] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.148] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.148] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.148] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.182] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.182] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.182] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.182] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.182] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.182] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.182] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.182] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.182] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.182] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.182] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.182] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.182] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.182] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.215] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.215] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.215] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.215] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.215] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.215] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.215] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.215] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.215] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.215] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.215] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.215] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.215] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.215] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.248] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.248] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.248] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.249] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.249] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.249] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.249] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.249] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.249] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.249] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.249] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.249] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.249] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.249] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.283] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.283] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.283] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.283] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.283] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.283] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.283] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.283] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.283] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.283] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.283] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.283] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.283] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.283] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.316] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.316] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.316] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.316] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.316] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.316] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.316] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.316] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.316] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.316] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.316] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.316] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.316] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.316] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.349] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.349] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.349] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.349] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.349] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.349] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.349] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.349] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.349] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.349] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.349] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.349] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.349] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.349] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.382] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.382] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.382] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.382] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.382] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.383] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.383] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.383] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.383] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.383] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.383] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.383] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.383] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.383] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.416] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.416] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.416] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.416] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.416] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.416] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.416] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.416] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.416] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.416] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.416] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.416] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.416] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.416] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.449] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.449] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.449] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.449] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.449] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.449] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.449] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.449] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.449] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.449] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.449] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.449] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.449] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.449] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.482] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.482] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.482] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.482] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.482] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.482] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.482] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.482] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.482] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.482] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.482] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.482] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.482] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.482] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.515] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.516] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.516] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.516] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.516] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.516] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.516] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.516] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.516] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.516] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.516] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.516] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.516] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.516] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.549] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.549] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.549] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.549] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.549] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.549] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.549] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.549] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.549] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.549] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.549] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.549] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.549] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.549] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.582] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.582] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.582] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.582] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.582] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.582] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.582] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.582] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.582] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.582] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.582] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.582] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.582] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.582] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.615] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.615] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.615] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.615] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.615] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.615] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.616] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.616] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.616] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.616] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.616] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.616] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.616] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.616] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.648] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.649] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.649] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.649] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.649] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.649] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.649] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.649] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.649] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.649] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.649] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.649] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.649] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.649] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.683] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.683] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.683] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.683] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.683] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.683] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.683] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.683] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.683] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.683] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.683] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.683] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.683] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.683] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.721] [main] [info] Boot stage 2: Calibrating 768KB SRAM + 32MB PSRAM...
+[2025-08-24 11:30:46.721] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.721] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.721] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.721] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.721] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.721] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.721] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.721] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.721] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.721] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.721] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.721] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.721] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.721] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.755] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.755] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.755] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.755] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.755] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.755] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.755] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.755] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.755] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.755] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.755] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.755] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.755] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.755] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.789] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.789] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.789] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.789] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.789] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.789] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.789] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.789] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.789] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.789] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.789] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.789] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.789] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.789] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.823] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.823] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.823] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.823] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.823] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.823] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.823] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.823] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.823] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.823] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.823] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.823] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.823] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.823] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.857] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.857] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.857] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.857] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.857] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.857] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.857] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.857] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.857] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.857] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.857] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.857] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.857] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.857] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.890] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.890] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.890] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.890] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.890] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.890] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.890] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.890] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.890] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.890] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.890] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.890] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.890] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.890] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.924] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.924] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.924] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.924] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.924] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.924] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.924] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.924] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.924] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.924] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.924] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.924] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.924] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.924] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.957] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.957] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.957] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.957] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.957] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.957] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.957] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.957] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.957] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.957] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.957] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.957] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.957] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.957] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.990] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.990] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.990] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.990] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.990] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:46.990] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.990] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.990] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.990] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.990] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.990] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:46.990] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:46.990] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:46.990] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.023] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.023] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.023] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.023] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.023] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.023] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.023] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.023] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.023] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.023] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.023] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.023] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.023] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.023] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.057] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.057] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.057] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.057] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.057] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.057] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.057] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.057] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.057] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.057] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.057] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.057] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.057] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.057] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.091] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.091] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.091] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.091] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.091] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.091] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.091] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.091] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.091] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.091] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.091] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.091] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.091] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.091] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.125] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.125] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.125] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.125] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.125] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.125] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.125] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.125] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.125] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.125] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.125] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.125] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.125] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.125] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.160] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.160] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.160] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.160] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.160] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.160] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.160] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.160] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.160] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.160] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.160] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.160] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.160] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.160] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.193] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.193] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.193] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.193] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.193] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.193] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.193] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.193] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.193] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.193] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.193] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.193] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.193] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.193] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.225] [main] [info] GUI loop iteration 61, elapsed: 2021ms, FPS: 30.2
+[2025-08-24 11:30:47.226] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.226] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.226] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.226] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.226] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.226] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.226] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.226] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.226] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.226] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.226] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.226] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.226] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.226] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.259] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.259] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.259] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.259] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.259] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.259] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.259] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.259] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.259] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.259] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.259] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.259] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.259] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.259] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.292] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.292] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.292] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.292] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.292] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.292] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.292] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.292] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.292] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.292] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.292] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.292] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.292] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.292] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.326] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.326] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.326] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.326] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.326] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.326] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.326] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.326] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.326] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.326] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.326] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.326] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.326] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.326] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.360] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.360] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.360] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.360] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.360] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.360] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.360] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.360] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.360] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.360] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.360] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.360] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.360] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.360] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.394] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.394] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.394] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.394] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.394] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.394] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.394] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.394] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.394] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.394] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.394] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.394] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.394] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.395] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.427] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.428] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.428] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.428] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.428] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.428] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.428] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.428] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.428] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.428] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.428] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.428] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.428] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.428] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.462] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.462] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.462] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.462] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.462] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.462] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.462] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.462] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.462] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.462] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.462] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.462] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.462] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.462] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.495] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.495] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.495] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.495] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.495] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.495] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.495] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.495] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.495] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.495] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.495] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.495] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.495] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.495] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.529] [main] [info] Boot stage 3: Configuring 1280x720 IPS display...
+[2025-08-24 11:30:47.529] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.529] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.529] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.529] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.529] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.529] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.529] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.529] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.529] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.529] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.529] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.529] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.529] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.529] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.562] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.562] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.562] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.562] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.562] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.562] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.562] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.562] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.562] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.562] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.562] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.562] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.562] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.562] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.596] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.596] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.596] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.596] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.596] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.596] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.596] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.596] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.596] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.597] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.597] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.597] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.597] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.597] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.630] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.630] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.630] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.630] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.630] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.630] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.630] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.630] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.630] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.630] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.630] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.630] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.630] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.630] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.663] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.663] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.663] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.663] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.663] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.663] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.663] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.663] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.663] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.663] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.663] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.663] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.663] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.663] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.696] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.696] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.696] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.696] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.696] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.696] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.696] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.696] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.696] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.696] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.696] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.696] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.696] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.696] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.730] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.730] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.730] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.730] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.730] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.730] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.730] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.730] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.730] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.730] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.730] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.730] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.730] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.730] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.763] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.764] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.764] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.764] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.764] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.764] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.764] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.764] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.764] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.764] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.764] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.764] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.764] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.764] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.797] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.797] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.797] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.797] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.797] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.797] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.797] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.797] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.797] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.797] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.797] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.797] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.797] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.797] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.830] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.830] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.830] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.830] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.830] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.830] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.830] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.830] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.830] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.830] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.830] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.831] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.831] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.831] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.863] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.863] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.863] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.863] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.863] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.863] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.863] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.863] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.863] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.863] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.863] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.863] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.863] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.863] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.898] [main] [info] *** MENU draw_text_centered: 'File' at (22,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.898] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.898] [main] [info] *** MENU draw_text_centered: 'Edit' at (84,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.898] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.898] [main] [info] *** MENU draw_text_centered: 'Emulator' at (146,9) width=79, text_width=64, color=0xFFFFFF
+[2025-08-24 11:30:47.898] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.898] [main] [info] *** MENU draw_text_centered: 'Debug' at (240,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.898] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.898] [main] [info] *** MENU draw_text_centered: 'View' at (310,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.898] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.898] [main] [info] *** MENU draw_text_centered: 'Tools' at (372,9) width=55, text_width=40, color=0xFFFFFF
+[2025-08-24 11:30:47.898] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+[2025-08-24 11:30:47.898] [main] [info] *** MENU draw_text_centered: 'Help' at (442,9) width=47, text_width=32, color=0xFFFFFF
+[2025-08-24 11:30:47.898] [main] [info] *** MENU draw_text_centered: draw_text SUCCESS
+
+GUI shutdown requested...
+[2025-08-24 11:30:47.930] [main] [info] GUI main loop ended
+[2025-08-24 11:30:47.930] [main] [info] Shutting down GUI emulator...
+[2025-08-24 11:30:47.930] [main] [info] Starting delightful farewell sequence: The GPIO pins are waving goodbye! Come back soon!
+[2025-08-24 11:30:47.931] [main] [info] Achievement Unlocked: Never Give Up Award - Never Give Up! Your persistence in development is truly admirable.
+[2025-08-24 11:30:47.931] [main] [info] 👋 Your code adventures were epic - see you next time!
+[2025-08-24 11:30:47.931] [main] [info] 🏆 Persistence Champion achievement earned - you're dedicated to quality development!
+[2025-08-24 11:30:50.931] [main] [error] Emulator shutdown timed out, forcing exit

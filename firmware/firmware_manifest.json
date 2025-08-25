@@ -1,0 +1,86 @@
+{
+    "name": "M5Stack Tab5 Test Firmware",
+    "version": "1.0.0",
+    "description": "Test firmware demonstrating M5Stack Tab5 hardware capabilities",
+    "target": "esp32p4",
+    "author": "M5Stack Tab5 Emulator",
+    "created": "2025-08-23",
+    
+    "hardware_features": {
+        "cpu": "ESP32-P4 Dual-core RISC-V @ 400MHz",
+        "memory": {
+            "flash": "16MB",
+            "psram": "32MB", 
+            "sram": "768KB"
+        },
+        "display": {
+            "size": "5-inch",
+            "resolution": "1280x720",
+            "type": "IPS TFT",
+            "interface": "MIPI-DSI"
+        },
+        "peripherals": [
+            "BMI270 6-axis IMU",
+            "ES8388 Audio Codec",
+            "ES7210 AEC", 
+            "SC2356 2MP Camera",
+            "GT911 Touch Controller",
+            "RX8130CE RTC",
+            "INA226 Power Monitor"
+        ],
+        "connectivity": [
+            "WiFi 6 (ESP32-C6)",
+            "Bluetooth LE",
+            "USB-A Host",
+            "USB-C Device",
+            "RS-485"
+        ],
+        "gpio_pins": 47,
+        "interfaces": ["I2C", "SPI", "UART", "PWM", "ADC"]
+    },
+    
+    "test_scenarios": [
+        {
+            "name": "GPIO Test",
+            "description": "Tests LED control and button input",
+            "components": ["GPIO", "LED", "Button"]
+        },
+        {
+            "name": "I2C Scan",
+            "description": "Scans for BMI270 IMU and ES8388 codec",
+            "components": ["I2C", "BMI270", "ES8388"]
+        },
+        {
+            "name": "Display Test", 
+            "description": "Tests 1280x720 display and touch",
+            "components": ["Display", "Touch", "LVGL"]
+        },
+        {
+            "name": "System Info",
+            "description": "Shows chip info and memory status",
+            "components": ["System", "Memory", "Flash"]
+        }
+    ],
+    
+    "expected_output": [
+        "M5Stack Tab5 Emulator Test Firmware Starting!",
+        "Hardware: ESP32-P4 @ 400MHz, 32MB PSRAM, 16MB Flash",
+        "BMI270 IMU found! Chip ID:",
+        "ES8388 Audio Codec found! Chip ID:",
+        "Display: Drawing test pattern on 1280x720 screen",
+        "LED: ON/OFF cycling every second"
+    ],
+    
+    "emulator_notes": {
+        "purpose": "Comprehensive hardware test for M5Stack Tab5 emulator",
+        "features_tested": [
+            "ESP32-P4 dual-core simulation",
+            "GPIO pin control and input",
+            "I2C peripheral communication",
+            "Display system integration",
+            "Memory and system information",
+            "FreeRTOS task management"
+        ],
+        "validation": "Firmware should demonstrate all major hardware subsystems working correctly in the emulator environment"
+    }
+}

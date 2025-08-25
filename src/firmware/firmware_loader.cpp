@@ -1,7 +1,9 @@
 #include "emulator/firmware/firmware_loader.hpp"
+#include "emulator/firmware/elf_parser.hpp"
 #include "emulator/memory/memory_controller.hpp"
 #include "emulator/cpu/dual_core_manager.hpp"
 #include "emulator/core/emulator_core.hpp"
+#include "emulator/utils/logging.hpp"
 
 using m5tab5::emulator::unexpected;
 
@@ -51,10 +53,11 @@ void FirmwareLoader::shutdown() {
     }
     
     // Cleanup
-    current_elf_binary_.reset();
+    parsed_elf_data_.reset();
     boot_loader_.reset();
     backup_state_.reset();
     loading_thread_.reset();
+    segment_mappings_.clear();
 }
 
 Result<ValidationResult> FirmwareLoader::validate_firmware(const std::string& file_path) {
@@ -120,7 +123,8 @@ Result<void> FirmwareLoader::unload_firmware() {
     }
 
     // Reset state
-    current_elf_binary_.reset();
+    parsed_elf_data_.reset();
+    segment_mappings_.clear();
     firmware_loaded_ = false;
     loaded_firmware_path_.clear();
     current_firmware_info_ = ValidationResult{};
@@ -312,103 +316,138 @@ Result<void> FirmwareLoader::load_firmware_internal(const std::string& file_path
 }
 
 Result<ValidationResult> FirmwareLoader::validate_elf_binary(const std::string& file_path) {
-    current_elf_binary_ = std::make_unique<ELFBinary>(file_path);
+    // Create new ELF parser
+    auto elf_parser = std::make_unique<ELFParser>(file_path);
     
-    auto parse_result = current_elf_binary_->parse();
+    // Parse the ELF file
+    auto parse_result = elf_parser->parse();
     if (!parse_result.has_value()) {
+        LOG_ERROR("ELF parsing failed: {}", parse_result.error().message());
         return unexpected(parse_result.error());
     }
 
-    return current_elf_binary_->validate_for_esp32p4();
+    // Store parsed ELF information
+    parsed_elf_data_ = std::make_unique<ParsedELF>(std::move(parse_result.value()));
+    
+    // Validate for ESP32-P4 compatibility
+    auto validation_result = elf_parser->validate_for_esp32p4();
+    if (!validation_result.has_value()) {
+        LOG_ERROR("ELF validation failed: {}", validation_result.error().message());
+        return unexpected(validation_result.error());
+    }
+
+    LOG_INFO("Firmware validation completed: {} segments, entry=0x{:08x}", 
+             parsed_elf_data_->segments.size(), parsed_elf_data_->entry_point);
+
+    return validation_result.value();
 }
 
 Result<void> FirmwareLoader::parse_elf_segments() {
-    if (!current_elf_binary_) {
-        return unexpected(Error{ErrorCode::INVALID_STATE, "No ELF binary loaded"});
+    if (!parsed_elf_data_) {
+        return unexpected(Error{ErrorCode::INVALID_STATE, "No ELF data available"});
     }
 
-    // ELF parsing is handled by ELFBinary class
+    // ELF parsing is already completed in validation phase
+    LOG_DEBUG("ELF segments already parsed: {} segments available", 
+              parsed_elf_data_->segments.size());
+    
     return {};
 }
 
 Result<void> FirmwareLoader::validate_memory_layout() {
-    if (!current_elf_binary_) {
-        return unexpected(Error{ErrorCode::INVALID_STATE, "No ELF binary loaded"});
+    if (!parsed_elf_data_) {
+        return unexpected(Error{ErrorCode::INVALID_STATE, "No ELF data available"});
     }
 
-    const auto& segments = current_elf_binary_->get_segments();
+    // Create memory mapper for segment validation
+    MemoryMapper mapper;
+    mapper.set_strict_mapping(strict_validation_);
+    mapper.set_allow_psram(true);
     
-    for (const auto& segment : segments) {
-        if (segment.memory_size == 0) continue; // Skip empty segments
-        
-        // Check if segment fits in valid memory regions
-        if (!is_address_in_valid_region(segment.virtual_addr, segment.memory_size)) {
-            return unexpected(Error{ErrorCode::MEMORY_INVALID_ADDRESS, 
-                        "Segment at 0x" + std::to_string(segment.virtual_addr) + 
-                        " does not fit in valid memory regions"});
-        }
+    // Validate all segments can be mapped
+    auto mapping_result = mapper.map_all_segments(parsed_elf_data_->segments);
+    if (!mapping_result.has_value()) {
+        LOG_ERROR("Memory layout validation failed: {}", mapping_result.error().message());
+        return unexpected(mapping_result.error());
     }
+
+    // Store mapping results for loading phase
+    segment_mappings_ = std::move(mapping_result.value());
+    
+    LOG_INFO("Memory layout validated: {} segments mapped successfully", 
+             segment_mappings_.size());
 
     return {};
 }
 
 Result<void> FirmwareLoader::load_segments_to_memory(ProgressCallback progress_callback) {
-    if (!current_elf_binary_ || !memory_controller_) {
-        return unexpected(Error{ErrorCode::INVALID_STATE, "ELF binary or memory controller not available"});
+    if (!parsed_elf_data_ || !memory_controller_) {
+        return unexpected(Error{ErrorCode::INVALID_STATE, "ELF data or memory controller not available"});
     }
 
-    const auto& segments = current_elf_binary_->get_segments();
+    const auto& segments = parsed_elf_data_->segments;
     size_t total_segments = segments.size();
+    size_t loaded_segments = 0;
+    
+    LOG_INFO("Loading {} segments to memory...", total_segments);
     
     for (size_t i = 0; i < segments.size(); ++i) {
         const auto& segment = segments[i];
         
-        if (segment.memory_size == 0) continue; // Skip empty segments
+        if (segment.memory_size == 0) {
+            LOG_DEBUG("Skipping empty segment {}", i);
+            continue; // Skip empty segments
+        }
         
         // Update progress
         float segment_progress = 0.6f + (0.2f * i / total_segments);
-        std::string message = "Loading segment " + std::to_string(i + 1) + "/" + std::to_string(total_segments);
+        std::string message = "Loading segment " + std::to_string(i + 1) + "/" + 
+                             std::to_string(total_segments) + " (" + 
+                             segment.get_permissions() + ", " + 
+                             std::to_string(segment.memory_size) + " bytes)";
         progress_update(progress_callback, "Loading", segment_progress, message);
         
         // Write segment data to memory
-        auto write_result = write_memory_segment(segment.virtual_addr, segment.data);
-        if (!write_result.has_value()) {
-            return unexpected(write_result.error());
+        if (!segment.data.empty()) {
+            auto write_result = write_memory_segment(segment.virtual_address, segment.data);
+            if (!write_result.has_value()) {
+                LOG_ERROR("Failed to load segment {} at 0x{:08x}: {}", 
+                         i, segment.virtual_address, write_result.error().message());
+                return unexpected(write_result.error());
+            }
+            loaded_segments++;
+        }
+        
+        // Zero-fill BSS sections
+        if (segment.memory_size > segment.file_size) {
+            size_t bss_size = segment.memory_size - segment.file_size;
+            Address bss_start = segment.virtual_address + segment.file_size;
+            
+            LOG_DEBUG("Zero-filling BSS section: 0x{:08x}, {} bytes", bss_start, bss_size);
+            auto clear_result = clear_memory_region(bss_start, bss_size);
+            if (!clear_result.has_value()) {
+                LOG_ERROR("Failed to clear BSS section at 0x{:08x}", bss_start);
+                return unexpected(clear_result.error());
+            }
         }
         
         // Check for cancellation
         if (cancel_requested_.load()) {
+            LOG_INFO("Loading cancelled by user after {} segments", loaded_segments);
             return unexpected(Error{ErrorCode::OPERATION_ABORTED, "Loading cancelled by user"});
         }
         
-        // Small delay to allow cancellation checks
+        // Small delay to allow cancellation checks and progress updates
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
+    LOG_INFO("Successfully loaded {} segments to memory", loaded_segments);
     return {};
 }
 
 Result<void> FirmwareLoader::initialize_bss_sections() {
-    if (!current_elf_binary_ || !memory_controller_) {
-        return unexpected(Error{ErrorCode::INVALID_STATE, "ELF binary or memory controller not available"});
-    }
-
-    // Zero-initialize BSS sections
-    const auto& segments = current_elf_binary_->get_segments();
-    
-    for (const auto& segment : segments) {
-        if (segment.memory_size > segment.file_size) {
-            // This is a BSS section - zero the uninitialized part
-            size_t bss_size = segment.memory_size - segment.file_size;
-            Address bss_start = segment.virtual_addr + segment.file_size;
-            
-            auto clear_result = clear_memory_region(bss_start, bss_size);
-            if (!clear_result.has_value()) {
-                return unexpected(clear_result.error());
-            }
-        }
-    }
-
+    // BSS initialization is now handled in load_segments_to_memory for efficiency
+    LOG_DEBUG("BSS sections already initialized during segment loading");
     return {};
 }
 
@@ -441,12 +480,23 @@ Result<void> FirmwareLoader::setup_interrupt_vectors() {
 }
 
 Result<void> FirmwareLoader::initialize_cores() {
-    if (!cpu_manager_) {
-        return unexpected(Error{ErrorCode::INVALID_STATE, "CPU manager not available"});
+    if (!cpu_manager_ || !parsed_elf_data_) {
+        return unexpected(Error{ErrorCode::INVALID_STATE, "CPU manager or ELF data not available"});
     }
 
     // Initialize CPU cores with entry point
-    // This would setup initial register state and prepare cores for execution
+    LOG_INFO("Initializing CPU cores with entry point: 0x{:08x}", parsed_elf_data_->entry_point);
+    
+    // TODO: Set initial register state and prepare cores for execution
+    // This would call cpu_manager_->initialize_core(core_id, entry_point, initial_stack_pointer)
+    
+    if (dual_core_loading_ && parsed_elf_data_->uses_dual_core) {
+        LOG_INFO("Setting up dual-core execution mode");
+        // TODO: Initialize both cores
+    } else {
+        LOG_INFO("Setting up single-core execution mode");
+        // TODO: Initialize primary core only
+    }
     
     return {};
 }
@@ -553,174 +603,7 @@ Result<void> FirmwareLoader::restore_backup_state() {
     return {};
 }
 
-//
-// ELFBinary Implementation
-//
-
-ELFBinary::ELFBinary(const std::string& file_path)
-    : file_path_(file_path)
-{
-}
-
-ELFBinary::~ELFBinary() = default;
-
-Result<void> ELFBinary::parse() {
-    // Load file data
-    auto load_result = load_file_data();
-    if (!load_result.has_value()) {
-        return unexpected(load_result.error());
-    }
-
-    // Parse ELF header
-    auto header_result = parse_header();
-    if (!header_result.has_value()) {
-        return unexpected(header_result.error());
-    }
-
-    // Parse segments
-    auto segments_result = parse_segments();
-    if (!segments_result.has_value()) {
-        return unexpected(segments_result.error());
-    }
-
-    return {};
-}
-
-Result<ValidationResult> ELFBinary::validate_for_esp32p4() {
-    ValidationResult result;
-    
-    // Basic validation
-    if (!validate_elf_magic() || !validate_architecture()) {
-        result.valid = false;
-        result.error_message = "Invalid ELF file or unsupported architecture";
-        return result;
-    }
-
-    // Extract information
-    result.valid = true;
-    result.architecture = header_.architecture;
-    result.target_chip = "ESP32-P4";
-    result.entry_point = header_.entry_point;
-    result.has_dual_core_support = is_dual_core_firmware();
-    result.memory_regions = get_required_memory_regions();
-
-    // Calculate sizes
-    result.code_size = 0;
-    result.data_size = 0;
-    result.bss_size = 0;
-
-    for (const auto& segment : segments_) {
-        if (segment.is_executable()) {
-            result.code_size += segment.file_size;
-        } else if (segment.is_writable()) {
-            result.data_size += segment.file_size;
-            if (segment.memory_size > segment.file_size) {
-                result.bss_size += segment.memory_size - segment.file_size;
-            }
-        }
-    }
-
-    // Check PSRAM usage
-    result.uses_psram = false;
-    for (const auto& segment : segments_) {
-        if (segment.virtual_addr >= ESP32P4MemoryLayout::PSRAM_BASE &&
-            segment.virtual_addr < ESP32P4MemoryLayout::PSRAM_BASE + ESP32P4MemoryLayout::PSRAM_SIZE) {
-            result.uses_psram = true;
-            break;
-        }
-    }
-
-    return result;
-}
-
-bool ELFBinary::is_dual_core_firmware() const {
-    // Check if firmware has dual-core specific symbols or sections
-    // This is a simplified check - real implementation would analyze symbols
-    return true; // Assume dual-core for ESP32-P4
-}
-
-std::vector<Address> ELFBinary::get_required_memory_regions() const {
-    std::vector<Address> regions;
-    
-    for (const auto& segment : segments_) {
-        if (segment.memory_size > 0) {
-            regions.push_back(segment.virtual_addr);
-        }
-    }
-    
-    return regions;
-}
-
-Result<void> ELFBinary::load_file_data() {
-    std::ifstream file(file_path_, std::ios::binary);
-    if (!file.is_open()) {
-        return unexpected(Error{ErrorCode::CONFIG_FILE_NOT_FOUND, "Failed to open ELF file: " + file_path_});
-    }
-
-    file.seekg(0, std::ios::end);
-    size_t file_size = file.tellg();
-    file.seekg(0, std::ios::beg);
-
-    file_data_.resize(file_size);
-    file.read(reinterpret_cast<char*>(file_data_.data()), file_size);
-
-    if (!file.good()) {
-        return unexpected(Error{ErrorCode::FILE_ERROR, "Failed to read ELF file data"});
-    }
-
-    return {};
-}
-
-Result<void> ELFBinary::parse_header() {
-    if (file_data_.size() < 64) { // Minimum ELF header size
-        return unexpected(Error{ErrorCode::INVALID_PARAMETER, "File too small to be a valid ELF"});
-    }
-
-    // Parse basic ELF header information
-    // This is a simplified implementation
-    header_.architecture = "riscv32";
-    header_.abi_version = "unknown";
-    header_.entry_point = 0x40000000; // Default ESP32-P4 entry point
-    header_.is_64bit = false;
-    header_.is_little_endian = true;
-    header_.machine_type = 0xF3; // RISC-V
-
-    return {};
-}
-
-Result<void> ELFBinary::parse_segments() {
-    // Parse program segments from ELF file
-    // This is a simplified implementation that creates dummy segments
-    
-    // Create a dummy code segment
-    ELFSegment code_segment;
-    code_segment.type = 1; // PT_LOAD
-    code_segment.virtual_addr = 0x40000000;
-    code_segment.physical_addr = 0x40000000;
-    code_segment.file_size = 1024;
-    code_segment.memory_size = 1024;
-    code_segment.flags = 0x5; // PF_R | PF_X
-    code_segment.data.resize(1024, 0x90); // NOP instructions
-    
-    segments_.push_back(code_segment);
-
-    return {};
-}
-
-bool ELFBinary::validate_elf_magic() const {
-    if (file_data_.size() < 4) return false;
-    
-    // Check ELF magic number
-    return file_data_[0] == 0x7F && 
-           file_data_[1] == 'E' && 
-           file_data_[2] == 'L' && 
-           file_data_[3] == 'F';
-}
-
-bool ELFBinary::validate_architecture() const {
-    // Check if architecture is RISC-V
-    return header_.machine_type == 0xF3; // EM_RISCV
-}
+// ELFBinary class removed - replaced by ELFParser with better functionality
 
 //
 // BootLoader Implementation
