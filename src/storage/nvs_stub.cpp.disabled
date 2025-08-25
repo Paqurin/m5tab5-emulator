@@ -1,0 +1,209 @@
+#include "emulator/storage/nvs_controller.hpp"
+#include "emulator/utils/logging.hpp"
+
+// In-memory stub implementation when SQLite is not available
+
+namespace m5tab5::emulator::storage {
+
+using namespace m5tab5::emulator::utils;
+
+#if !SQLITE_AVAILABLE
+
+// Simple in-memory storage for NVS entries
+static std::unordered_map<std::string, std::unordered_map<std::string, NVSController::NVSEntry>> g_in_memory_storage;
+static std::mutex g_storage_mutex;
+
+// SQLiteBackend stub implementation
+SQLiteBackend::SQLiteBackend(const Config& config) : config_(config) {}
+
+SQLiteBackend::~SQLiteBackend() {
+    if (initialized_) {
+        shutdown();
+    }
+}
+
+Result<void> SQLiteBackend::initialize() {
+    if (initialized_) {
+        return Ok();
+    }
+    
+    LOG_INFO("Initializing in-memory NVS storage (SQLite not available)");
+    initialized_ = true;
+    return Ok();
+}
+
+Result<void> SQLiteBackend::shutdown() {
+    if (!initialized_) {
+        return Ok();
+    }
+    
+    {
+        std::lock_guard<std::mutex> lock(g_storage_mutex);
+        g_in_memory_storage.clear();
+    }
+    
+    initialized_ = false;
+    LOG_INFO("In-memory NVS storage shutdown complete");
+    return Ok();
+}
+
+Result<void> SQLiteBackend::insert_entry(const NVSController::NVSEntry& entry) {
+    if (!initialized_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+    
+    std::lock_guard<std::mutex> lock(g_storage_mutex);
+    g_in_memory_storage[entry.namespace_name][entry.key] = entry;
+    return Ok();
+}
+
+Result<void> SQLiteBackend::update_entry(const NVSController::NVSEntry& entry) {
+    return insert_entry(entry);  // Same as insert for in-memory
+}
+
+Result<void> SQLiteBackend::delete_entry(const std::string& namespace_name, const std::string& key) {
+    if (!initialized_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+    
+    std::lock_guard<std::mutex> lock(g_storage_mutex);
+    auto ns_it = g_in_memory_storage.find(namespace_name);
+    if (ns_it != g_in_memory_storage.end()) {
+        ns_it->second.erase(key);
+        if (ns_it->second.empty()) {
+            g_in_memory_storage.erase(ns_it);
+        }
+    }
+    return Ok();
+}
+
+Result<NVSController::NVSEntry> SQLiteBackend::get_entry(const std::string& namespace_name, const std::string& key) {
+    if (!initialized_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+    
+    std::lock_guard<std::mutex> lock(g_storage_mutex);
+    auto ns_it = g_in_memory_storage.find(namespace_name);
+    if (ns_it != g_in_memory_storage.end()) {
+        auto entry_it = ns_it->second.find(key);
+        if (entry_it != ns_it->second.end()) {
+            return Ok(entry_it->second);
+        }
+    }
+    return Err(ErrorCode::NOT_FOUND);
+}
+
+Result<bool> SQLiteBackend::entry_exists(const std::string& namespace_name, const std::string& key) {
+    if (!initialized_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+    
+    std::lock_guard<std::mutex> lock(g_storage_mutex);
+    auto ns_it = g_in_memory_storage.find(namespace_name);
+    if (ns_it != g_in_memory_storage.end()) {
+        return Ok(ns_it->second.find(key) != ns_it->second.end());
+    }
+    return Ok(false);
+}
+
+Result<std::vector<std::string>> SQLiteBackend::list_keys(const std::string& namespace_name) {
+    if (!initialized_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+    
+    std::vector<std::string> keys;
+    std::lock_guard<std::mutex> lock(g_storage_mutex);
+    auto ns_it = g_in_memory_storage.find(namespace_name);
+    if (ns_it != g_in_memory_storage.end()) {
+        for (const auto& pair : ns_it->second) {
+            keys.push_back(pair.first);
+        }
+    }
+    return Ok(std::move(keys));
+}
+
+Result<std::vector<std::string>> SQLiteBackend::list_namespaces() {
+    if (!initialized_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+    
+    std::vector<std::string> namespaces;
+    std::lock_guard<std::mutex> lock(g_storage_mutex);
+    for (const auto& pair : g_in_memory_storage) {
+        namespaces.push_back(pair.first);
+    }
+    return Ok(std::move(namespaces));
+}
+
+Result<size_t> SQLiteBackend::count_entries(const std::string& namespace_name) {
+    if (!initialized_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+    
+    std::lock_guard<std::mutex> lock(g_storage_mutex);
+    auto ns_it = g_in_memory_storage.find(namespace_name);
+    if (ns_it != g_in_memory_storage.end()) {
+        return Ok(ns_it->second.size());
+    }
+    return Ok(0);
+}
+
+Result<void> SQLiteBackend::begin_transaction() {
+    // No-op for in-memory storage
+    return Ok();
+}
+
+Result<void> SQLiteBackend::commit_transaction() {
+    // No-op for in-memory storage
+    return Ok();
+}
+
+Result<void> SQLiteBackend::rollback_transaction() {
+    // No-op for in-memory storage
+    return Ok();
+}
+
+Result<void> SQLiteBackend::vacuum() {
+    // No-op for in-memory storage
+    return Ok();
+}
+
+Result<void> SQLiteBackend::analyze() {
+    // No-op for in-memory storage
+    return Ok();
+}
+
+Result<NVSController::NVSStats> SQLiteBackend::get_stats() {
+    if (!initialized_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+    
+    NVSController::NVSStats stats;
+    std::lock_guard<std::mutex> lock(g_storage_mutex);
+    
+    stats.total_entries = 0;
+    stats.used_space = 0;
+    stats.namespaces_count = g_in_memory_storage.size();
+    
+    for (const auto& ns_pair : g_in_memory_storage) {
+        for (const auto& entry_pair : ns_pair.second) {
+            stats.total_entries++;
+            stats.used_space += entry_pair.second.size;
+        }
+    }
+    
+    stats.total_space = 1024 * 1024;  // 1MB virtual space
+    stats.free_space = stats.total_space - stats.used_space;
+    stats.write_operations = 0;
+    stats.read_operations = 0;
+    stats.erase_operations = 0;
+    stats.wear_level_avg = 0.0;
+    stats.last_commit_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count();
+    
+    return Ok(stats);
+}
+
+#endif // !SQLITE_AVAILABLE
+
+} // namespace m5tab5::emulator::storage

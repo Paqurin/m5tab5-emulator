@@ -21,8 +21,33 @@ endif()
 # Find required packages
 find_package(Threads REQUIRED)
 
-# Try to find PkgConfig (optional)
+# SQLite3 for NVS storage backend
 find_package(PkgConfig QUIET)
+if(PkgConfig_FOUND)
+    pkg_check_modules(SQLITE3 QUIET sqlite3)
+endif()
+
+if(NOT SQLITE3_FOUND)
+    find_library(SQLITE3_LIBRARIES sqlite3)
+    find_path(SQLITE3_INCLUDE_DIRS sqlite3.h)
+    if(SQLITE3_LIBRARIES AND SQLITE3_INCLUDE_DIRS)
+        set(SQLITE3_FOUND TRUE)
+    else()
+        message(STATUS "SQLite3 not found. Building with in-memory NVS storage.")
+        set(SQLITE3_LIBRARIES "")
+        set(SQLITE3_INCLUDE_DIRS "")
+    endif()
+endif()
+
+# Add SQLite3 compile definition if found
+if(SQLITE3_FOUND)
+    add_compile_definitions(HAVE_SQLITE3=1)
+    message(STATUS "SQLite3 found - building with persistent NVS storage")
+else()
+    message(STATUS "SQLite3 not found - building with in-memory NVS storage")
+endif()
+
+# Try to find PkgConfig (optional)
 
 # SDL2 for graphics and input (enhanced detection with manual fallback)
 find_package(SDL2 QUIET)
@@ -115,6 +140,7 @@ file(GLOB_RECURSE UTILS_SOURCES "src/utils/*.cpp")
 file(GLOB_RECURSE FREERTOS_SOURCES "src/freertos/*.cpp")
 file(GLOB_RECURSE ESP_IDF_SOURCES "src/esp_idf/*.cpp")
 file(GLOB_RECURSE FIRMWARE_SOURCES "src/firmware/*.cpp")
+file(GLOB_RECURSE STORAGE_SOURCES "src/storage/*.cpp")
 file(GLOB_RECURSE GUI_SOURCES "src/gui/*.cpp")
 
 set(ALL_SOURCES
@@ -131,6 +157,7 @@ set(ALL_SOURCES
     ${FREERTOS_SOURCES}
     ${ESP_IDF_SOURCES}
     ${FIRMWARE_SOURCES}
+    ${STORAGE_SOURCES}
 )
 
 # GUI sources (separate for optional GUI builds)
@@ -151,6 +178,11 @@ target_link_libraries(m5tab5-emulator-core
         ${CMAKE_DL_LIBS}  # For plugin loading
 )
 
+# Conditionally link SQLite3 if available
+if(SQLITE3_FOUND)
+    target_link_libraries(m5tab5-emulator-core PUBLIC ${SQLITE3_LIBRARIES})
+endif()
+
 # Set target properties
 target_include_directories(m5tab5-emulator-core
     PUBLIC
@@ -158,6 +190,11 @@ target_include_directories(m5tab5-emulator-core
         $<INSTALL_INTERFACE:include>
         ${SDL2_INCLUDE_DIRS}
 )
+
+# Conditionally add SQLite3 include directories
+if(SQLITE3_FOUND)
+    target_include_directories(m5tab5-emulator-core PUBLIC ${SQLITE3_INCLUDE_DIRS})
+endif()
 
 target_compile_definitions(m5tab5-emulator-core
     PUBLIC

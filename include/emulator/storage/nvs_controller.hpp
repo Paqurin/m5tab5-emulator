@@ -8,6 +8,7 @@
 #include <string>
 #include <unordered_map>
 #include <mutex>
+#include <shared_mutex>
 #include <vector>
 #include <functional>
 #include <cstdint>
@@ -123,7 +124,8 @@ public:
         bool enable_statistics = true;
     };
 
-    explicit NVSController(const Config& config = Config{});
+    NVSController();
+    explicit NVSController(const Config& config);
     ~NVSController();
 
     // Lifecycle management

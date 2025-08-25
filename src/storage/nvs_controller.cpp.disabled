@@ -1,0 +1,780 @@
+#include "emulator/storage/nvs_controller.hpp"
+#include "emulator/utils/logging.hpp"
+#include "emulator/utils/error.hpp"
+
+#ifdef HAVE_SQLITE3
+#include <sqlite3.h>
+#define SQLITE_AVAILABLE 1
+#else
+#define SQLITE_AVAILABLE 0
+// Stub SQLite types when not available
+typedef void sqlite3;
+typedef void sqlite3_stmt;
+#define SQLITE_OK 0
+#define SQLITE_DONE 100
+#define SQLITE_ROW 101
+#define SQLITE_OPEN_READWRITE 0x00000002
+#define SQLITE_OPEN_CREATE 0x00000004
+#define SQLITE_OPEN_FULLMUTEX 0x00010000
+#define SQLITE_STATIC ((void*)0)
+#endif
+
+#include <filesystem>
+#include <chrono>
+#include <algorithm>
+#include <cstring>
+#include <sstream>
+#include <iomanip>
+
+namespace m5tab5::emulator::storage {
+
+using namespace m5tab5::emulator::utils;
+
+// SQLiteBackend Implementation
+SQLiteBackend::SQLiteBackend(const Config& config) : config_(config) {}
+
+SQLiteBackend::~SQLiteBackend() {
+    if (initialized_) {
+        shutdown();
+    }
+}
+
+Result<void> SQLiteBackend::initialize() {
+    if (initialized_) {
+        return Ok();
+    }
+
+    // Ensure directory exists
+    std::filesystem::path db_path(config_.database_path);
+    std::filesystem::path db_dir = db_path.parent_path();
+    
+    try {
+        if (!std::filesystem::exists(db_dir)) {
+            std::filesystem::create_directories(db_dir);
+        }
+    } catch (const std::exception& e) {
+        LOG_ERROR("Failed to create database directory: {}", e.what());
+        return Err(ErrorCode::FILE_SYSTEM_ERROR);
+    }
+
+    // Open database
+    int result = sqlite3_open_v2(
+        config_.database_path.c_str(),
+        &db_,
+        SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX,
+        nullptr
+    );
+
+    if (result != SQLITE_OK) {
+        LOG_ERROR("Failed to open SQLite database: {}", get_sqlite_error());
+        return Err(ErrorCode::DATABASE_ERROR);
+    }
+
+    // Configure database
+    if (config_.enable_wal_mode) {
+        result = sqlite3_exec(db_, "PRAGMA journal_mode=WAL;", nullptr, nullptr, nullptr);
+        if (result != SQLITE_OK) {
+            LOG_WARN("Failed to enable WAL mode: {}", get_sqlite_error());
+        }
+    }
+
+    if (config_.enable_foreign_keys) {
+        result = sqlite3_exec(db_, "PRAGMA foreign_keys=ON;", nullptr, nullptr, nullptr);
+        if (result != SQLITE_OK) {
+            LOG_WARN("Failed to enable foreign keys: {}", get_sqlite_error());
+        }
+    }
+
+    // Set cache size
+    std::string cache_sql = "PRAGMA cache_size=-" + std::to_string(config_.cache_size_kb) + ";";
+    sqlite3_exec(db_, cache_sql.c_str(), nullptr, nullptr, nullptr);
+
+    // Set page size
+    std::string page_sql = "PRAGMA page_size=" + std::to_string(config_.page_size) + ";";
+    sqlite3_exec(db_, page_sql.c_str(), nullptr, nullptr, nullptr);
+
+    // Create tables
+    auto create_result = create_tables();
+    if (!create_result.has_value()) {
+        sqlite3_close(db_);
+        db_ = nullptr;
+        return create_result;
+    }
+
+    // Prepare statements
+    auto prepare_result = prepare_statements();
+    if (!prepare_result.has_value()) {
+        cleanup_statements();
+        sqlite3_close(db_);
+        db_ = nullptr;
+        return prepare_result;
+    }
+
+    initialized_ = true;
+    LOG_INFO("SQLite NVS backend initialized: {}", config_.database_path);
+    return Ok();
+}
+
+Result<void> SQLiteBackend::shutdown() {
+    if (!initialized_) {
+        return Ok();
+    }
+
+    cleanup_statements();
+    
+    if (db_) {
+        int result = sqlite3_close(db_);
+        if (result != SQLITE_OK) {
+            LOG_ERROR("Failed to close SQLite database: {}", get_sqlite_error());
+            return Err(ErrorCode::DATABASE_ERROR);
+        }
+        db_ = nullptr;
+    }
+
+    initialized_ = false;
+    LOG_INFO("SQLite NVS backend shutdown complete");
+    return Ok();
+}
+
+Result<void> SQLiteBackend::create_tables() {
+    const char* create_table_sql = R"(
+        CREATE TABLE IF NOT EXISTS nvs_entries (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            namespace_name TEXT NOT NULL,
+            key TEXT NOT NULL,
+            type INTEGER NOT NULL,
+            value BLOB NOT NULL,
+            size INTEGER NOT NULL,
+            crc32 INTEGER NOT NULL,
+            timestamp INTEGER NOT NULL,
+            encrypted BOOLEAN NOT NULL DEFAULT 0,
+            UNIQUE(namespace_name, key)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_namespace_key ON nvs_entries(namespace_name, key);
+        CREATE INDEX IF NOT EXISTS idx_namespace ON nvs_entries(namespace_name);
+        CREATE INDEX IF NOT EXISTS idx_timestamp ON nvs_entries(timestamp);
+    )";
+
+    char* error_msg = nullptr;
+    int result = sqlite3_exec(db_, create_table_sql, nullptr, nullptr, &error_msg);
+    
+    if (result != SQLITE_OK) {
+        std::string error = error_msg ? error_msg : "Unknown error";
+        sqlite3_free(error_msg);
+        LOG_ERROR("Failed to create NVS tables: {}", error);
+        return Err(ErrorCode::DATABASE_ERROR);
+    }
+
+    return Ok();
+}
+
+Result<void> SQLiteBackend::prepare_statements() {
+    // INSERT OR REPLACE statement
+    const char* insert_sql = R"(
+        INSERT OR REPLACE INTO nvs_entries 
+        (namespace_name, key, type, value, size, crc32, timestamp, encrypted)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    )";
+
+    int result = sqlite3_prepare_v2(db_, insert_sql, -1, &stmt_insert_, nullptr);
+    if (result != SQLITE_OK) {
+        LOG_ERROR("Failed to prepare insert statement: {}", get_sqlite_error());
+        return Err(ErrorCode::DATABASE_ERROR);
+    }
+
+    // SELECT statement
+    const char* select_sql = R"(
+        SELECT type, value, size, crc32, timestamp, encrypted
+        FROM nvs_entries 
+        WHERE namespace_name = ? AND key = ?
+    )";
+
+    result = sqlite3_prepare_v2(db_, select_sql, -1, &stmt_select_, nullptr);
+    if (result != SQLITE_OK) {
+        LOG_ERROR("Failed to prepare select statement: {}", get_sqlite_error());
+        return Err(ErrorCode::DATABASE_ERROR);
+    }
+
+    // DELETE statement
+    const char* delete_sql = R"(
+        DELETE FROM nvs_entries 
+        WHERE namespace_name = ? AND key = ?
+    )";
+
+    result = sqlite3_prepare_v2(db_, delete_sql, -1, &stmt_delete_, nullptr);
+    if (result != SQLITE_OK) {
+        LOG_ERROR("Failed to prepare delete statement: {}", get_sqlite_error());
+        return Err(ErrorCode::DATABASE_ERROR);
+    }
+
+    // EXISTS statement
+    const char* exists_sql = R"(
+        SELECT 1 FROM nvs_entries 
+        WHERE namespace_name = ? AND key = ?
+        LIMIT 1
+    )";
+
+    result = sqlite3_prepare_v2(db_, exists_sql, -1, &stmt_exists_, nullptr);
+    if (result != SQLITE_OK) {
+        LOG_ERROR("Failed to prepare exists statement: {}", get_sqlite_error());
+        return Err(ErrorCode::DATABASE_ERROR);
+    }
+
+    // LIST KEYS statement
+    const char* list_keys_sql = R"(
+        SELECT key FROM nvs_entries 
+        WHERE namespace_name = ?
+        ORDER BY key
+    )";
+
+    result = sqlite3_prepare_v2(db_, list_keys_sql, -1, &stmt_list_keys_, nullptr);
+    if (result != SQLITE_OK) {
+        LOG_ERROR("Failed to prepare list keys statement: {}", get_sqlite_error());
+        return Err(ErrorCode::DATABASE_ERROR);
+    }
+
+    // LIST NAMESPACES statement
+    const char* list_namespaces_sql = R"(
+        SELECT DISTINCT namespace_name FROM nvs_entries 
+        ORDER BY namespace_name
+    )";
+
+    result = sqlite3_prepare_v2(db_, list_namespaces_sql, -1, &stmt_list_namespaces_, nullptr);
+    if (result != SQLITE_OK) {
+        LOG_ERROR("Failed to prepare list namespaces statement: {}", get_sqlite_error());
+        return Err(ErrorCode::DATABASE_ERROR);
+    }
+
+    // COUNT ENTRIES statement
+    const char* count_entries_sql = R"(
+        SELECT COUNT(*) FROM nvs_entries 
+        WHERE namespace_name = ?
+    )";
+
+    result = sqlite3_prepare_v2(db_, count_entries_sql, -1, &stmt_count_entries_, nullptr);
+    if (result != SQLITE_OK) {
+        LOG_ERROR("Failed to prepare count entries statement: {}", get_sqlite_error());
+        return Err(ErrorCode::DATABASE_ERROR);
+    }
+
+    return Ok();
+}
+
+void SQLiteBackend::cleanup_statements() {
+    if (stmt_insert_) { sqlite3_finalize(stmt_insert_); stmt_insert_ = nullptr; }
+    if (stmt_select_) { sqlite3_finalize(stmt_select_); stmt_select_ = nullptr; }
+    if (stmt_delete_) { sqlite3_finalize(stmt_delete_); stmt_delete_ = nullptr; }
+    if (stmt_exists_) { sqlite3_finalize(stmt_exists_); stmt_exists_ = nullptr; }
+    if (stmt_list_keys_) { sqlite3_finalize(stmt_list_keys_); stmt_list_keys_ = nullptr; }
+    if (stmt_list_namespaces_) { sqlite3_finalize(stmt_list_namespaces_); stmt_list_namespaces_ = nullptr; }
+    if (stmt_count_entries_) { sqlite3_finalize(stmt_count_entries_); stmt_count_entries_ = nullptr; }
+}
+
+std::string SQLiteBackend::get_sqlite_error() const {
+    if (db_) {
+        return sqlite3_errmsg(db_);
+    }
+    return "Database not initialized";
+}
+
+Result<void> SQLiteBackend::insert_entry(const NVSController::NVSEntry& entry) {
+    if (!initialized_ || !stmt_insert_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+
+    sqlite3_reset(stmt_insert_);
+    
+    sqlite3_bind_text(stmt_insert_, 1, entry.namespace_name.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt_insert_, 2, entry.key.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_int(stmt_insert_, 3, static_cast<int>(entry.type));
+    sqlite3_bind_blob(stmt_insert_, 4, entry.value.data(), entry.value.size(), SQLITE_STATIC);
+    sqlite3_bind_int64(stmt_insert_, 5, entry.size);
+    sqlite3_bind_int64(stmt_insert_, 6, entry.crc32);
+    sqlite3_bind_int64(stmt_insert_, 7, entry.timestamp);
+    sqlite3_bind_int(stmt_insert_, 8, entry.encrypted ? 1 : 0);
+
+    int result = sqlite3_step(stmt_insert_);
+    if (result != SQLITE_DONE) {
+        LOG_ERROR("Failed to insert NVS entry: {}", get_sqlite_error());
+        return Err(ErrorCode::DATABASE_ERROR);
+    }
+
+    return Ok();
+}
+
+Result<void> SQLiteBackend::update_entry(const NVSController::NVSEntry& entry) {
+    // SQLite INSERT OR REPLACE handles updates
+    return insert_entry(entry);
+}
+
+Result<void> SQLiteBackend::delete_entry(const std::string& namespace_name, const std::string& key) {
+    if (!initialized_ || !stmt_delete_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+
+    sqlite3_reset(stmt_delete_);
+    sqlite3_bind_text(stmt_delete_, 1, namespace_name.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt_delete_, 2, key.c_str(), -1, SQLITE_STATIC);
+
+    int result = sqlite3_step(stmt_delete_);
+    if (result != SQLITE_DONE) {
+        LOG_ERROR("Failed to delete NVS entry: {}", get_sqlite_error());
+        return Err(ErrorCode::DATABASE_ERROR);
+    }
+
+    return Ok();
+}
+
+Result<NVSController::NVSEntry> SQLiteBackend::get_entry(const std::string& namespace_name, const std::string& key) {
+    if (!initialized_ || !stmt_select_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+
+    sqlite3_reset(stmt_select_);
+    sqlite3_bind_text(stmt_select_, 1, namespace_name.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt_select_, 2, key.c_str(), -1, SQLITE_STATIC);
+
+    int result = sqlite3_step(stmt_select_);
+    if (result == SQLITE_DONE) {
+        // Entry not found
+        return Err(ErrorCode::NOT_FOUND);
+    }
+
+    if (result != SQLITE_ROW) {
+        LOG_ERROR("Failed to get NVS entry: {}", get_sqlite_error());
+        return Err(ErrorCode::DATABASE_ERROR);
+    }
+
+    NVSController::NVSEntry entry;
+    entry.namespace_name = namespace_name;
+    entry.key = key;
+    entry.type = static_cast<NVSController::NVSType>(sqlite3_column_int(stmt_select_, 0));
+    
+    const void* blob_data = sqlite3_column_blob(stmt_select_, 1);
+    int blob_size = sqlite3_column_bytes(stmt_select_, 1);
+    entry.value.resize(blob_size);
+    std::memcpy(entry.value.data(), blob_data, blob_size);
+    
+    entry.size = sqlite3_column_int64(stmt_select_, 2);
+    entry.crc32 = sqlite3_column_int64(stmt_select_, 3);
+    entry.timestamp = sqlite3_column_int64(stmt_select_, 4);
+    entry.encrypted = sqlite3_column_int(stmt_select_, 5) != 0;
+
+    return Ok(std::move(entry));
+}
+
+Result<bool> SQLiteBackend::entry_exists(const std::string& namespace_name, const std::string& key) {
+    if (!initialized_ || !stmt_exists_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+
+    sqlite3_reset(stmt_exists_);
+    sqlite3_bind_text(stmt_exists_, 1, namespace_name.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt_exists_, 2, key.c_str(), -1, SQLITE_STATIC);
+
+    int result = sqlite3_step(stmt_exists_);
+    if (result == SQLITE_ROW) {
+        return Ok(true);
+    } else if (result == SQLITE_DONE) {
+        return Ok(false);
+    } else {
+        LOG_ERROR("Failed to check NVS entry existence: {}", get_sqlite_error());
+        return Err(ErrorCode::DATABASE_ERROR);
+    }
+}
+
+Result<std::vector<std::string>> SQLiteBackend::list_keys(const std::string& namespace_name) {
+    if (!initialized_ || !stmt_list_keys_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+
+    std::vector<std::string> keys;
+    sqlite3_reset(stmt_list_keys_);
+    sqlite3_bind_text(stmt_list_keys_, 1, namespace_name.c_str(), -1, SQLITE_STATIC);
+
+    while (true) {
+        int result = sqlite3_step(stmt_list_keys_);
+        if (result == SQLITE_DONE) {
+            break;
+        } else if (result == SQLITE_ROW) {
+            const char* key = reinterpret_cast<const char*>(sqlite3_column_text(stmt_list_keys_, 0));
+            if (key) {
+                keys.emplace_back(key);
+            }
+        } else {
+            LOG_ERROR("Failed to list NVS keys: {}", get_sqlite_error());
+            return Err(ErrorCode::DATABASE_ERROR);
+        }
+    }
+
+    return Ok(std::move(keys));
+}
+
+Result<std::vector<std::string>> SQLiteBackend::list_namespaces() {
+    if (!initialized_ || !stmt_list_namespaces_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+
+    std::vector<std::string> namespaces;
+    sqlite3_reset(stmt_list_namespaces_);
+
+    while (true) {
+        int result = sqlite3_step(stmt_list_namespaces_);
+        if (result == SQLITE_DONE) {
+            break;
+        } else if (result == SQLITE_ROW) {
+            const char* ns = reinterpret_cast<const char*>(sqlite3_column_text(stmt_list_namespaces_, 0));
+            if (ns) {
+                namespaces.emplace_back(ns);
+            }
+        } else {
+            LOG_ERROR("Failed to list NVS namespaces: {}", get_sqlite_error());
+            return Err(ErrorCode::DATABASE_ERROR);
+        }
+    }
+
+    return Ok(std::move(namespaces));
+}
+
+Result<size_t> SQLiteBackend::count_entries(const std::string& namespace_name) {
+    if (!initialized_ || !stmt_count_entries_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+
+    sqlite3_reset(stmt_count_entries_);
+    sqlite3_bind_text(stmt_count_entries_, 1, namespace_name.c_str(), -1, SQLITE_STATIC);
+
+    int result = sqlite3_step(stmt_count_entries_);
+    if (result == SQLITE_ROW) {
+        return Ok(static_cast<size_t>(sqlite3_column_int64(stmt_count_entries_, 0)));
+    } else {
+        LOG_ERROR("Failed to count NVS entries: {}", get_sqlite_error());
+        return Err(ErrorCode::DATABASE_ERROR);
+    }
+}
+
+Result<void> SQLiteBackend::begin_transaction() {
+    int result = sqlite3_exec(db_, "BEGIN TRANSACTION;", nullptr, nullptr, nullptr);
+    if (result != SQLITE_OK) {
+        LOG_ERROR("Failed to begin transaction: {}", get_sqlite_error());
+        return Err(ErrorCode::DATABASE_ERROR);
+    }
+    return Ok();
+}
+
+Result<void> SQLiteBackend::commit_transaction() {
+    int result = sqlite3_exec(db_, "COMMIT;", nullptr, nullptr, nullptr);
+    if (result != SQLITE_OK) {
+        LOG_ERROR("Failed to commit transaction: {}", get_sqlite_error());
+        return Err(ErrorCode::DATABASE_ERROR);
+    }
+    return Ok();
+}
+
+Result<void> SQLiteBackend::rollback_transaction() {
+    int result = sqlite3_exec(db_, "ROLLBACK;", nullptr, nullptr, nullptr);
+    if (result != SQLITE_OK) {
+        LOG_ERROR("Failed to rollback transaction: {}", get_sqlite_error());
+        return Err(ErrorCode::DATABASE_ERROR);
+    }
+    return Ok();
+}
+
+Result<void> SQLiteBackend::vacuum() {
+    int result = sqlite3_exec(db_, "VACUUM;", nullptr, nullptr, nullptr);
+    if (result != SQLITE_OK) {
+        LOG_ERROR("Failed to vacuum database: {}", get_sqlite_error());
+        return Err(ErrorCode::DATABASE_ERROR);
+    }
+    return Ok();
+}
+
+Result<void> SQLiteBackend::analyze() {
+    int result = sqlite3_exec(db_, "ANALYZE;", nullptr, nullptr, nullptr);
+    if (result != SQLITE_OK) {
+        LOG_ERROR("Failed to analyze database: {}", get_sqlite_error());
+        return Err(ErrorCode::DATABASE_ERROR);
+    }
+    return Ok();
+}
+
+Result<NVSController::NVSStats> SQLiteBackend::get_stats() {
+    if (!initialized_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+
+    NVSController::NVSStats stats;
+    
+    // Get basic statistics
+    const char* stats_sql = R"(
+        SELECT 
+            COUNT(*) as total_entries,
+            SUM(size) as used_space,
+            COUNT(DISTINCT namespace_name) as namespaces_count
+        FROM nvs_entries;
+    )";
+
+    sqlite3_stmt* stmt = nullptr;
+    int result = sqlite3_prepare_v2(db_, stats_sql, -1, &stmt, nullptr);
+    if (result != SQLITE_OK) {
+        LOG_ERROR("Failed to prepare stats statement: {}", get_sqlite_error());
+        return Err(ErrorCode::DATABASE_ERROR);
+    }
+
+    result = sqlite3_step(stmt);
+    if (result == SQLITE_ROW) {
+        stats.total_entries = sqlite3_column_int64(stmt, 0);
+        stats.used_space = sqlite3_column_int64(stmt, 1);
+        stats.namespaces_count = sqlite3_column_int64(stmt, 2);
+    }
+
+    sqlite3_finalize(stmt);
+
+    // Estimate total space (simplified)
+    stats.total_space = 1024 * 1024;  // 1MB default
+    stats.free_space = stats.total_space - stats.used_space;
+    stats.wear_level_avg = 0.5;  // Placeholder
+    stats.last_commit_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count();
+
+    return Ok(stats);
+}
+
+// NVSController Implementation
+NVSController::NVSController() 
+    : config_() {
+    // Set default config values
+    config_.storage_path = "~/.m5tab5_emulator/nvs.db";
+    config_.enable_encryption = false;
+    config_.max_entries = 10000;
+    config_.max_entry_size = 4096;
+    config_.enable_wear_leveling = true;
+    config_.auto_commit = true;
+    config_.enable_statistics = true;
+    
+    // Expand storage path
+    config_.storage_path = expand_path(config_.storage_path);
+    
+    // Create SQLite backend
+    SQLiteBackend::Config backend_config;
+    backend_config.database_path = config_.storage_path;
+    backend_ = std::make_unique<SQLiteBackend>(backend_config);
+}
+
+NVSController::NVSController(const Config& config) 
+    : config_(config) {
+    // Expand storage path
+    config_.storage_path = expand_path(config_.storage_path);
+    
+    // Create SQLite backend
+    SQLiteBackend::Config backend_config;
+    backend_config.database_path = config_.storage_path;
+    backend_ = std::make_unique<SQLiteBackend>(backend_config);
+}
+
+NVSController::~NVSController() {
+    if (initialized_) {
+        shutdown();
+    }
+}
+
+Result<void> NVSController::initialize() {
+    std::lock_guard<std::shared_mutex> lock(global_mutex_);
+    
+    if (initialized_) {
+        return Ok();
+    }
+
+    // Initialize backend
+    auto backend_result = backend_->initialize();
+    if (!backend_result.has_value()) {
+        LOG_ERROR("Failed to initialize NVS backend");
+        return backend_result;
+    }
+
+    initialized_ = true;
+    LOG_INFO("NVS Controller initialized with storage: {}", config_.storage_path);
+    return Ok();
+}
+
+Result<void> NVSController::shutdown() {
+    std::lock_guard<std::shared_mutex> lock(global_mutex_);
+    
+    if (!initialized_) {
+        return Ok();
+    }
+
+    // Close all handles
+    {
+        std::lock_guard<std::mutex> handle_lock(handles_mutex_);
+        handles_.clear();
+    }
+
+    // Shutdown backend
+    auto backend_result = backend_->shutdown();
+    if (!backend_result.has_value()) {
+        LOG_ERROR("Failed to shutdown NVS backend");
+        return backend_result;
+    }
+
+    initialized_ = false;
+    LOG_INFO("NVS Controller shutdown complete");
+    return Ok();
+}
+
+std::string NVSController::expand_path(const std::string& path) const {
+    if (path.empty()) {
+        return path;
+    }
+
+    std::string expanded = path;
+    if (expanded[0] == '~') {
+        const char* home = getenv("HOME");
+        if (home) {
+            expanded = std::string(home) + expanded.substr(1);
+        }
+    }
+
+    return expanded;
+}
+
+uint32_t NVSController::calculate_crc32(const void* data, size_t size) const {
+    // Simple CRC32 implementation
+    const uint32_t polynomial = 0xEDB88320;
+    uint32_t crc = 0xFFFFFFFF;
+    
+    const uint8_t* bytes = static_cast<const uint8_t*>(data);
+    for (size_t i = 0; i < size; i++) {
+        crc ^= bytes[i];
+        for (int j = 0; j < 8; j++) {
+            if (crc & 1) {
+                crc = (crc >> 1) ^ polynomial;
+            } else {
+                crc >>= 1;
+            }
+        }
+    }
+    
+    return ~crc;
+}
+
+uint64_t NVSController::get_timestamp() const {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count();
+}
+
+uint32_t NVSController::generate_handle() {
+    std::lock_guard<std::mutex> lock(handles_mutex_);
+    return next_handle_id_++;
+}
+
+NVSController::NVSHandle* NVSController::get_handle(uint32_t handle_id) {
+    std::lock_guard<std::mutex> lock(handles_mutex_);
+    auto it = handles_.find(handle_id);
+    return (it != handles_.end()) ? it->second.get() : nullptr;
+}
+
+const NVSController::NVSHandle* NVSController::get_handle(uint32_t handle_id) const {
+    std::lock_guard<std::mutex> lock(handles_mutex_);
+    auto it = handles_.find(handle_id);
+    return (it != handles_.end()) ? it->second.get() : nullptr;
+}
+
+Result<void> NVSController::validate_key(const std::string& key) const {
+    if (key.empty()) {
+        return Err(ErrorCode::INVALID_PARAMETER);
+    }
+    
+    if (key.length() > 15) {  // ESP-IDF NVS key limit
+        return Err(ErrorCode::INVALID_PARAMETER);
+    }
+    
+    // Check for invalid characters
+    for (char c : key) {
+        if (!std::isalnum(c) && c != '_' && c != '-') {
+            return Err(ErrorCode::INVALID_PARAMETER);
+        }
+    }
+    
+    return Ok();
+}
+
+Result<void> NVSController::validate_namespace(const std::string& namespace_name) const {
+    if (namespace_name.empty()) {
+        return Err(ErrorCode::INVALID_PARAMETER);
+    }
+    
+    if (namespace_name.length() > 15) {  // ESP-IDF NVS namespace limit
+        return Err(ErrorCode::INVALID_PARAMETER);
+    }
+    
+    return Ok();
+}
+
+Result<void> NVSController::validate_handle(uint32_t handle) const {
+    if (!is_handle_valid(handle)) {
+        return Err(ErrorCode::INVALID_HANDLE);
+    }
+    return Ok();
+}
+
+Result<uint32_t> NVSController::open_namespace(const std::string& namespace_name, 
+                                              AccessMode mode,
+                                              const std::string& partition_name) {
+    std::shared_lock<std::shared_mutex> global_lock(global_mutex_);
+    
+    if (!initialized_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+
+    auto validate_result = validate_namespace(namespace_name);
+    if (!validate_result.has_value()) {
+        return Err(ErrorCode::INVALID_PARAMETER);
+    }
+
+    uint32_t handle_id = generate_handle();
+    auto handle = std::make_unique<NVSHandle>();
+    handle->handle_id = handle_id;
+    handle->namespace_name = namespace_name;
+    handle->partition_name = partition_name;
+    handle->mode = mode;
+    handle->valid = true;
+
+    {
+        std::lock_guard<std::mutex> lock(handles_mutex_);
+        handles_[handle_id] = std::move(handle);
+    }
+
+    LOG_DEBUG("Opened NVS namespace '{}' with handle {}", namespace_name, handle_id);
+    return Ok(handle_id);
+}
+
+Result<void> NVSController::close_namespace(uint32_t handle) {
+    std::shared_lock<std::shared_mutex> global_lock(global_mutex_);
+    
+    if (!initialized_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(handles_mutex_);
+        auto it = handles_.find(handle);
+        if (it == handles_.end()) {
+            return Err(ErrorCode::INVALID_HANDLE);
+        }
+        
+        LOG_DEBUG("Closed NVS namespace '{}' handle {}", it->second->namespace_name, handle);
+        handles_.erase(it);
+    }
+
+    return Ok();
+}
+
+bool NVSController::is_handle_valid(uint32_t handle) const {
+    std::lock_guard<std::mutex> lock(handles_mutex_);
+    auto it = handles_.find(handle);
+    return (it != handles_.end() && it->second->valid);
+}
+
+} // namespace m5tab5::emulator::storage

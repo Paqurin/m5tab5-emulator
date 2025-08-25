@@ -1,0 +1,716 @@
+#include "emulator/storage/nvs_controller.hpp"
+#include "emulator/utils/logging.hpp"
+
+namespace m5tab5::emulator::storage {
+
+using namespace m5tab5::emulator::utils;
+
+// Generic data operations
+Result<void> NVSController::set_entry(uint32_t handle, const std::string& key, 
+                                     NVSType type, const void* value, size_t size) {
+    std::shared_lock<std::shared_mutex> global_lock(global_mutex_);
+    
+    if (!initialized_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+
+    auto validate_result = validate_handle(handle);
+    if (!validate_result.has_value()) {
+        return validate_result;
+    }
+
+    auto key_result = validate_key(key);
+    if (!key_result.has_value()) {
+        return key_result;
+    }
+
+    NVSHandle* nvs_handle = get_handle(handle);
+    if (!nvs_handle) {
+        return Err(ErrorCode::INVALID_HANDLE);
+    }
+
+    if (nvs_handle->mode == AccessMode::READ_ONLY) {
+        return Err(ErrorCode::READ_ONLY);
+    }
+
+    if (size > config_.max_entry_size) {
+        return Err(ErrorCode::INVALID_LENGTH);
+    }
+
+    // Create entry
+    NVSEntry entry;
+    entry.key = key;
+    entry.namespace_name = nvs_handle->namespace_name;
+    entry.type = type;
+    entry.value.resize(size);
+    std::memcpy(entry.value.data(), value, size);
+    entry.size = size;
+    entry.crc32 = calculate_crc32(value, size);
+    entry.timestamp = get_timestamp();
+    entry.encrypted = false;  // TODO: Implement encryption
+
+    // Store in backend
+    {
+        std::lock_guard<std::mutex> backend_lock(backend_mutex_);
+        auto result = backend_->insert_entry(entry);
+        if (!result.has_value()) {
+            return result;
+        }
+    }
+
+    // Update statistics
+    {
+        std::lock_guard<std::mutex> stats_lock(stats_mutex_);
+        stats_.write_operations++;
+    }
+
+    LOG_DEBUG("Set NVS entry: {}:{} (size: {})", nvs_handle->namespace_name, key, size);
+    return Ok();
+}
+
+Result<NVSController::NVSEntry> NVSController::get_entry(uint32_t handle, const std::string& key) {
+    std::shared_lock<std::shared_mutex> global_lock(global_mutex_);
+    
+    if (!initialized_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+
+    auto validate_result = validate_handle(handle);
+    if (!validate_result.has_value()) {
+        return Err(validate_result.error());
+    }
+
+    auto key_result = validate_key(key);
+    if (!key_result.has_value()) {
+        return Err(key_result.error());
+    }
+
+    NVSHandle* nvs_handle = get_handle(handle);
+    if (!nvs_handle) {
+        return Err(ErrorCode::INVALID_HANDLE);
+    }
+
+    // Get from backend
+    Result<NVSEntry> result;
+    {
+        std::lock_guard<std::mutex> backend_lock(backend_mutex_);
+        result = backend_->get_entry(nvs_handle->namespace_name, key);
+    }
+
+    if (result.has_value()) {
+        // Update statistics
+        std::lock_guard<std::mutex> stats_lock(stats_mutex_);
+        stats_.read_operations++;
+        
+        LOG_DEBUG("Get NVS entry: {}:{} (size: {})", nvs_handle->namespace_name, key, result.value().size);
+    }
+
+    return result;
+}
+
+// Typed setters implementation
+Result<void> NVSController::set_u8(uint32_t handle, const std::string& key, uint8_t value) {
+    return set_entry(handle, key, NVSType::U8, &value, sizeof(value));
+}
+
+Result<void> NVSController::set_i8(uint32_t handle, const std::string& key, int8_t value) {
+    return set_entry(handle, key, NVSType::I8, &value, sizeof(value));
+}
+
+Result<void> NVSController::set_u16(uint32_t handle, const std::string& key, uint16_t value) {
+    return set_entry(handle, key, NVSType::U16, &value, sizeof(value));
+}
+
+Result<void> NVSController::set_i16(uint32_t handle, const std::string& key, int16_t value) {
+    return set_entry(handle, key, NVSType::I16, &value, sizeof(value));
+}
+
+Result<void> NVSController::set_u32(uint32_t handle, const std::string& key, uint32_t value) {
+    return set_entry(handle, key, NVSType::U32, &value, sizeof(value));
+}
+
+Result<void> NVSController::set_i32(uint32_t handle, const std::string& key, int32_t value) {
+    return set_entry(handle, key, NVSType::I32, &value, sizeof(value));
+}
+
+Result<void> NVSController::set_u64(uint32_t handle, const std::string& key, uint64_t value) {
+    return set_entry(handle, key, NVSType::U64, &value, sizeof(value));
+}
+
+Result<void> NVSController::set_i64(uint32_t handle, const std::string& key, int64_t value) {
+    return set_entry(handle, key, NVSType::I64, &value, sizeof(value));
+}
+
+Result<void> NVSController::set_str(uint32_t handle, const std::string& key, const std::string& value) {
+    return set_entry(handle, key, NVSType::STR, value.c_str(), value.length() + 1);  // Include null terminator
+}
+
+Result<void> NVSController::set_blob(uint32_t handle, const std::string& key, 
+                                    const void* value, size_t size) {
+    return set_entry(handle, key, NVSType::BLOB, value, size);
+}
+
+// Typed getters implementation
+Result<uint8_t> NVSController::get_u8(uint32_t handle, const std::string& key) {
+    auto entry_result = get_entry(handle, key);
+    if (!entry_result.has_value()) {
+        return Err(entry_result.error());
+    }
+
+    const auto& entry = entry_result.value();
+    if (entry.type != NVSType::U8) {
+        return Err(ErrorCode::TYPE_MISMATCH);
+    }
+
+    if (entry.value.size() != sizeof(uint8_t)) {
+        return Err(ErrorCode::INVALID_LENGTH);
+    }
+
+    return Ok(*reinterpret_cast<const uint8_t*>(entry.value.data()));
+}
+
+Result<int8_t> NVSController::get_i8(uint32_t handle, const std::string& key) {
+    auto entry_result = get_entry(handle, key);
+    if (!entry_result.has_value()) {
+        return Err(entry_result.error());
+    }
+
+    const auto& entry = entry_result.value();
+    if (entry.type != NVSType::I8) {
+        return Err(ErrorCode::TYPE_MISMATCH);
+    }
+
+    if (entry.value.size() != sizeof(int8_t)) {
+        return Err(ErrorCode::INVALID_LENGTH);
+    }
+
+    return Ok(*reinterpret_cast<const int8_t*>(entry.value.data()));
+}
+
+Result<uint16_t> NVSController::get_u16(uint32_t handle, const std::string& key) {
+    auto entry_result = get_entry(handle, key);
+    if (!entry_result.has_value()) {
+        return Err(entry_result.error());
+    }
+
+    const auto& entry = entry_result.value();
+    if (entry.type != NVSType::U16) {
+        return Err(ErrorCode::TYPE_MISMATCH);
+    }
+
+    if (entry.value.size() != sizeof(uint16_t)) {
+        return Err(ErrorCode::INVALID_LENGTH);
+    }
+
+    return Ok(*reinterpret_cast<const uint16_t*>(entry.value.data()));
+}
+
+Result<int16_t> NVSController::get_i16(uint32_t handle, const std::string& key) {
+    auto entry_result = get_entry(handle, key);
+    if (!entry_result.has_value()) {
+        return Err(entry_result.error());
+    }
+
+    const auto& entry = entry_result.value();
+    if (entry.type != NVSType::I16) {
+        return Err(ErrorCode::TYPE_MISMATCH);
+    }
+
+    if (entry.value.size() != sizeof(int16_t)) {
+        return Err(ErrorCode::INVALID_LENGTH);
+    }
+
+    return Ok(*reinterpret_cast<const int16_t*>(entry.value.data()));
+}
+
+Result<uint32_t> NVSController::get_u32(uint32_t handle, const std::string& key) {
+    auto entry_result = get_entry(handle, key);
+    if (!entry_result.has_value()) {
+        return Err(entry_result.error());
+    }
+
+    const auto& entry = entry_result.value();
+    if (entry.type != NVSType::U32) {
+        return Err(ErrorCode::TYPE_MISMATCH);
+    }
+
+    if (entry.value.size() != sizeof(uint32_t)) {
+        return Err(ErrorCode::INVALID_LENGTH);
+    }
+
+    return Ok(*reinterpret_cast<const uint32_t*>(entry.value.data()));
+}
+
+Result<int32_t> NVSController::get_i32(uint32_t handle, const std::string& key) {
+    auto entry_result = get_entry(handle, key);
+    if (!entry_result.has_value()) {
+        return Err(entry_result.error());
+    }
+
+    const auto& entry = entry_result.value();
+    if (entry.type != NVSType::I32) {
+        return Err(ErrorCode::TYPE_MISMATCH);
+    }
+
+    if (entry.value.size() != sizeof(int32_t)) {
+        return Err(ErrorCode::INVALID_LENGTH);
+    }
+
+    return Ok(*reinterpret_cast<const int32_t*>(entry.value.data()));
+}
+
+Result<uint64_t> NVSController::get_u64(uint32_t handle, const std::string& key) {
+    auto entry_result = get_entry(handle, key);
+    if (!entry_result.has_value()) {
+        return Err(entry_result.error());
+    }
+
+    const auto& entry = entry_result.value();
+    if (entry.type != NVSType::U64) {
+        return Err(ErrorCode::TYPE_MISMATCH);
+    }
+
+    if (entry.value.size() != sizeof(uint64_t)) {
+        return Err(ErrorCode::INVALID_LENGTH);
+    }
+
+    return Ok(*reinterpret_cast<const uint64_t*>(entry.value.data()));
+}
+
+Result<int64_t> NVSController::get_i64(uint32_t handle, const std::string& key) {
+    auto entry_result = get_entry(handle, key);
+    if (!entry_result.has_value()) {
+        return Err(entry_result.error());
+    }
+
+    const auto& entry = entry_result.value();
+    if (entry.type != NVSType::I64) {
+        return Err(ErrorCode::TYPE_MISMATCH);
+    }
+
+    if (entry.value.size() != sizeof(int64_t)) {
+        return Err(ErrorCode::INVALID_LENGTH);
+    }
+
+    return Ok(*reinterpret_cast<const int64_t*>(entry.value.data()));
+}
+
+Result<std::string> NVSController::get_str(uint32_t handle, const std::string& key) {
+    auto entry_result = get_entry(handle, key);
+    if (!entry_result.has_value()) {
+        return Err(entry_result.error());
+    }
+
+    const auto& entry = entry_result.value();
+    if (entry.type != NVSType::STR) {
+        return Err(ErrorCode::TYPE_MISMATCH);
+    }
+
+    if (entry.value.empty()) {
+        return Ok(std::string{});
+    }
+
+    // Ensure null termination
+    std::string result(reinterpret_cast<const char*>(entry.value.data()), entry.value.size());
+    if (result.back() == '\0') {
+        result.pop_back();
+    }
+
+    return Ok(std::move(result));
+}
+
+Result<size_t> NVSController::get_str_size(uint32_t handle, const std::string& key) {
+    auto entry_result = get_entry(handle, key);
+    if (!entry_result.has_value()) {
+        return Err(entry_result.error());
+    }
+
+    const auto& entry = entry_result.value();
+    if (entry.type != NVSType::STR) {
+        return Err(ErrorCode::TYPE_MISMATCH);
+    }
+
+    return Ok(entry.size);
+}
+
+Result<size_t> NVSController::get_blob(uint32_t handle, const std::string& key, 
+                                      void* value, size_t size) {
+    auto entry_result = get_entry(handle, key);
+    if (!entry_result.has_value()) {
+        return Err(entry_result.error());
+    }
+
+    const auto& entry = entry_result.value();
+    if (entry.type != NVSType::BLOB) {
+        return Err(ErrorCode::TYPE_MISMATCH);
+    }
+
+    size_t copy_size = std::min(size, entry.value.size());
+    std::memcpy(value, entry.value.data(), copy_size);
+
+    return Ok(entry.value.size());
+}
+
+Result<size_t> NVSController::get_blob_size(uint32_t handle, const std::string& key) {
+    auto entry_result = get_entry(handle, key);
+    if (!entry_result.has_value()) {
+        return Err(entry_result.error());
+    }
+
+    const auto& entry = entry_result.value();
+    if (entry.type != NVSType::BLOB) {
+        return Err(ErrorCode::TYPE_MISMATCH);
+    }
+
+    return Ok(entry.size);
+}
+
+// Entry management
+Result<void> NVSController::erase_key(uint32_t handle, const std::string& key) {
+    std::shared_lock<std::shared_mutex> global_lock(global_mutex_);
+    
+    if (!initialized_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+
+    auto validate_result = validate_handle(handle);
+    if (!validate_result.has_value()) {
+        return validate_result;
+    }
+
+    auto key_result = validate_key(key);
+    if (!key_result.has_value()) {
+        return key_result;
+    }
+
+    NVSHandle* nvs_handle = get_handle(handle);
+    if (!nvs_handle) {
+        return Err(ErrorCode::INVALID_HANDLE);
+    }
+
+    if (nvs_handle->mode == AccessMode::READ_ONLY) {
+        return Err(ErrorCode::READ_ONLY);
+    }
+
+    // Delete from backend
+    Result<void> result;
+    {
+        std::lock_guard<std::mutex> backend_lock(backend_mutex_);
+        result = backend_->delete_entry(nvs_handle->namespace_name, key);
+    }
+
+    if (result.has_value()) {
+        // Update statistics
+        std::lock_guard<std::mutex> stats_lock(stats_mutex_);
+        stats_.erase_operations++;
+        
+        LOG_DEBUG("Erased NVS entry: {}:{}", nvs_handle->namespace_name, key);
+    }
+
+    return result;
+}
+
+Result<void> NVSController::erase_all(uint32_t handle) {
+    std::shared_lock<std::shared_mutex> global_lock(global_mutex_);
+    
+    if (!initialized_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+
+    auto validate_result = validate_handle(handle);
+    if (!validate_result.has_value()) {
+        return validate_result;
+    }
+
+    NVSHandle* nvs_handle = get_handle(handle);
+    if (!nvs_handle) {
+        return Err(ErrorCode::INVALID_HANDLE);
+    }
+
+    if (nvs_handle->mode == AccessMode::READ_ONLY) {
+        return Err(ErrorCode::READ_ONLY);
+    }
+
+    // Get all keys and delete them
+    std::vector<std::string> keys;
+    {
+        std::lock_guard<std::mutex> backend_lock(backend_mutex_);
+        auto keys_result = backend_->list_keys(nvs_handle->namespace_name);
+        if (!keys_result.has_value()) {
+            return Err(keys_result.error());
+        }
+        keys = keys_result.value();
+    }
+
+    // Delete each key
+    for (const auto& key : keys) {
+        auto delete_result = erase_key(handle, key);
+        if (!delete_result.has_value()) {
+            LOG_ERROR("Failed to erase key '{}' during erase_all", key);
+            return delete_result;
+        }
+    }
+
+    LOG_DEBUG("Erased all {} entries from namespace '{}'", keys.size(), nvs_handle->namespace_name);
+    return Ok();
+}
+
+bool NVSController::exists(uint32_t handle, const std::string& key) {
+    if (!initialized_) {
+        return false;
+    }
+
+    if (!validate_handle(handle).has_value()) {
+        return false;
+    }
+
+    if (!validate_key(key).has_value()) {
+        return false;
+    }
+
+    NVSHandle* nvs_handle = get_handle(handle);
+    if (!nvs_handle) {
+        return false;
+    }
+
+    std::lock_guard<std::mutex> backend_lock(backend_mutex_);
+    auto result = backend_->entry_exists(nvs_handle->namespace_name, key);
+    return result.has_value() && result.value();
+}
+
+Result<NVSController::NVSType> NVSController::get_key_type(uint32_t handle, const std::string& key) {
+    auto entry_result = get_entry(handle, key);
+    if (!entry_result.has_value()) {
+        return Err(entry_result.error());
+    }
+
+    return Ok(entry_result.value().type);
+}
+
+// Transaction management (simplified for now)
+Result<void> NVSController::commit(uint32_t handle) {
+    if (!initialized_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+
+    if (!validate_handle(handle).has_value()) {
+        return Err(ErrorCode::INVALID_HANDLE);
+    }
+
+    // In this implementation, commits are immediate
+    // This is a placeholder for future transaction support
+    return Ok();
+}
+
+Result<void> NVSController::commit_all() {
+    if (!initialized_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+
+    // Placeholder for future transaction support
+    return Ok();
+}
+
+Result<void> NVSController::rollback(uint32_t handle) {
+    if (!initialized_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+
+    if (!validate_handle(handle).has_value()) {
+        return Err(ErrorCode::INVALID_HANDLE);
+    }
+
+    // Placeholder for future transaction support
+    return Err(ErrorCode::NOT_IMPLEMENTED);
+}
+
+// Enumeration and discovery
+std::vector<std::string> NVSController::list_keys(uint32_t handle, NVSType type) {
+    if (!initialized_ || !validate_handle(handle).has_value()) {
+        return {};
+    }
+
+    NVSHandle* nvs_handle = get_handle(handle);
+    if (!nvs_handle) {
+        return {};
+    }
+
+    std::lock_guard<std::mutex> backend_lock(backend_mutex_);
+    auto keys_result = backend_->list_keys(nvs_handle->namespace_name);
+    if (!keys_result.has_value()) {
+        return {};
+    }
+
+    // If specific type requested, filter keys
+    if (type != NVSType::U8) {  // Using U8 as "any type"
+        std::vector<std::string> filtered_keys;
+        for (const auto& key : keys_result.value()) {
+            auto entry_result = backend_->get_entry(nvs_handle->namespace_name, key);
+            if (entry_result.has_value() && entry_result.value().type == type) {
+                filtered_keys.push_back(key);
+            }
+        }
+        return filtered_keys;
+    }
+
+    return keys_result.value();
+}
+
+std::vector<std::string> NVSController::list_namespaces(const std::string& partition_name) {
+    if (!initialized_) {
+        return {};
+    }
+
+    std::lock_guard<std::mutex> backend_lock(backend_mutex_);
+    auto namespaces_result = backend_->list_namespaces();
+    return namespaces_result.has_value() ? namespaces_result.value() : std::vector<std::string>{};
+}
+
+Result<size_t> NVSController::get_namespace_entry_count(uint32_t handle) {
+    if (!initialized_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+
+    if (!validate_handle(handle).has_value()) {
+        return Err(ErrorCode::INVALID_HANDLE);
+    }
+
+    NVSHandle* nvs_handle = get_handle(handle);
+    if (!nvs_handle) {
+        return Err(ErrorCode::INVALID_HANDLE);
+    }
+
+    std::lock_guard<std::mutex> backend_lock(backend_mutex_);
+    return backend_->count_entries(nvs_handle->namespace_name);
+}
+
+// Statistics and monitoring
+NVSController::NVSStats NVSController::get_stats(const std::string& partition_name) const {
+    if (!initialized_) {
+        return NVSStats{};
+    }
+
+    std::lock_guard<std::mutex> backend_lock(backend_mutex_);
+    auto stats_result = backend_->get_stats();
+    return stats_result.has_value() ? stats_result.value() : NVSStats{};
+}
+
+Result<void> NVSController::compact_partition(const std::string& partition_name) {
+    if (!initialized_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+
+    std::lock_guard<std::mutex> backend_lock(backend_mutex_);
+    return backend_->vacuum();
+}
+
+double NVSController::get_wear_level(const std::string& partition_name) const {
+    // Simplified wear level calculation
+    return 0.5;  // 50% wear level
+}
+
+// Encryption support (placeholder)
+Result<void> NVSController::set_encryption_key(const std::string& key) {
+    config_.encryption_key = key;
+    config_.enable_encryption = !key.empty();
+    return Ok();
+}
+
+// Debug and diagnostics
+void NVSController::dump_namespace(uint32_t handle) const {
+    if (!initialized_ || !validate_handle(handle).has_value()) {
+        return;
+    }
+
+    NVSHandle* nvs_handle = get_handle(handle);
+    if (!nvs_handle) {
+        return;
+    }
+
+    LOG_INFO("=== NVS Namespace Dump: {} ===", nvs_handle->namespace_name);
+    
+    std::lock_guard<std::mutex> backend_lock(backend_mutex_);
+    auto keys_result = backend_->list_keys(nvs_handle->namespace_name);
+    if (!keys_result.has_value()) {
+        LOG_INFO("Failed to list keys for namespace");
+        return;
+    }
+
+    for (const auto& key : keys_result.value()) {
+        auto entry_result = backend_->get_entry(nvs_handle->namespace_name, key);
+        if (entry_result.has_value()) {
+            const auto& entry = entry_result.value();
+            LOG_INFO("  {}: type={}, size={}, crc32=0x{:08x}", 
+                    key, static_cast<int>(entry.type), entry.size, entry.crc32);
+        }
+    }
+}
+
+void NVSController::dump_partition(const std::string& partition_name) const {
+    if (!initialized_) {
+        return;
+    }
+
+    LOG_INFO("=== NVS Partition Dump: {} ===", partition_name);
+    
+    std::lock_guard<std::mutex> backend_lock(backend_mutex_);
+    auto namespaces_result = backend_->list_namespaces();
+    if (!namespaces_result.has_value()) {
+        LOG_INFO("Failed to list namespaces");
+        return;
+    }
+
+    for (const auto& namespace_name : namespaces_result.value()) {
+        auto count_result = backend_->count_entries(namespace_name);
+        size_t count = count_result.has_value() ? count_result.value() : 0;
+        LOG_INFO("  Namespace '{}': {} entries", namespace_name, count);
+    }
+
+    auto stats_result = backend_->get_stats();
+    if (stats_result.has_value()) {
+        const auto& stats = stats_result.value();
+        LOG_INFO("  Total entries: {}", stats.total_entries);
+        LOG_INFO("  Used space: {} bytes", stats.used_space);
+        LOG_INFO("  Free space: {} bytes", stats.free_space);
+    }
+}
+
+// Partition management
+Result<void> NVSController::init_partition(const std::string& partition_name) {
+    // In our SQLite implementation, partitions are logical concepts
+    // This is a placeholder for ESP-IDF compatibility
+    return Ok();
+}
+
+Result<void> NVSController::erase_partition(const std::string& partition_name) {
+    if (!initialized_) {
+        return Err(ErrorCode::NOT_INITIALIZED);
+    }
+
+    // Delete all entries from all namespaces
+    std::lock_guard<std::mutex> backend_lock(backend_mutex_);
+    
+    auto namespaces_result = backend_->list_namespaces();
+    if (!namespaces_result.has_value()) {
+        return Err(namespaces_result.error());
+    }
+
+    for (const auto& namespace_name : namespaces_result.value()) {
+        auto keys_result = backend_->list_keys(namespace_name);
+        if (keys_result.has_value()) {
+            for (const auto& key : keys_result.value()) {
+                backend_->delete_entry(namespace_name, key);
+            }
+        }
+    }
+
+    LOG_INFO("Erased NVS partition: {}", partition_name);
+    return Ok();
+}
+
+std::vector<std::string> NVSController::list_partitions() const {
+    // In our implementation, we only have one logical partition
+    return {"nvs"};
+}
+
+} // namespace m5tab5::emulator::storage

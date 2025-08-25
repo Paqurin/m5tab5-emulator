@@ -1,0 +1,821 @@
+#include "emulator/esp_idf/nvs.h"
+#include "emulator/storage/nvs_controller.hpp"
+#include "emulator/core/emulator_core.hpp"
+#include "emulator/utils/logging.hpp"
+
+#include <unordered_map>
+#include <mutex>
+#include <memory>
+
+namespace {
+    // Global NVS controller instance
+    std::unique_ptr<m5tab5::emulator::storage::NVSController> g_nvs_controller;
+    std::mutex g_nvs_mutex;
+    bool g_nvs_initialized = false;
+
+    // Handle to NVS controller handle mapping
+    std::unordered_map<nvs_handle_t, uint32_t> g_handle_mapping;
+    nvs_handle_t g_next_handle = 1;
+
+    // Convert NVS controller error to ESP-IDF error
+    esp_err_t convert_nvs_error(m5tab5::emulator::Error error) {
+        using ErrorCode = m5tab5::emulator::utils::ErrorCode;
+        
+        switch (error) {
+            case ErrorCode::SUCCESS:
+                return ESP_OK;
+            case ErrorCode::NOT_FOUND:
+                return ESP_ERR_NVS_NOT_FOUND;
+            case ErrorCode::TYPE_MISMATCH:
+                return ESP_ERR_NVS_TYPE_MISMATCH;
+            case ErrorCode::READ_ONLY:
+                return ESP_ERR_NVS_READ_ONLY;
+            case ErrorCode::NOT_ENOUGH_SPACE:
+                return ESP_ERR_NVS_NOT_ENOUGH_SPACE;
+            case ErrorCode::INVALID_PARAMETER:
+                return ESP_ERR_NVS_INVALID_NAME;
+            case ErrorCode::INVALID_HANDLE:
+                return ESP_ERR_NVS_INVALID_HANDLE;
+            case ErrorCode::REMOVE_FAILED:
+                return ESP_ERR_NVS_REMOVE_FAILED;
+            case ErrorCode::INVALID_LENGTH:
+                return ESP_ERR_NVS_INVALID_LENGTH;
+            case ErrorCode::NOT_INITIALIZED:
+                return ESP_ERR_NVS_NOT_INITIALIZED;
+            default:
+                return ESP_FAIL;
+        }
+    }
+
+    // Convert ESP-IDF access mode to NVS controller access mode
+    m5tab5::emulator::storage::NVSController::AccessMode convert_access_mode(nvs_open_mode_t open_mode) {
+        return (open_mode == NVS_READWRITE) ? 
+            m5tab5::emulator::storage::NVSController::AccessMode::READ_WRITE :
+            m5tab5::emulator::storage::NVSController::AccessMode::READ_ONLY;
+    }
+
+    // Get NVS controller instance
+    m5tab5::emulator::storage::NVSController* get_nvs_controller() {
+        std::lock_guard<std::mutex> lock(g_nvs_mutex);
+        
+        if (!g_nvs_controller) {
+            // Initialize NVS controller with default config
+            m5tab5::emulator::storage::NVSController::Config config;
+            config.storage_path = "~/.m5tab5_emulator/nvs.db";
+            config.enable_encryption = false;
+            config.max_entries = 10000;
+            config.max_entry_size = 4096;
+            config.enable_wear_leveling = true;
+            config.auto_commit = true;
+            config.enable_statistics = true;
+            
+            g_nvs_controller = std::make_unique<m5tab5::emulator::storage::NVSController>(config);
+            
+            auto init_result = g_nvs_controller->initialize();
+            if (!init_result.has_value()) {
+                LOG_ERROR("Failed to initialize NVS controller: {}", static_cast<int>(init_result.error()));
+                g_nvs_controller.reset();
+                return nullptr;
+            }
+            
+            g_nvs_initialized = true;
+            LOG_INFO("NVS controller initialized for ESP-IDF API");
+        }
+        
+        return g_nvs_controller.get();
+    }
+
+    // Register handle mapping
+    nvs_handle_t register_handle(uint32_t controller_handle) {
+        std::lock_guard<std::mutex> lock(g_nvs_mutex);
+        nvs_handle_t api_handle = g_next_handle++;
+        g_handle_mapping[api_handle] = controller_handle;
+        return api_handle;
+    }
+
+    // Get controller handle from API handle
+    uint32_t get_controller_handle(nvs_handle_t handle) {
+        std::lock_guard<std::mutex> lock(g_nvs_mutex);
+        auto it = g_handle_mapping.find(handle);
+        return (it != g_handle_mapping.end()) ? it->second : 0;
+    }
+
+    // Unregister handle mapping
+    void unregister_handle(nvs_handle_t handle) {
+        std::lock_guard<std::mutex> lock(g_nvs_mutex);
+        g_handle_mapping.erase(handle);
+    }
+}
+
+extern "C" {
+
+// Initialize NVS partition
+esp_err_t nvs_flash_init() {
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    auto result = controller->init_partition("nvs");
+    if (!result.has_value()) {
+        return convert_nvs_error(result.error());
+    }
+    
+    LOG_INFO("NVS flash initialized");
+    return ESP_OK;
+}
+
+esp_err_t nvs_flash_init_partition(const char* partition_label) {
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    auto result = controller->init_partition(partition_label ? partition_label : "nvs");
+    if (!result.has_value()) {
+        return convert_nvs_error(result.error());
+    }
+    
+    LOG_INFO("NVS flash partition '{}' initialized", partition_label ? partition_label : "nvs");
+    return ESP_OK;
+}
+
+// Erase NVS partition
+esp_err_t nvs_flash_erase() {
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    auto result = controller->erase_partition("nvs");
+    if (!result.has_value()) {
+        return convert_nvs_error(result.error());
+    }
+    
+    LOG_INFO("NVS flash erased");
+    return ESP_OK;
+}
+
+esp_err_t nvs_flash_erase_partition(const char* partition_label) {
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    auto result = controller->erase_partition(partition_label ? partition_label : "nvs");
+    if (!result.has_value()) {
+        return convert_nvs_error(result.error());
+    }
+    
+    LOG_INFO("NVS flash partition '{}' erased", partition_label ? partition_label : "nvs");
+    return ESP_OK;
+}
+
+// Open NVS namespace
+esp_err_t nvs_open(const char* namespace_name, nvs_open_mode_t open_mode, nvs_handle_t* out_handle) {
+    if (!namespace_name || !out_handle) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    auto mode = convert_access_mode(open_mode);
+    auto result = controller->open_namespace(namespace_name, mode);
+    if (!result.has_value()) {
+        return convert_nvs_error(result.error());
+    }
+    
+    *out_handle = register_handle(result.value());
+    LOG_DEBUG("Opened NVS namespace '{}' with handle {}", namespace_name, *out_handle);
+    return ESP_OK;
+}
+
+esp_err_t nvs_open_from_partition(const char* partition_label, const char* namespace_name, 
+                                 nvs_open_mode_t open_mode, nvs_handle_t* out_handle) {
+    if (!namespace_name || !out_handle) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    auto mode = convert_access_mode(open_mode);
+    auto result = controller->open_namespace(namespace_name, mode, partition_label ? partition_label : "nvs");
+    if (!result.has_value()) {
+        return convert_nvs_error(result.error());
+    }
+    
+    *out_handle = register_handle(result.value());
+    LOG_DEBUG("Opened NVS namespace '{}' from partition '{}' with handle {}", 
+             namespace_name, partition_label ? partition_label : "nvs", *out_handle);
+    return ESP_OK;
+}
+
+// Close NVS handle
+void nvs_close(nvs_handle_t handle) {
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return;
+    }
+    
+    uint32_t controller_handle = get_controller_handle(handle);
+    if (controller_handle == 0) {
+        return;
+    }
+    
+    auto result = controller->close_namespace(controller_handle);
+    if (!result.has_value()) {
+        LOG_ERROR("Failed to close NVS namespace: {}", static_cast<int>(result.error()));
+    }
+    
+    unregister_handle(handle);
+    LOG_DEBUG("Closed NVS handle {}", handle);
+}
+
+// Generic set function
+esp_err_t nvs_set_blob(nvs_handle_t handle, const char* key, const void* value, size_t length) {
+    if (!key || !value) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    uint32_t controller_handle = get_controller_handle(handle);
+    if (controller_handle == 0) {
+        return ESP_ERR_NVS_INVALID_HANDLE;
+    }
+    
+    auto result = controller->set_blob(controller_handle, key, value, length);
+    if (!result.has_value()) {
+        return convert_nvs_error(result.error());
+    }
+    
+    return ESP_OK;
+}
+
+// Typed set functions
+esp_err_t nvs_set_u8(nvs_handle_t handle, const char* key, uint8_t value) {
+    if (!key) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    uint32_t controller_handle = get_controller_handle(handle);
+    if (controller_handle == 0) {
+        return ESP_ERR_NVS_INVALID_HANDLE;
+    }
+    
+    auto result = controller->set_u8(controller_handle, key, value);
+    return result.has_value() ? ESP_OK : convert_nvs_error(result.error());
+}
+
+esp_err_t nvs_set_i8(nvs_handle_t handle, const char* key, int8_t value) {
+    if (!key) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    uint32_t controller_handle = get_controller_handle(handle);
+    if (controller_handle == 0) {
+        return ESP_ERR_NVS_INVALID_HANDLE;
+    }
+    
+    auto result = controller->set_i8(controller_handle, key, value);
+    return result.has_value() ? ESP_OK : convert_nvs_error(result.error());
+}
+
+esp_err_t nvs_set_u16(nvs_handle_t handle, const char* key, uint16_t value) {
+    if (!key) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    uint32_t controller_handle = get_controller_handle(handle);
+    if (controller_handle == 0) {
+        return ESP_ERR_NVS_INVALID_HANDLE;
+    }
+    
+    auto result = controller->set_u16(controller_handle, key, value);
+    return result.has_value() ? ESP_OK : convert_nvs_error(result.error());
+}
+
+esp_err_t nvs_set_i16(nvs_handle_t handle, const char* key, int16_t value) {
+    if (!key) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    uint32_t controller_handle = get_controller_handle(handle);
+    if (controller_handle == 0) {
+        return ESP_ERR_NVS_INVALID_HANDLE;
+    }
+    
+    auto result = controller->set_i16(controller_handle, key, value);
+    return result.has_value() ? ESP_OK : convert_nvs_error(result.error());
+}
+
+esp_err_t nvs_set_u32(nvs_handle_t handle, const char* key, uint32_t value) {
+    if (!key) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    uint32_t controller_handle = get_controller_handle(handle);
+    if (controller_handle == 0) {
+        return ESP_ERR_NVS_INVALID_HANDLE;
+    }
+    
+    auto result = controller->set_u32(controller_handle, key, value);
+    return result.has_value() ? ESP_OK : convert_nvs_error(result.error());
+}
+
+esp_err_t nvs_set_i32(nvs_handle_t handle, const char* key, int32_t value) {
+    if (!key) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    uint32_t controller_handle = get_controller_handle(handle);
+    if (controller_handle == 0) {
+        return ESP_ERR_NVS_INVALID_HANDLE;
+    }
+    
+    auto result = controller->set_i32(controller_handle, key, value);
+    return result.has_value() ? ESP_OK : convert_nvs_error(result.error());
+}
+
+esp_err_t nvs_set_u64(nvs_handle_t handle, const char* key, uint64_t value) {
+    if (!key) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    uint32_t controller_handle = get_controller_handle(handle);
+    if (controller_handle == 0) {
+        return ESP_ERR_NVS_INVALID_HANDLE;
+    }
+    
+    auto result = controller->set_u64(controller_handle, key, value);
+    return result.has_value() ? ESP_OK : convert_nvs_error(result.error());
+}
+
+esp_err_t nvs_set_i64(nvs_handle_t handle, const char* key, int64_t value) {
+    if (!key) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    uint32_t controller_handle = get_controller_handle(handle);
+    if (controller_handle == 0) {
+        return ESP_ERR_NVS_INVALID_HANDLE;
+    }
+    
+    auto result = controller->set_i64(controller_handle, key, value);
+    return result.has_value() ? ESP_OK : convert_nvs_error(result.error());
+}
+
+esp_err_t nvs_set_str(nvs_handle_t handle, const char* key, const char* value) {
+    if (!key || !value) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    uint32_t controller_handle = get_controller_handle(handle);
+    if (controller_handle == 0) {
+        return ESP_ERR_NVS_INVALID_HANDLE;
+    }
+    
+    auto result = controller->set_str(controller_handle, key, std::string(value));
+    return result.has_value() ? ESP_OK : convert_nvs_error(result.error());
+}
+
+// Generic get function
+esp_err_t nvs_get_blob(nvs_handle_t handle, const char* key, void* out_value, size_t* length) {
+    if (!key || !length) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    uint32_t controller_handle = get_controller_handle(handle);
+    if (controller_handle == 0) {
+        return ESP_ERR_NVS_INVALID_HANDLE;
+    }
+    
+    if (out_value == nullptr) {
+        // Just get size
+        auto size_result = controller->get_blob_size(controller_handle, key);
+        if (!size_result.has_value()) {
+            return convert_nvs_error(size_result.error());
+        }
+        *length = size_result.value();
+        return ESP_OK;
+    }
+    
+    auto result = controller->get_blob(controller_handle, key, out_value, *length);
+    if (!result.has_value()) {
+        return convert_nvs_error(result.error());
+    }
+    
+    *length = result.value();
+    return ESP_OK;
+}
+
+// Typed get functions
+esp_err_t nvs_get_u8(nvs_handle_t handle, const char* key, uint8_t* out_value) {
+    if (!key || !out_value) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    uint32_t controller_handle = get_controller_handle(handle);
+    if (controller_handle == 0) {
+        return ESP_ERR_NVS_INVALID_HANDLE;
+    }
+    
+    auto result = controller->get_u8(controller_handle, key);
+    if (!result.has_value()) {
+        return convert_nvs_error(result.error());
+    }
+    
+    *out_value = result.value();
+    return ESP_OK;
+}
+
+esp_err_t nvs_get_i8(nvs_handle_t handle, const char* key, int8_t* out_value) {
+    if (!key || !out_value) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    uint32_t controller_handle = get_controller_handle(handle);
+    if (controller_handle == 0) {
+        return ESP_ERR_NVS_INVALID_HANDLE;
+    }
+    
+    auto result = controller->get_i8(controller_handle, key);
+    if (!result.has_value()) {
+        return convert_nvs_error(result.error());
+    }
+    
+    *out_value = result.value();
+    return ESP_OK;
+}
+
+esp_err_t nvs_get_u16(nvs_handle_t handle, const char* key, uint16_t* out_value) {
+    if (!key || !out_value) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    uint32_t controller_handle = get_controller_handle(handle);
+    if (controller_handle == 0) {
+        return ESP_ERR_NVS_INVALID_HANDLE;
+    }
+    
+    auto result = controller->get_u16(controller_handle, key);
+    if (!result.has_value()) {
+        return convert_nvs_error(result.error());
+    }
+    
+    *out_value = result.value();
+    return ESP_OK;
+}
+
+esp_err_t nvs_get_i16(nvs_handle_t handle, const char* key, int16_t* out_value) {
+    if (!key || !out_value) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    uint32_t controller_handle = get_controller_handle(handle);
+    if (controller_handle == 0) {
+        return ESP_ERR_NVS_INVALID_HANDLE;
+    }
+    
+    auto result = controller->get_i16(controller_handle, key);
+    if (!result.has_value()) {
+        return convert_nvs_error(result.error());
+    }
+    
+    *out_value = result.value();
+    return ESP_OK;
+}
+
+esp_err_t nvs_get_u32(nvs_handle_t handle, const char* key, uint32_t* out_value) {
+    if (!key || !out_value) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    uint32_t controller_handle = get_controller_handle(handle);
+    if (controller_handle == 0) {
+        return ESP_ERR_NVS_INVALID_HANDLE;
+    }
+    
+    auto result = controller->get_u32(controller_handle, key);
+    if (!result.has_value()) {
+        return convert_nvs_error(result.error());
+    }
+    
+    *out_value = result.value();
+    return ESP_OK;
+}
+
+esp_err_t nvs_get_i32(nvs_handle_t handle, const char* key, int32_t* out_value) {
+    if (!key || !out_value) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    uint32_t controller_handle = get_controller_handle(handle);
+    if (controller_handle == 0) {
+        return ESP_ERR_NVS_INVALID_HANDLE;
+    }
+    
+    auto result = controller->get_i32(controller_handle, key);
+    if (!result.has_value()) {
+        return convert_nvs_error(result.error());
+    }
+    
+    *out_value = result.value();
+    return ESP_OK;
+}
+
+esp_err_t nvs_get_u64(nvs_handle_t handle, const char* key, uint64_t* out_value) {
+    if (!key || !out_value) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    uint32_t controller_handle = get_controller_handle(handle);
+    if (controller_handle == 0) {
+        return ESP_ERR_NVS_INVALID_HANDLE;
+    }
+    
+    auto result = controller->get_u64(controller_handle, key);
+    if (!result.has_value()) {
+        return convert_nvs_error(result.error());
+    }
+    
+    *out_value = result.value();
+    return ESP_OK;
+}
+
+esp_err_t nvs_get_i64(nvs_handle_t handle, const char* key, int64_t* out_value) {
+    if (!key || !out_value) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    uint32_t controller_handle = get_controller_handle(handle);
+    if (controller_handle == 0) {
+        return ESP_ERR_NVS_INVALID_HANDLE;
+    }
+    
+    auto result = controller->get_i64(controller_handle, key);
+    if (!result.has_value()) {
+        return convert_nvs_error(result.error());
+    }
+    
+    *out_value = result.value();
+    return ESP_OK;
+}
+
+esp_err_t nvs_get_str(nvs_handle_t handle, const char* key, char* out_value, size_t* length) {
+    if (!key || !length) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    uint32_t controller_handle = get_controller_handle(handle);
+    if (controller_handle == 0) {
+        return ESP_ERR_NVS_INVALID_HANDLE;
+    }
+    
+    if (out_value == nullptr) {
+        // Just get size
+        auto size_result = controller->get_str_size(controller_handle, key);
+        if (!size_result.has_value()) {
+            return convert_nvs_error(size_result.error());
+        }
+        *length = size_result.value();
+        return ESP_OK;
+    }
+    
+    auto result = controller->get_str(controller_handle, key);
+    if (!result.has_value()) {
+        return convert_nvs_error(result.error());
+    }
+    
+    const std::string& str = result.value();
+    if (str.length() + 1 > *length) {
+        *length = str.length() + 1;
+        return ESP_ERR_NVS_INVALID_LENGTH;
+    }
+    
+    std::strcpy(out_value, str.c_str());
+    *length = str.length() + 1;
+    return ESP_OK;
+}
+
+// Erase operations
+esp_err_t nvs_erase_key(nvs_handle_t handle, const char* key) {
+    if (!key) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    uint32_t controller_handle = get_controller_handle(handle);
+    if (controller_handle == 0) {
+        return ESP_ERR_NVS_INVALID_HANDLE;
+    }
+    
+    auto result = controller->erase_key(controller_handle, key);
+    return result.has_value() ? ESP_OK : convert_nvs_error(result.error());
+}
+
+esp_err_t nvs_erase_all(nvs_handle_t handle) {
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    uint32_t controller_handle = get_controller_handle(handle);
+    if (controller_handle == 0) {
+        return ESP_ERR_NVS_INVALID_HANDLE;
+    }
+    
+    auto result = controller->erase_all(controller_handle);
+    return result.has_value() ? ESP_OK : convert_nvs_error(result.error());
+}
+
+// Commit operations
+esp_err_t nvs_commit(nvs_handle_t handle) {
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    uint32_t controller_handle = get_controller_handle(handle);
+    if (controller_handle == 0) {
+        return ESP_ERR_NVS_INVALID_HANDLE;
+    }
+    
+    auto result = controller->commit(controller_handle);
+    return result.has_value() ? ESP_OK : convert_nvs_error(result.error());
+}
+
+// Statistics and info functions
+esp_err_t nvs_get_stats(const char* part_name, nvs_stats_t* nvs_stats) {
+    if (!nvs_stats) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    auto stats = controller->get_stats(part_name ? part_name : "nvs");
+    
+    nvs_stats->used_entries = stats.total_entries;
+    nvs_stats->free_entries = 0;  // Calculated differently in SQLite backend
+    nvs_stats->total_entries = stats.total_entries;
+    // nvs_stats_t doesn't have namespace_count field in ESP-IDF
+    // snprintf(nvs_stats->namespace_name, NVS_NS_NAME_MAX_SIZE, "%s", part_name ? part_name : "nvs");
+    
+    return ESP_OK;
+}
+
+esp_err_t nvs_get_used_entry_count(nvs_handle_t handle, size_t* used_entries) {
+    if (!used_entries) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_nvs_controller();
+    if (!controller) {
+        return ESP_FAIL;
+    }
+    
+    uint32_t controller_handle = get_controller_handle(handle);
+    if (controller_handle == 0) {
+        return ESP_ERR_NVS_INVALID_HANDLE;
+    }
+    
+    auto result = controller->get_namespace_entry_count(controller_handle);
+    if (!result.has_value()) {
+        return convert_nvs_error(result.error());
+    }
+    
+    *used_entries = result.value();
+    return ESP_OK;
+}
+
+// Iterator functions (basic implementation)
+esp_err_t nvs_entry_find(const char* part_name, const char* namespace_name, nvs_type_t type, nvs_iterator_t* output_iterator) {
+    // Basic implementation - in a full implementation, this would create an iterator
+    // For now, return not found to indicate iteration is not fully implemented
+    return ESP_ERR_NVS_NOT_FOUND;
+}
+
+esp_err_t nvs_entry_next(nvs_iterator_t* iterator) {
+    return ESP_ERR_NVS_NOT_FOUND;
+}
+
+void nvs_entry_info(nvs_iterator_t iterator, nvs_entry_info_t* out_info) {
+    // Placeholder implementation
+}
+
+void nvs_release_iterator(nvs_iterator_t iterator) {
+    // Placeholder implementation
+}
+
+} // extern "C"

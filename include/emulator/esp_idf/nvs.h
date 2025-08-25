@@ -21,6 +21,7 @@ typedef int esp_err_t;
 // Common ESP-IDF error codes
 #define ESP_OK                    0       /*!< esp_err_t value indicating success (no error) */
 #define ESP_FAIL                  -1      /*!< Generic esp_err_t code indicating failure */
+#define ESP_ERR_INVALID_ARG       0x102   /*!< Invalid argument */
 
 // NVS specific error codes (matching ESP-IDF)
 #define ESP_ERR_NVS_BASE                0x1100                     /*!< Starting number of error codes */
