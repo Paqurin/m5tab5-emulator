@@ -9,6 +9,7 @@ if(GTest_FOUND)
         test_i2c_controller.cpp
         test_spi_controller.cpp
         test_uart_controller.cpp
+        test_esp_idf_uart.cpp
         test_bmi270_imu.cpp
         test_sensor_fusion.cpp
         test_wifi_controller.cpp
@@ -23,6 +24,7 @@ if(GTest_FOUND)
     target_link_libraries(unit_tests 
         GTest::gtest 
         GTest::gtest_main
+        m5tab5-emulator-core
         ${SDL2_LIBRARIES}
         pthread
     )

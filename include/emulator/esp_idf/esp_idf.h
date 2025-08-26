@@ -8,6 +8,10 @@
 
 #pragma once
 
+// Core type definitions
+#include "esp_types.h"
+#include "esp_err.h"
+
 // Core system APIs
 #include "esp_system.h"
 #include "esp_log.h"
@@ -17,9 +21,9 @@
 // Driver APIs
 #include "driver/gpio.h"
 #include "driver/i2c.h"
+#include "driver/spi_master.h"
+#include "driver/uart.h"
 // TODO: Add more driver headers as they are implemented
-// #include "driver/spi_master.h"
-// #include "driver/uart.h"
 // #include "driver/ledc.h"
 
 // FreeRTOS integration
