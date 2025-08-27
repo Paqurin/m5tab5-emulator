@@ -330,7 +330,7 @@ void DualCoreManager::dump_all_cores_state() const {
             // TODO: Fix interface - CpuCore doesn't have get_state() method
             // COMPONENT_LOG_INFO("  State: {}", static_cast<int>(cores_[i]->get_state()));
             // COMPONENT_LOG_INFO("  Frequency: {} Hz", cores_[i]->get_frequency());
-            const auto& perf = cores_[i]->getPerformanceCounters();
+            [[maybe_unused]] const auto& perf = cores_[i]->getPerformanceCounters();
             COMPONENT_LOG_INFO("  Cycles executed: {}", perf.cycles_executed);
             COMPONENT_LOG_INFO("  Instructions executed: {}", perf.instructions_executed);
             
@@ -369,7 +369,7 @@ Result<void> DualCoreManager::process_interrupts() {
             // TODO: InterruptController interface needs to be defined
             // TODO: RegisterFile CSR interface needs to be implemented
             
-            CoreId core_id = static_cast<CoreId>(i);
+            [[maybe_unused]] CoreId core_id = static_cast<CoreId>(i);
             // auto pending_interrupts = interrupt_controller_->get_pending_interrupts(core_id);
             
             // Placeholder for interrupt delivery logic

@@ -30,6 +30,10 @@ Result<void> MemoryController::initialize(const Configuration& config) {
     try {
         // Initialize memory regions based on configuration
         auto memory_config = config.getMemoryConfig();
+        
+        // Initialize Boot ROM first (required for CPU reset)
+        RETURN_IF_ERROR(initialize_boot_rom_region());
+        
         RETURN_IF_ERROR(initialize_flash_region(memory_config.flash_size));
         RETURN_IF_ERROR(initialize_psram_region(memory_config.psram_size));
         RETURN_IF_ERROR(initialize_sram_region(memory_config.sram_size));
@@ -63,6 +67,12 @@ Result<void> MemoryController::shutdown() {
     }
     
     COMPONENT_LOG_INFO("Shutting down memory controller");
+    
+    // Shutdown Boot ROM
+    if (boot_rom_) {
+        boot_rom_->shutdown();
+        boot_rom_.reset();
+    }
     
     // Shutdown MMU (TODO: Implement MemoryMappingUnit)
     // if (mmu_) {
@@ -261,6 +271,20 @@ void MemoryController::clear_cache_statistics() {
     cache_stats_ = {};
 }
 
+Result<void> MemoryController::initialize_boot_rom_region() {
+    COMPONENT_LOG_DEBUG("Initializing Boot ROM region");
+    
+    boot_rom_ = std::make_unique<BootROM>();
+    RETURN_IF_ERROR(boot_rom_->initialize());
+    
+    // Add Boot ROM memory region to our regions
+    auto boot_rom_memory = boot_rom_->getMemoryRegion();
+    memory_regions_["BootROM"] = boot_rom_memory;
+    
+    COMPONENT_LOG_INFO("Boot ROM initialized: 32KB at 0x40000000");
+    return {};
+}
+
 Result<SharedPtr<MemoryRegion>> MemoryController::find_memory_region(Address address) const {
     for (const auto& [name, region] : memory_regions_) {
         if (region->contains_address(address)) {
@@ -303,9 +327,10 @@ Result<void> MemoryController::initialize_psram_region(size_t size) {
 Result<void> MemoryController::initialize_sram_region(size_t size) {
     COMPONENT_LOG_DEBUG("Initializing SRAM region: {} bytes", size);
     
+    // Use TCM layout for ESP32-P4 internal memory
     auto sram_region = std::make_shared<MemoryRegion>(
-        "SRAM", SRAM_LAYOUT.start_address, size, MemoryType::SRAM,
-        SRAM_LAYOUT.writable, SRAM_LAYOUT.executable, SRAM_LAYOUT.cacheable
+        "SRAM", TCM_LAYOUT.start_address, size, MemoryType::SRAM,
+        TCM_LAYOUT.writable, TCM_LAYOUT.executable, TCM_LAYOUT.cacheable
     );
     
     RETURN_IF_ERROR(sram_region->initialize());

@@ -1348,7 +1348,7 @@ bool BMI270_IMU::detect_step(const IMUData& data) {
     static float step_energy = 0.0f;
     static auto last_step_time = std::chrono::steady_clock::now();
     
-    float accel_magnitude = calculate_magnitude(data.accel_x_g, data.accel_y_g, data.accel_z_g);
+    [[maybe_unused]] float accel_magnitude = calculate_magnitude(data.accel_x_g, data.accel_y_g, data.accel_z_g);
     float vertical_component = std::abs(data.accel_z_g - 1.0f); // Deviation from gravity
     
     step_energy = high_pass_filter(vertical_component, step_energy, 0.1f);

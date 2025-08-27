@@ -49,11 +49,11 @@ EmulatorError CpuCore::reset() {
     // Reset register file
     registers_.reset();
     
-    // Set initial PC
+    // Set initial PC to ESP32-P4 Boot ROM reset vector
     if (config_.type == CoreType::LPCore) {
-        pc_ = 0x50000000;
+        pc_ = 0x50000000;  // LP Core starts at different address
     } else {
-        pc_ = 0x10000000;
+        pc_ = 0x40000080;  // ESP32-P4 Boot ROM reset vector
     }
     
     cycle_count_ = 0;
@@ -189,18 +189,110 @@ EmulatorError CpuCore::decode(const PipelineStage& stage, DecodedInstruction& de
 }
 
 EmulatorError CpuCore::execute(const DecodedInstruction& decoded) {
-    // Check for ECALL instruction (system call)
-    if (decoded.type == InstructionType::ECALL) {
-        return handleSystemCall();
-    }
-    
-    // For now, just implement basic NOP behavior for other instructions
-    // TODO: Implement full RISC-V instruction execution
-    
     // Update performance counters
     perf_counters_.instructions_executed++;
+    registers_.incrementInstructionCounter();
     
-    return EmulatorError::Success;
+    // Execute instruction based on type
+    switch (decoded.type) {
+        // Arithmetic with immediate
+        case InstructionType::ADDI:
+            return executeADDI(decoded);
+        case InstructionType::SLTI:
+            return executeSLTI(decoded);
+        case InstructionType::SLTIU:
+            return executeSLTIU(decoded);
+        case InstructionType::XORI:
+            return executeXORI(decoded);
+        case InstructionType::ORI:
+            return executeORI(decoded);
+        case InstructionType::ANDI:
+            return executeANDI(decoded);
+        case InstructionType::SLLI:
+            return executeSLLI(decoded);
+        case InstructionType::SRLI:
+            return executeSRLI(decoded);
+        case InstructionType::SRAI:
+            return executeSRAI(decoded);
+            
+        // Register arithmetic
+        case InstructionType::ADD:
+            return executeADD(decoded);
+        case InstructionType::SUB:
+            return executeSUB(decoded);
+        case InstructionType::SLL:
+            return executeSLL(decoded);
+        case InstructionType::SLT:
+            return executeSLT(decoded);
+        case InstructionType::SLTU:
+            return executeSLTU(decoded);
+        case InstructionType::XOR:
+            return executeXOR(decoded);
+        case InstructionType::SRL:
+            return executeSRL(decoded);
+        case InstructionType::SRA:
+            return executeSRA(decoded);
+        case InstructionType::OR:
+            return executeOR(decoded);
+        case InstructionType::AND:
+            return executeAND(decoded);
+            
+        // Upper immediate
+        case InstructionType::LUI:
+            return executeLUI(decoded);
+        case InstructionType::AUIPC:
+            return executeAUIPC(decoded);
+            
+        // Jumps
+        case InstructionType::JAL:
+            return executeJAL(decoded);
+        case InstructionType::JALR:
+            return executeJALR(decoded);
+            
+        // Branches
+        case InstructionType::BEQ:
+            return executeBEQ(decoded);
+        case InstructionType::BNE:
+            return executeBNE(decoded);
+        case InstructionType::BLT:
+            return executeBLT(decoded);
+        case InstructionType::BGE:
+            return executeBGE(decoded);
+        case InstructionType::BLTU:
+            return executeBLTU(decoded);
+        case InstructionType::BGEU:
+            return executeBGEU(decoded);
+            
+        // Loads
+        case InstructionType::LB:
+            return executeLB(decoded);
+        case InstructionType::LH:
+            return executeLH(decoded);
+        case InstructionType::LW:
+            return executeLW(decoded);
+        case InstructionType::LBU:
+            return executeLBU(decoded);
+        case InstructionType::LHU:
+            return executeLHU(decoded);
+            
+        // Stores
+        case InstructionType::SB:
+            return executeSB(decoded);
+        case InstructionType::SH:
+            return executeSH(decoded);
+        case InstructionType::SW:
+            return executeSW(decoded);
+            
+        // System
+        case InstructionType::ECALL:
+            return handleSystemCall();
+        case InstructionType::EBREAK:
+            return executeEBREAK(decoded);
+            
+        default:
+            // COMPONENT_LOG_ERROR("Unimplemented instruction type: {}", static_cast<int>(decoded.type));
+            return EmulatorError::NotImplemented;
+    }
 }
 
 EmulatorError CpuCore::writeback(const DecodedInstruction& decoded) {
@@ -276,7 +368,450 @@ bool CpuCore::predictBranch(Address pc) {
 }
 
 void CpuCore::updateBranchPredictor(Address pc, bool taken) {
-    // TODO: Implement 2-bit branch predictor
+    // Simple 2-bit branch predictor
+    uint8_t index = (pc >> 2) & 0xFF;  // Use PC bits [9:2] as index
+    uint8_t& counter = branch_predictor_[index];
+    
+    if (taken) {
+        if (counter < 3) counter++;  // Saturate at 3
+    } else {
+        if (counter > 0) counter--;  // Saturate at 0
+    }
+}
+
+// Arithmetic Immediate Instructions
+EmulatorError CpuCore::executeADDI(const DecodedInstruction& decoded) {
+    uint32_t rs1_val = registers_.read(decoded.rs1);
+    uint32_t result = rs1_val + static_cast<uint32_t>(decoded.immediate);
+    registers_.write(decoded.rd, result);
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeSLTI(const DecodedInstruction& decoded) {
+    int32_t rs1_val = static_cast<int32_t>(registers_.read(decoded.rs1));
+    int32_t imm = decoded.immediate;
+    uint32_t result = (rs1_val < imm) ? 1 : 0;
+    registers_.write(decoded.rd, result);
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeSLTIU(const DecodedInstruction& decoded) {
+    uint32_t rs1_val = registers_.read(decoded.rs1);
+    uint32_t imm = static_cast<uint32_t>(decoded.immediate);
+    uint32_t result = (rs1_val < imm) ? 1 : 0;
+    registers_.write(decoded.rd, result);
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeXORI(const DecodedInstruction& decoded) {
+    uint32_t rs1_val = registers_.read(decoded.rs1);
+    uint32_t result = rs1_val ^ static_cast<uint32_t>(decoded.immediate);
+    registers_.write(decoded.rd, result);
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeORI(const DecodedInstruction& decoded) {
+    uint32_t rs1_val = registers_.read(decoded.rs1);
+    uint32_t result = rs1_val | static_cast<uint32_t>(decoded.immediate);
+    registers_.write(decoded.rd, result);
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeANDI(const DecodedInstruction& decoded) {
+    uint32_t rs1_val = registers_.read(decoded.rs1);
+    uint32_t result = rs1_val & static_cast<uint32_t>(decoded.immediate);
+    registers_.write(decoded.rd, result);
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeSLLI(const DecodedInstruction& decoded) {
+    uint32_t rs1_val = registers_.read(decoded.rs1);
+    uint32_t shamt = decoded.immediate & 0x1F;  // Only use lower 5 bits
+    uint32_t result = rs1_val << shamt;
+    registers_.write(decoded.rd, result);
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeSRLI(const DecodedInstruction& decoded) {
+    uint32_t rs1_val = registers_.read(decoded.rs1);
+    uint32_t shamt = decoded.immediate & 0x1F;  // Only use lower 5 bits
+    uint32_t result = rs1_val >> shamt;
+    registers_.write(decoded.rd, result);
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeSRAI(const DecodedInstruction& decoded) {
+    int32_t rs1_val = static_cast<int32_t>(registers_.read(decoded.rs1));
+    uint32_t shamt = decoded.immediate & 0x1F;  // Only use lower 5 bits
+    int32_t result = rs1_val >> shamt;
+    registers_.write(decoded.rd, static_cast<uint32_t>(result));
+    return EmulatorError::Success;
+}
+
+// Register Arithmetic Instructions
+EmulatorError CpuCore::executeADD(const DecodedInstruction& decoded) {
+    uint32_t rs1_val = registers_.read(decoded.rs1);
+    uint32_t rs2_val = registers_.read(decoded.rs2);
+    uint32_t result = rs1_val + rs2_val;
+    registers_.write(decoded.rd, result);
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeSUB(const DecodedInstruction& decoded) {
+    uint32_t rs1_val = registers_.read(decoded.rs1);
+    uint32_t rs2_val = registers_.read(decoded.rs2);
+    uint32_t result = rs1_val - rs2_val;
+    registers_.write(decoded.rd, result);
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeSLL(const DecodedInstruction& decoded) {
+    uint32_t rs1_val = registers_.read(decoded.rs1);
+    uint32_t rs2_val = registers_.read(decoded.rs2);
+    uint32_t shamt = rs2_val & 0x1F;  // Only use lower 5 bits
+    uint32_t result = rs1_val << shamt;
+    registers_.write(decoded.rd, result);
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeSLT(const DecodedInstruction& decoded) {
+    int32_t rs1_val = static_cast<int32_t>(registers_.read(decoded.rs1));
+    int32_t rs2_val = static_cast<int32_t>(registers_.read(decoded.rs2));
+    uint32_t result = (rs1_val < rs2_val) ? 1 : 0;
+    registers_.write(decoded.rd, result);
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeSLTU(const DecodedInstruction& decoded) {
+    uint32_t rs1_val = registers_.read(decoded.rs1);
+    uint32_t rs2_val = registers_.read(decoded.rs2);
+    uint32_t result = (rs1_val < rs2_val) ? 1 : 0;
+    registers_.write(decoded.rd, result);
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeXOR(const DecodedInstruction& decoded) {
+    uint32_t rs1_val = registers_.read(decoded.rs1);
+    uint32_t rs2_val = registers_.read(decoded.rs2);
+    uint32_t result = rs1_val ^ rs2_val;
+    registers_.write(decoded.rd, result);
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeSRL(const DecodedInstruction& decoded) {
+    uint32_t rs1_val = registers_.read(decoded.rs1);
+    uint32_t rs2_val = registers_.read(decoded.rs2);
+    uint32_t shamt = rs2_val & 0x1F;  // Only use lower 5 bits
+    uint32_t result = rs1_val >> shamt;
+    registers_.write(decoded.rd, result);
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeSRA(const DecodedInstruction& decoded) {
+    int32_t rs1_val = static_cast<int32_t>(registers_.read(decoded.rs1));
+    uint32_t rs2_val = registers_.read(decoded.rs2);
+    uint32_t shamt = rs2_val & 0x1F;  // Only use lower 5 bits
+    int32_t result = rs1_val >> shamt;
+    registers_.write(decoded.rd, static_cast<uint32_t>(result));
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeOR(const DecodedInstruction& decoded) {
+    uint32_t rs1_val = registers_.read(decoded.rs1);
+    uint32_t rs2_val = registers_.read(decoded.rs2);
+    uint32_t result = rs1_val | rs2_val;
+    registers_.write(decoded.rd, result);
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeAND(const DecodedInstruction& decoded) {
+    uint32_t rs1_val = registers_.read(decoded.rs1);
+    uint32_t rs2_val = registers_.read(decoded.rs2);
+    uint32_t result = rs1_val & rs2_val;
+    registers_.write(decoded.rd, result);
+    return EmulatorError::Success;
+}
+
+// Upper Immediate Instructions
+EmulatorError CpuCore::executeLUI(const DecodedInstruction& decoded) {
+    uint32_t result = static_cast<uint32_t>(decoded.immediate);
+    registers_.write(decoded.rd, result);
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeAUIPC(const DecodedInstruction& decoded) {
+    uint32_t result = pc_ + static_cast<uint32_t>(decoded.immediate);
+    registers_.write(decoded.rd, result);
+    return EmulatorError::Success;
+}
+
+// Jump Instructions
+EmulatorError CpuCore::executeJAL(const DecodedInstruction& decoded) {
+    // Save return address (PC + 4)
+    registers_.write(decoded.rd, pc_ + 4);
+    
+    // Jump to target
+    pc_ = pc_ + decoded.immediate - 4;  // -4 because pc_ will be incremented by 4 after execute
+    
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeJALR(const DecodedInstruction& decoded) {
+    // Save return address (PC + 4)
+    uint32_t return_addr = pc_ + 4;
+    
+    // Calculate target address
+    uint32_t target = registers_.read(decoded.rs1) + decoded.immediate;
+    target &= ~1;  // Clear LSB for alignment
+    
+    // Set PC and return address
+    pc_ = target - 4;  // -4 because pc_ will be incremented by 4 after execute
+    registers_.write(decoded.rd, return_addr);
+    
+    return EmulatorError::Success;
+}
+
+// Branch Instructions
+EmulatorError CpuCore::executeBEQ(const DecodedInstruction& decoded) {
+    uint32_t rs1_val = registers_.read(decoded.rs1);
+    uint32_t rs2_val = registers_.read(decoded.rs2);
+    
+    if (rs1_val == rs2_val) {
+        pc_ = pc_ + decoded.immediate - 4;  // -4 because pc_ will be incremented
+        updateBranchPredictor(pc_, true);
+        perf_counters_.branch_predictions++;
+    } else {
+        updateBranchPredictor(pc_, false);
+    }
+    
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeBNE(const DecodedInstruction& decoded) {
+    uint32_t rs1_val = registers_.read(decoded.rs1);
+    uint32_t rs2_val = registers_.read(decoded.rs2);
+    
+    if (rs1_val != rs2_val) {
+        pc_ = pc_ + decoded.immediate - 4;  // -4 because pc_ will be incremented
+        updateBranchPredictor(pc_, true);
+        perf_counters_.branch_predictions++;
+    } else {
+        updateBranchPredictor(pc_, false);
+    }
+    
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeBLT(const DecodedInstruction& decoded) {
+    int32_t rs1_val = static_cast<int32_t>(registers_.read(decoded.rs1));
+    int32_t rs2_val = static_cast<int32_t>(registers_.read(decoded.rs2));
+    
+    if (rs1_val < rs2_val) {
+        pc_ = pc_ + decoded.immediate - 4;  // -4 because pc_ will be incremented
+        updateBranchPredictor(pc_, true);
+        perf_counters_.branch_predictions++;
+    } else {
+        updateBranchPredictor(pc_, false);
+    }
+    
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeBGE(const DecodedInstruction& decoded) {
+    int32_t rs1_val = static_cast<int32_t>(registers_.read(decoded.rs1));
+    int32_t rs2_val = static_cast<int32_t>(registers_.read(decoded.rs2));
+    
+    if (rs1_val >= rs2_val) {
+        pc_ = pc_ + decoded.immediate - 4;  // -4 because pc_ will be incremented
+        updateBranchPredictor(pc_, true);
+        perf_counters_.branch_predictions++;
+    } else {
+        updateBranchPredictor(pc_, false);
+    }
+    
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeBLTU(const DecodedInstruction& decoded) {
+    uint32_t rs1_val = registers_.read(decoded.rs1);
+    uint32_t rs2_val = registers_.read(decoded.rs2);
+    
+    if (rs1_val < rs2_val) {
+        pc_ = pc_ + decoded.immediate - 4;  // -4 because pc_ will be incremented
+        updateBranchPredictor(pc_, true);
+        perf_counters_.branch_predictions++;
+    } else {
+        updateBranchPredictor(pc_, false);
+    }
+    
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeBGEU(const DecodedInstruction& decoded) {
+    uint32_t rs1_val = registers_.read(decoded.rs1);
+    uint32_t rs2_val = registers_.read(decoded.rs2);
+    
+    if (rs1_val >= rs2_val) {
+        pc_ = pc_ + decoded.immediate - 4;  // -4 because pc_ will be incremented
+        updateBranchPredictor(pc_, true);
+        perf_counters_.branch_predictions++;
+    } else {
+        updateBranchPredictor(pc_, false);
+    }
+    
+    return EmulatorError::Success;
+}
+
+// Load Instructions
+EmulatorError CpuCore::executeLB(const DecodedInstruction& decoded) {
+    uint32_t addr = registers_.read(decoded.rs1) + decoded.immediate;
+    uint32_t value;
+    EmulatorError result = loadMemory(addr, 1, value);
+    if (result != EmulatorError::Success) {
+        return result;
+    }
+    
+    // Sign extend byte to 32 bits
+    int32_t signed_value = static_cast<int8_t>(value & 0xFF);
+    registers_.write(decoded.rd, static_cast<uint32_t>(signed_value));
+    perf_counters_.memory_accesses++;
+    
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeLH(const DecodedInstruction& decoded) {
+    uint32_t addr = registers_.read(decoded.rs1) + decoded.immediate;
+    
+    // Check alignment
+    if (addr & 1) {
+        return EmulatorError::InvalidAddress;
+    }
+    
+    uint32_t value;
+    EmulatorError result = loadMemory(addr, 2, value);
+    if (result != EmulatorError::Success) {
+        return result;
+    }
+    
+    // Sign extend halfword to 32 bits
+    int32_t signed_value = static_cast<int16_t>(value & 0xFFFF);
+    registers_.write(decoded.rd, static_cast<uint32_t>(signed_value));
+    perf_counters_.memory_accesses++;
+    
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeLW(const DecodedInstruction& decoded) {
+    uint32_t addr = registers_.read(decoded.rs1) + decoded.immediate;
+    
+    // Check alignment
+    if (addr & 3) {
+        return EmulatorError::InvalidAddress;
+    }
+    
+    uint32_t value;
+    EmulatorError result = loadMemory(addr, 4, value);
+    if (result != EmulatorError::Success) {
+        return result;
+    }
+    
+    registers_.write(decoded.rd, value);
+    perf_counters_.memory_accesses++;
+    
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeLBU(const DecodedInstruction& decoded) {
+    uint32_t addr = registers_.read(decoded.rs1) + decoded.immediate;
+    uint32_t value;
+    EmulatorError result = loadMemory(addr, 1, value);
+    if (result != EmulatorError::Success) {
+        return result;
+    }
+    
+    // Zero extend byte to 32 bits
+    registers_.write(decoded.rd, value & 0xFF);
+    perf_counters_.memory_accesses++;
+    
+    return EmulatorError::Success;
+}
+
+EmulatorError CpuCore::executeLHU(const DecodedInstruction& decoded) {
+    uint32_t addr = registers_.read(decoded.rs1) + decoded.immediate;
+    
+    // Check alignment
+    if (addr & 1) {
+        return EmulatorError::InvalidAddress;
+    }
+    
+    uint32_t value;
+    EmulatorError result = loadMemory(addr, 2, value);
+    if (result != EmulatorError::Success) {
+        return result;
+    }
+    
+    // Zero extend halfword to 32 bits
+    registers_.write(decoded.rd, value & 0xFFFF);
+    perf_counters_.memory_accesses++;
+    
+    return EmulatorError::Success;
+}
+
+// Store Instructions
+EmulatorError CpuCore::executeSB(const DecodedInstruction& decoded) {
+    uint32_t addr = registers_.read(decoded.rs1) + decoded.immediate;
+    uint32_t value = registers_.read(decoded.rs2) & 0xFF;
+    
+    EmulatorError result = storeMemory(addr, 1, value);
+    if (result == EmulatorError::Success) {
+        perf_counters_.memory_accesses++;
+    }
+    
+    return result;
+}
+
+EmulatorError CpuCore::executeSH(const DecodedInstruction& decoded) {
+    uint32_t addr = registers_.read(decoded.rs1) + decoded.immediate;
+    
+    // Check alignment
+    if (addr & 1) {
+        return EmulatorError::InvalidAddress;
+    }
+    
+    uint32_t value = registers_.read(decoded.rs2) & 0xFFFF;
+    
+    EmulatorError result = storeMemory(addr, 2, value);
+    if (result == EmulatorError::Success) {
+        perf_counters_.memory_accesses++;
+    }
+    
+    return result;
+}
+
+EmulatorError CpuCore::executeSW(const DecodedInstruction& decoded) {
+    uint32_t addr = registers_.read(decoded.rs1) + decoded.immediate;
+    
+    // Check alignment
+    if (addr & 3) {
+        return EmulatorError::InvalidAddress;
+    }
+    
+    uint32_t value = registers_.read(decoded.rs2);
+    
+    EmulatorError result = storeMemory(addr, 4, value);
+    if (result == EmulatorError::Success) {
+        perf_counters_.memory_accesses++;
+    }
+    
+    return result;
+}
+
+// System Instructions
+EmulatorError CpuCore::executeEBREAK(const DecodedInstruction& decoded) {
+    // Trigger breakpoint exception - for now just indicate an exception occurred
+    // In a real implementation this would trigger a debug trap
+    // COMPONENT_LOG_DEBUG("EBREAK instruction executed at PC: 0x{:08X}", pc_);
+    return EmulatorError::InvalidOperation;
 }
 
 }  // namespace m5tab5::emulator

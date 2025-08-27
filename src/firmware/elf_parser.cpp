@@ -399,7 +399,7 @@ bool ELFParser::validate_segment_alignment(const ParsedSegment& segment) const {
 
 bool ELFParser::validate_address_range(Address addr, size_t size) const {
     // Check if address range fits within ESP32-P4 memory map
-    Address end_addr = addr + size;
+    (void)size; // Suppress unused parameter warning
     
     return is_address_in_flash(addr) || 
            is_address_in_sram(addr) || 

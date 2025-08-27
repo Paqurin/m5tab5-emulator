@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "../esp_types.h"
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -16,14 +17,7 @@
 extern "C" {
 #endif
 
-/**
- * @brief ESP-IDF GPIO error codes
- */
-#define ESP_OK                 (0)     ///< No error
-#define ESP_FAIL              (-1)     ///< Generic error
-#define ESP_ERR_INVALID_ARG   (0x102)  ///< Invalid argument
-#define ESP_ERR_INVALID_STATE (0x103)  ///< Invalid state
-#define ESP_ERR_NOT_FOUND     (0x105)  ///< Component not found
+// Error codes are defined in esp_types.h
 
 /**
  * @brief GPIO number definitions for ESP32-P4

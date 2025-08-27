@@ -10,6 +10,7 @@ namespace m5tab5::emulator {
     class MemoryController;
     class DualCoreManager;
     class EmulatorCore;
+    class BootROM;
 }
 
 #include <string>
@@ -26,6 +27,7 @@ namespace m5tab5::emulator::firmware {
 // Forward declarations
 class ELFParser;
 class BootLoader;
+class ELFLoader;
 struct ParsedELF;
 struct ParsedSegment;
 
@@ -171,6 +173,7 @@ public:
     void set_memory_controller(std::shared_ptr<::m5tab5::emulator::MemoryController> memory_controller);
     void set_cpu_manager(std::shared_ptr<::m5tab5::emulator::DualCoreManager> cpu_manager);
     void set_emulator_core(std::shared_ptr<::m5tab5::emulator::EmulatorCore> emulator_core);
+    void set_boot_rom(std::shared_ptr<::m5tab5::emulator::BootROM> boot_rom);
 
 private:
     // Core components (injected dependencies)
@@ -181,6 +184,8 @@ private:
     // Internal components
     std::unique_ptr<ParsedELF> parsed_elf_data_;
     std::unique_ptr<BootLoader> boot_loader_;
+    std::unique_ptr<ELFLoader> elf_loader_;
+    std::shared_ptr<::m5tab5::emulator::BootROM> boot_rom_;
     std::vector<MappingResult> segment_mappings_;
 
     // State management

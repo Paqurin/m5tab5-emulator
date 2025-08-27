@@ -1103,7 +1103,7 @@ void MicrophoneArray::dump_status() const {
                           wind_noise_enabled_, wind_speed_);
         
         for (size_t i = 0; i < microphones_.size(); ++i) {
-            const auto& mic = microphones_[i];
+            [[maybe_unused]] const auto& mic = microphones_[i];
             COMPONENT_LOG_INFO("  Mic{}: enabled={}, gain={:.1f}dB, muted={}, sensitivity={:.1f}dBFS",
                               i, mic.enabled, mic.gain_db, mic.muted, mic.sensitivity_dbfs);
         }

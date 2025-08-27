@@ -12,23 +12,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include "../esp_err.h"
 
 #ifdef __cplusplus
 extern "C" {
-#endif
-
-/**
- * @brief ESP-IDF error codes (shared with GPIO)
- */
-#ifndef ESP_OK
-#define ESP_OK                 (0)     ///< No error
-#define ESP_FAIL              (-1)     ///< Generic error
-#define ESP_ERR_INVALID_ARG   (0x102)  ///< Invalid argument
-#define ESP_ERR_INVALID_STATE (0x103)  ///< Invalid state
-#define ESP_ERR_NOT_FOUND     (0x105)  ///< Component not found
-#define ESP_ERR_TIMEOUT       (0x107)  ///< Timeout occurred
-#define ESP_ERR_INVALID_SIZE  (0x104)  ///< Invalid data size
-#define ESP_ERR_NOT_SUPPORTED (0x106)  ///< Operation not supported
 #endif
 
 /**

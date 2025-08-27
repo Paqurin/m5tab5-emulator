@@ -18,10 +18,15 @@ extern "C" {
 // ESP error type compatibility
 typedef int esp_err_t;
 
-// Common ESP-IDF error codes
+// Common ESP-IDF error codes (with redefinition protection)
+#ifndef ESP_OK
 #define ESP_OK                    0       /*!< esp_err_t value indicating success (no error) */
 #define ESP_FAIL                  -1      /*!< Generic esp_err_t code indicating failure */
 #define ESP_ERR_INVALID_ARG       0x102   /*!< Invalid argument */
+#define ESP_ERR_INVALID_STATE     0x103   /*!< Invalid state */
+#define ESP_ERR_TIMEOUT           0x107   /*!< Timeout occurred */
+#define ESP_ERR_NOT_FOUND         0x105   /*!< Component not found */
+#endif
 
 // NVS specific error codes (matching ESP-IDF)
 #define ESP_ERR_NVS_BASE                0x1100                     /*!< Starting number of error codes */

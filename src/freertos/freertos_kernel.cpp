@@ -1,4 +1,5 @@
 #include "emulator/freertos/freertos_kernel.hpp"
+#include "emulator/freertos/cpu_integration.hpp"
 #include "emulator/utils/logging.hpp"
 #include <thread>
 
@@ -74,14 +75,29 @@ Result<void> FreeRTOSKernel::start_kernel() {
         LOG_WARN("Failed to create timer task, continuing without software timers");
     }
     
+    // Initialize CPU integration
+    auto cpu_integration_result = initialize_cpu_integration(cpu_manager_, *scheduler_);
+    if (!cpu_integration_result.has_value()) {
+        LOG_ERROR("Failed to initialize CPU integration: {}", cpu_integration_result.error().to_string());
+        return cpu_integration_result;
+    }
+    
     // Start the scheduler
     auto start_result = scheduler_->start();
     if (!start_result.has_value()) {
         return unexpected(MAKE_ERROR(OPERATION_FAILED, "Failed to start task scheduler"));
     }
     
+    // Start CPU integration to enable task execution
+    auto cpu_start_result = start_cpu_integration();
+    if (!cpu_start_result.has_value()) {
+        LOG_ERROR("Failed to start CPU integration: {}", cpu_start_result.error().to_string());
+        scheduler_->stop();
+        return cpu_start_result;
+    }
+    
     kernel_running_ = true;
-    LOG_INFO("FreeRTOS kernel started successfully");
+    LOG_INFO("FreeRTOS kernel started successfully with CPU integration");
     return {};
 }
 
@@ -91,6 +107,12 @@ Result<void> FreeRTOSKernel::stop_kernel() {
     }
     
     LOG_INFO("Stopping FreeRTOS kernel");
+    
+    // Stop CPU integration first
+    auto cpu_stop_result = stop_cpu_integration();
+    if (!cpu_stop_result.has_value()) {
+        LOG_WARN("Failed to stop CPU integration cleanly: {}", cpu_stop_result.error().to_string());
+    }
     
     // Stop the scheduler
     if (scheduler_) {
@@ -122,6 +144,9 @@ Result<void> FreeRTOSKernel::reset_kernel() {
     kernel_initialized_ = false;
     scheduler_.reset();
     timer_task_handle_ = nullptr;
+    
+    // Shutdown CPU integration
+    shutdown_cpu_integration();
     
     // Restart if needed
     return initialize(config_);

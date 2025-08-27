@@ -615,4 +615,178 @@ UBaseType_t TaskScheduler::get_task_count() const {
     return all_tasks_.size();
 }
 
+void TaskScheduler::yield_current_task() {
+    if (!scheduler_running_ || scheduler_suspended_) {
+        return;
+    }
+    
+    // Trigger rescheduling to potentially switch to another task of same/higher priority
+    schedule();
+}
+
+std::vector<TaskHandle_t> TaskScheduler::get_all_tasks() const {
+    std::lock_guard<std::mutex> lock(tasks_mutex_);
+    std::vector<TaskHandle_t> handles;
+    
+    for (const auto& task : all_tasks_) {
+        if (task->get_state() != TaskState::DELETED) {
+            handles.push_back(static_cast<TaskHandle_t>(task.get()));
+        }
+    }
+    
+    return handles;
+}
+
+TaskHandle_t TaskScheduler::get_current_task() const {
+    // Get current task for the calling thread's core
+    // For simplicity, we'll return core 0's current task
+    // In a real implementation, this would determine which core is calling
+    return static_cast<TaskHandle_t>(current_task_core_0_.load());
+}
+
+TaskHandle_t TaskScheduler::get_current_task(CoreAssignment core) const {
+    if (core == CoreAssignment::CORE_0) {
+        return static_cast<TaskHandle_t>(current_task_core_0_.load());
+    } else if (core == CoreAssignment::CORE_1) {
+        return static_cast<TaskHandle_t>(current_task_core_1_.load());
+    }
+    
+    return nullptr;
+}
+
+Result<UBaseType_t> TaskScheduler::get_stack_high_water_mark(TaskHandle_t task_handle) const {
+    if (!is_valid_task_handle(task_handle)) {
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER, "Invalid task handle"));
+    }
+    
+    Task* task = handle_to_task_ptr(task_handle);
+    
+    // For emulation purposes, return a simulated high water mark
+    // In real implementation, this would examine the task's stack
+    UBaseType_t stack_size = task->get_stack_size();
+    UBaseType_t used_stack = stack_size / 4; // Simulate 25% stack usage
+    
+    return stack_size - used_stack;
+}
+
+Result<void> TaskScheduler::suspend_task(TaskHandle_t task_handle) {
+    if (!is_valid_task_handle(task_handle)) {
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER, "Invalid task handle"));
+    }
+    
+    Task* task = handle_to_task_ptr(task_handle);
+    LOG_DEBUG("Suspending task: {}", task->get_name());
+    
+    // Remove from ready queue
+    remove_task_from_ready_queue(task);
+    
+    // Set to suspended state
+    task->set_state(TaskState::SUSPENDED);
+    
+    // If this is the current task, trigger context switch
+    if (current_task_core_0_ == task) {
+        context_switch_pending_[0] = true;
+        context_switch_cv_[0].notify_one();
+    }
+    if (current_task_core_1_ == task) {
+        context_switch_pending_[1] = true;
+        context_switch_cv_[1].notify_one();
+    }
+    
+    return {};
+}
+
+Result<void> TaskScheduler::resume_task(TaskHandle_t task_handle) {
+    if (!is_valid_task_handle(task_handle)) {
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER, "Invalid task handle"));
+    }
+    
+    Task* task = handle_to_task_ptr(task_handle);
+    LOG_DEBUG("Resuming task: {}", task->get_name());
+    
+    if (task->get_state() == TaskState::SUSPENDED) {
+        // Set to ready state
+        task->set_state(TaskState::READY);
+        
+        // Add back to ready queue
+        add_task_to_ready_queue(task, CoreAssignment::NO_PREFERENCE);
+        
+        // Trigger scheduling
+        schedule();
+    }
+    
+    return {};
+}
+
+Result<void> TaskScheduler::set_task_priority(TaskHandle_t task_handle, UBaseType_t new_priority) {
+    if (!is_valid_task_handle(task_handle)) {
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER, "Invalid task handle"));
+    }
+    
+    if (new_priority >= configMAX_PRIORITIES) {
+        return unexpected(MAKE_ERROR(INVALID_PARAMETER, "Priority too high"));
+    }
+    
+    Task* task = handle_to_task_ptr(task_handle);
+    UBaseType_t old_priority = task->get_priority();
+    
+    LOG_DEBUG("Setting task {} priority from {} to {}", task->get_name(), old_priority, new_priority);
+    
+    // Remove from ready queue with old priority
+    if (task->get_state() == TaskState::READY) {
+        remove_task_from_ready_queue(task);
+    }
+    
+    // Update priority
+    task->set_priority(new_priority);
+    
+    // Add back to ready queue with new priority
+    if (task->get_state() == TaskState::READY) {
+        add_task_to_ready_queue(task, CoreAssignment::NO_PREFERENCE);
+        
+        // Trigger scheduling if priority increased
+        if (new_priority > old_priority) {
+            schedule();
+        }
+    }
+    
+    return {};
+}
+
+UBaseType_t TaskScheduler::get_task_priority(TaskHandle_t task_handle) const {
+    if (!is_valid_task_handle(task_handle)) {
+        return 0; // Return lowest priority for invalid handles
+    }
+    
+    Task* task = handle_to_task_ptr(task_handle);
+    return task->get_priority();
+}
+
+void TaskScheduler::preempt_current_task() {
+    if (!scheduler_running_ || scheduler_suspended_) {
+        return;
+    }
+    
+    // Force a context switch on both cores
+    context_switch_pending_[0] = true;
+    context_switch_pending_[1] = true;
+    
+    // Wake up any waiting context switches
+    context_switch_cv_[0].notify_one();
+    context_switch_cv_[1].notify_one();
+    
+    // Trigger scheduling
+    schedule();
+}
+
+bool TaskScheduler::is_context_switch_pending(CoreAssignment core) const {
+    if (core == CoreAssignment::CORE_0) {
+        return context_switch_pending_[0].load();
+    } else if (core == CoreAssignment::CORE_1) {
+        return context_switch_pending_[1].load();
+    }
+    
+    return false;
+}
+
 } // namespace m5tab5::emulator::freertos

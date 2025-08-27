@@ -189,9 +189,9 @@ namespace {
     }
     
     /**
-     * @brief Simulate buffer operations with ring buffer
+     * @brief Simulate buffer operations with ring buffer (for future use)
      */
-    size_t ring_buffer_available_read(const UARTDriverInstance* instance) {
+    [[maybe_unused]] size_t ring_buffer_available_read(const UARTDriverInstance* instance) {
         if (instance->rx_head >= instance->rx_tail) {
             return instance->rx_head - instance->rx_tail;
         } else {
@@ -199,7 +199,7 @@ namespace {
         }
     }
     
-    size_t ring_buffer_available_write(const UARTDriverInstance* instance) {
+    [[maybe_unused]] size_t ring_buffer_available_write(const UARTDriverInstance* instance) {
         return instance->tx_buffer_size - ((instance->tx_head - instance->tx_tail + instance->tx_buffer_size) % instance->tx_buffer_size) - 1;
     }
 }

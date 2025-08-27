@@ -155,7 +155,52 @@ private:
     // Branch prediction table (256 entries, 2-bit saturating counters)
     std::array<uint8_t, 256> branch_predictor_ = {};
 
-    // Future: Add instruction set implementation here if needed
+    // RISC-V instruction execution methods
+    EmulatorError executeADDI(const DecodedInstruction& decoded);
+    EmulatorError executeSLTI(const DecodedInstruction& decoded);
+    EmulatorError executeSLTIU(const DecodedInstruction& decoded);
+    EmulatorError executeXORI(const DecodedInstruction& decoded);
+    EmulatorError executeORI(const DecodedInstruction& decoded);
+    EmulatorError executeANDI(const DecodedInstruction& decoded);
+    EmulatorError executeSLLI(const DecodedInstruction& decoded);
+    EmulatorError executeSRLI(const DecodedInstruction& decoded);
+    EmulatorError executeSRAI(const DecodedInstruction& decoded);
+    
+    EmulatorError executeADD(const DecodedInstruction& decoded);
+    EmulatorError executeSUB(const DecodedInstruction& decoded);
+    EmulatorError executeSLL(const DecodedInstruction& decoded);
+    EmulatorError executeSLT(const DecodedInstruction& decoded);
+    EmulatorError executeSLTU(const DecodedInstruction& decoded);
+    EmulatorError executeXOR(const DecodedInstruction& decoded);
+    EmulatorError executeSRL(const DecodedInstruction& decoded);
+    EmulatorError executeSRA(const DecodedInstruction& decoded);
+    EmulatorError executeOR(const DecodedInstruction& decoded);
+    EmulatorError executeAND(const DecodedInstruction& decoded);
+    
+    EmulatorError executeLUI(const DecodedInstruction& decoded);
+    EmulatorError executeAUIPC(const DecodedInstruction& decoded);
+    
+    EmulatorError executeJAL(const DecodedInstruction& decoded);
+    EmulatorError executeJALR(const DecodedInstruction& decoded);
+    
+    EmulatorError executeBEQ(const DecodedInstruction& decoded);
+    EmulatorError executeBNE(const DecodedInstruction& decoded);
+    EmulatorError executeBLT(const DecodedInstruction& decoded);
+    EmulatorError executeBGE(const DecodedInstruction& decoded);
+    EmulatorError executeBLTU(const DecodedInstruction& decoded);
+    EmulatorError executeBGEU(const DecodedInstruction& decoded);
+    
+    EmulatorError executeLB(const DecodedInstruction& decoded);
+    EmulatorError executeLH(const DecodedInstruction& decoded);
+    EmulatorError executeLW(const DecodedInstruction& decoded);
+    EmulatorError executeLBU(const DecodedInstruction& decoded);
+    EmulatorError executeLHU(const DecodedInstruction& decoded);
+    
+    EmulatorError executeSB(const DecodedInstruction& decoded);
+    EmulatorError executeSH(const DecodedInstruction& decoded);
+    EmulatorError executeSW(const DecodedInstruction& decoded);
+    
+    EmulatorError executeEBREAK(const DecodedInstruction& decoded);
 };
 
 } // namespace m5tab5::emulator

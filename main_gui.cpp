@@ -1202,6 +1202,40 @@ bool start_emulator() {
         LOG_INFO("🚀 Starting delightful M5Stack Tab5 boot sequence!");
     }
     
+    // Check if emulator needs to be initialized before starting
+    if (emulator->get_state() == EmulatorState::UNINITIALIZED) {
+        LOG_INFO("Emulator not initialized, reinitializing...");
+        
+        // Recreate the configuration used during GUI startup
+        Configuration config;
+        auto config_file = "config/development.json";
+        if (std::filesystem::exists(config_file)) {
+            if (!config.loadFromFile(config_file)) {
+                LOG_WARN("Failed to load configuration from: {}, using defaults", config_file);
+                config.setDefaults();
+            }
+        } else {
+            LOG_INFO("Configuration file not found, using defaults");
+            config.setDefaults();
+        }
+        
+        Configuration emulator_config = config;
+        emulator_config.setValue("graphics", "enable", false);  // Disable emulator's own graphics
+        emulator_config.setValue("graphics", "headless", true); // Run headless, GUI provides display
+        
+        auto init_result = emulator->initialize(emulator_config);
+        if (!init_result) {
+            std::string error_msg = init_result.error().to_string();
+            LOG_ERROR("Failed to reinitialize emulator: {}", error_msg);
+            if (personality_manager) {
+                gui_state.status_message = personality_manager->get_friendly_error_message("hardware_error");
+                personality_manager->complete_loading(false, error_msg);
+            }
+            return false;
+        }
+        LOG_INFO("Emulator reinitialized successfully");
+    }
+    
     auto result = emulator->start();
     if (!result) {
         std::string error_msg = result.error().to_string();

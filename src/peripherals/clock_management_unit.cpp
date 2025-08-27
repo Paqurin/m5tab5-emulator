@@ -693,8 +693,7 @@ void ClockManagementUnit::update_frequency_monitors() {
             // Measure frequency
             auto result = measure_frequency(source);
             if (result) {
-                float measured_mhz = result.value();
-                
+                // measure_frequency() already updates monitor.in_spec internally
                 // Check if frequency is in specification
                 if (!monitor.in_spec) {
                     trigger_interrupt(CMUInterruptType::FREQUENCY_ERROR);
@@ -811,13 +810,13 @@ void ClockManagementUnit::dump_status() const {
         
         COMPONENT_LOG_INFO("CPU Cores:");
         for (size_t i = 0; i < cpu_domains_.size(); ++i) {
-            const auto& core = cpu_domains_[i];
+            [[maybe_unused]] const auto& core = cpu_domains_[i];
             COMPONENT_LOG_INFO("  {}: {} MHz, enabled={}, cycles={}",
                               core.name, core.frequency_hz / 1000000, core.enabled, core.cycle_count);
         }
         
         COMPONENT_LOG_INFO("PLL Status:");
-        for (const auto& [source, pll] : pll_states_) {
+        for ([[maybe_unused]] const auto& [source, pll] : pll_states_) {
             COMPONENT_LOG_INFO("  Source {}: {} MHz, locked={}, enabled={}",
                               static_cast<u8>(source), pll.actual_frequency_hz / 1000000,
                               pll.locked, pll.enabled);
@@ -825,7 +824,7 @@ void ClockManagementUnit::dump_status() const {
         
         COMPONENT_LOG_INFO("Key Peripheral Clocks:");
         for (size_t i = 0; i < 10 && i < NUM_PERIPHERAL_DOMAINS; ++i) {
-            const auto& domain = peripheral_domains_[i];
+            [[maybe_unused]] const auto& domain = peripheral_domains_[i];
             COMPONENT_LOG_INFO("  {}: {} MHz, enabled={}, gating={}",
                               domain.name, domain.frequency_hz / 1000000, 
                               domain.enabled, static_cast<u8>(domain.gating_mode));

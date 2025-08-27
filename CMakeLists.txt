@@ -13,6 +13,14 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0 -DDEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG -march=native")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O2 -g")
 
+# Fix fmt v9/spdlog dangling reference warnings in GCC 13+ for entire project
+# This suppresses known false positives in fmt library template instantiation when using spdlog
+# See: https://github.com/fmtlib/fmt/issues/3415
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "13.0")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-dangling-reference")
+    message(STATUS "Applied -Wno-dangling-reference fix for fmt v9/spdlog usage with GCC ${CMAKE_CXX_COMPILER_VERSION}")
+endif()
+
 # Platform-specific settings
 if(UNIX AND NOT APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
@@ -120,6 +128,14 @@ if(NOT spdlog_FOUND)
         GIT_TAG v1.12.0
     )
     FetchContent_MakeAvailable(spdlog)
+    
+    # Fix fmt v9/spdlog dangling reference warnings in GCC 13+
+    # This suppresses known false positives in fmt library template instantiation
+    # See: https://github.com/fmtlib/fmt/issues/3415
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "13.0")
+        target_compile_options(spdlog PRIVATE -Wno-dangling-reference)
+        message(STATUS "Applied -Wno-dangling-reference fix for spdlog/fmt v9 with GCC ${CMAKE_CXX_COMPILER_VERSION}")
+    endif()
 endif()
 
 # Include directories
@@ -289,11 +305,37 @@ add_executable(test_display_connection
     test_display_connection.cpp
 )
 
+# NVS persistence test
+add_executable(test_nvs_persistence
+    test_nvs_persistence.cpp
+)
+
+# Simple NVS test
+add_executable(test_nvs_simple
+    test_nvs_simple.cpp
+)
+
 # Link test with core library
 target_link_libraries(test_display_connection
     PRIVATE m5tab5-emulator-core
     PRIVATE Threads::Threads
 )
+
+# Link NVS test with core library
+target_link_libraries(test_nvs_persistence
+    PRIVATE m5tab5-emulator-core
+    PRIVATE Threads::Threads
+)
+
+# Link simple NVS test with core library
+target_link_libraries(test_nvs_simple
+    PRIVATE m5tab5-emulator-core
+    PRIVATE Threads::Threads
+)
+
+# Set C++ standard for NVS tests
+target_compile_features(test_nvs_persistence PRIVATE cxx_std_20)
+target_compile_features(test_nvs_simple PRIVATE cxx_std_20)
 
 # Set C++ standard and properties for test
 target_compile_features(test_display_connection PRIVATE cxx_std_20)
@@ -307,6 +349,15 @@ if(SDL2_LIBRARY_MANUAL)
 else()
     target_compile_definitions(test_display_connection PRIVATE NO_GRAPHICS)
     message(STATUS "Building test_display_connection without SDL2 (NO_GRAPHICS mode)")
+endif()
+
+# Examples
+option(BUILD_EXAMPLES "Build example applications" ON)
+if(BUILD_EXAMPLES)
+    # Simple FreeRTOS integration test example
+    add_executable(simple-freertos-test examples/simple_freertos_test.cpp)
+    target_link_libraries(simple-freertos-test m5tab5-emulator-core)
+    message(STATUS "Building simple FreeRTOS test example")
 endif()
 
 # Documentation

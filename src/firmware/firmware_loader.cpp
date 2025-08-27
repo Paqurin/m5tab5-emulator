@@ -1,6 +1,8 @@
 #include "emulator/firmware/firmware_loader.hpp"
 #include "emulator/firmware/elf_parser.hpp"
+#include "emulator/firmware/elf_loader.hpp"
 #include "emulator/memory/memory_controller.hpp"
+#include "emulator/memory/boot_rom.hpp"
 #include "emulator/cpu/dual_core_manager.hpp"
 #include "emulator/core/emulator_core.hpp"
 #include "emulator/utils/logging.hpp"
@@ -20,7 +22,10 @@ namespace m5tab5::emulator::firmware {
 // FirmwareLoader Implementation
 //
 
-FirmwareLoader::FirmwareLoader() = default;
+FirmwareLoader::FirmwareLoader() {
+    // Initialize ELF loader
+    elf_loader_ = std::make_unique<ELFLoader>();
+}
 
 FirmwareLoader::~FirmwareLoader() {
     shutdown();
@@ -32,6 +37,15 @@ Result<void> FirmwareLoader::initialize() {
     auto boot_result = boot_loader_->initialize();
     if (!boot_result.has_value()) {
         return unexpected(boot_result.error());
+    }
+
+    // Initialize ELF loader
+    if (!elf_loader_) {
+        elf_loader_ = std::make_unique<ELFLoader>();
+    }
+    auto elf_result = elf_loader_->initialize();
+    if (!elf_result.has_value()) {
+        return unexpected(elf_result.error());
     }
 
     // Configure boot loader
@@ -58,6 +72,12 @@ void FirmwareLoader::shutdown() {
     backup_state_.reset();
     loading_thread_.reset();
     segment_mappings_.clear();
+    
+    // Shutdown ELF loader
+    if (elf_loader_) {
+        elf_loader_->shutdown();
+        elf_loader_.reset();
+    }
 }
 
 Result<ValidationResult> FirmwareLoader::validate_firmware(const std::string& file_path) {
@@ -189,25 +209,57 @@ Result<void> FirmwareLoader::trigger_hard_reset() {
 
 void FirmwareLoader::set_memory_controller(std::shared_ptr<::m5tab5::emulator::MemoryController> memory_controller) {
     memory_controller_ = memory_controller;
+    
+    // Pass to ELF loader
+    if (elf_loader_) {
+        elf_loader_->set_memory_controller(memory_controller);
+    }
 }
 
 void FirmwareLoader::set_cpu_manager(std::shared_ptr<::m5tab5::emulator::DualCoreManager> cpu_manager) {
     cpu_manager_ = cpu_manager;
+    
+    // Pass to ELF loader
+    if (elf_loader_) {
+        elf_loader_->set_cpu_manager(cpu_manager);
+    }
 }
 
 void FirmwareLoader::set_emulator_core(std::shared_ptr<::m5tab5::emulator::EmulatorCore> emulator_core) {
     emulator_core_ = emulator_core;
 }
 
+void FirmwareLoader::set_boot_rom(std::shared_ptr<::m5tab5::emulator::BootROM> boot_rom) {
+    boot_rom_ = boot_rom;
+    
+    // Pass to ELF loader
+    if (elf_loader_) {
+        elf_loader_->set_boot_rom(boot_rom);
+    }
+}
+
 Result<void> FirmwareLoader::load_firmware_internal(const std::string& file_path, ProgressCallback progress_callback) {
     loading_state_.store(LoadingState::VALIDATING);
     progress_update(progress_callback, "Validating", 0.1f, "Validating ELF binary...");
 
-    // Validate firmware
-    auto validation_result = validate_elf_binary(file_path);
-    if (!validation_result.has_value()) {
+    if (!elf_loader_) {
         loading_state_.store(LoadingState::FAILED);
-        return unexpected(validation_result.error());
+        return unexpected(Error{ErrorCode::INVALID_STATE, "ELF loader not initialized"});
+    }
+
+    // Use new ELF loader for complete application loading
+    auto elf_progress_callback = [progress_callback, this](const std::string& stage, float progress, const std::string& message) {
+        if (cancel_requested_.load()) {
+            return;
+        }
+        progress_update(progress_callback, stage, progress, message);
+    };
+
+    // Load ELF application with comprehensive pipeline
+    auto load_result = elf_loader_->load_elf_application(file_path, elf_progress_callback);
+    if (!load_result.has_value()) {
+        loading_state_.store(LoadingState::FAILED);
+        return unexpected(load_result.error());
     }
 
     if (cancel_requested_.load()) {
@@ -215,102 +267,35 @@ Result<void> FirmwareLoader::load_firmware_internal(const std::string& file_path
         return unexpected(Error{ErrorCode::OPERATION_ABORTED, "Loading cancelled by user"});
     }
 
-    current_firmware_info_ = validation_result.value();
-    progress_update(progress_callback, "Validation", 0.2f, "Firmware validation completed");
-
-    // Parse ELF segments
-    loading_state_.store(LoadingState::LOADING_SEGMENTS);
-    progress_update(progress_callback, "Parsing", 0.3f, "Parsing ELF segments...");
+    const auto& result = load_result.value();
     
-    auto parse_result = parse_elf_segments();
-    if (!parse_result.has_value()) {
-        loading_state_.store(LoadingState::FAILED);
-        return unexpected(parse_result.error());
-    }
-
-    if (cancel_requested_.load()) {
-        loading_state_.store(LoadingState::IDLE);
-        return unexpected(Error{ErrorCode::OPERATION_ABORTED, "Loading cancelled by user"});
-    }
-
-    progress_update(progress_callback, "Parsing", 0.4f, "ELF segments parsed successfully");
-
-    // Validate memory layout
-    auto layout_result = validate_memory_layout();
-    if (!layout_result.has_value()) {
-        loading_state_.store(LoadingState::FAILED);
-        return unexpected(layout_result.error());
-    }
-
-    progress_update(progress_callback, "Memory Layout", 0.5f, "Memory layout validated");
-
-    // Load segments to memory
-    loading_state_.store(LoadingState::INITIALIZING_MEMORY);
-    progress_update(progress_callback, "Loading", 0.6f, "Loading segments to memory...");
+    // Update firmware info from ELF loader result
+    current_firmware_info_.valid = result.success;
+    current_firmware_info_.entry_point = result.entry_point;
+    current_firmware_info_.architecture = "RISC-V";
+    current_firmware_info_.target_chip = "ESP32-P4";
+    current_firmware_info_.warnings = result.warnings;
     
-    auto load_segments_result = load_segments_to_memory(progress_callback);
-    if (!load_segments_result.has_value()) {
-        loading_state_.store(LoadingState::FAILED);
-        return unexpected(load_segments_result.error());
-    }
-
-    if (cancel_requested_.load()) {
-        loading_state_.store(LoadingState::IDLE);
-        return unexpected(Error{ErrorCode::OPERATION_ABORTED, "Loading cancelled by user"});
-    }
-
-    progress_update(progress_callback, "Memory", 0.8f, "Segments loaded to memory");
-
-    // Initialize BSS sections
-    auto bss_result = initialize_bss_sections();
-    if (!bss_result.has_value()) {
-        loading_state_.store(LoadingState::FAILED);
-        return unexpected(bss_result.error());
-    }
-
-    // Setup stack and heap
-    auto stack_result = setup_stack_and_heap();
-    if (!stack_result.has_value()) {
-        loading_state_.store(LoadingState::FAILED);
-        return unexpected(stack_result.error());
-    }
-
-    // Configure memory protection
-    auto protection_result = configure_memory_protection();
-    if (!protection_result.has_value()) {
-        loading_state_.store(LoadingState::FAILED);
-        return unexpected(protection_result.error());
-    }
-
-    // Setup interrupt vectors
-    auto interrupt_result = setup_interrupt_vectors();
-    if (!interrupt_result.has_value()) {
-        loading_state_.store(LoadingState::FAILED);
-        return unexpected(interrupt_result.error());
-    }
-
-    // Initialize cores
-    loading_state_.store(LoadingState::STARTING_CORES);
-    progress_update(progress_callback, "Cores", 0.9f, "Initializing CPU cores...");
-    
-    auto cores_result = initialize_cores();
-    if (!cores_result.has_value()) {
-        loading_state_.store(LoadingState::FAILED);
-        return unexpected(cores_result.error());
-    }
-
-    // Validate boot readiness
-    auto boot_ready_result = validate_boot_readiness();
-    if (!boot_ready_result.has_value()) {
-        loading_state_.store(LoadingState::FAILED);
-        return unexpected(boot_ready_result.error());
+    // Integrate with Boot ROM if available
+    if (boot_rom_) {
+        loading_state_.store(LoadingState::SETTING_UP_BOOT);
+        progress_update(progress_callback, "Boot ROM", 0.95f, "Integrating with Boot ROM...");
+        
+        auto boot_integration_result = elf_loader_->integrate_with_boot_rom(result.entry_point);
+        if (!boot_integration_result.has_value()) {
+            // Non-fatal error - log warning and continue
+            LOG_WARN("Boot ROM integration failed: {}", boot_integration_result.error().message());
+        }
     }
 
     // Success!
     firmware_loaded_ = true;
     loaded_firmware_path_ = file_path;
     loading_state_.store(LoadingState::COMPLETED);
-    progress_update(progress_callback, "Complete", 1.0f, "Firmware loaded successfully!", true);
+    progress_update(progress_callback, "Complete", 1.0f, "Firmware loaded successfully with ELF loader!", true);
+
+    LOG_INFO("Firmware loaded successfully: entry=0x{:08x}, size={} bytes, warnings={}",
+             result.entry_point, result.total_size, result.warnings.size());
 
     return {};
 }

@@ -3,6 +3,7 @@
 #include "emulator/core/types.hpp"
 #include "emulator/memory/memory_interface.hpp"
 #include "emulator/memory/memory_region.hpp"
+#include "emulator/memory/boot_rom.hpp"
 #include "emulator/config/configuration.hpp"
 #include "emulator/utils/error.hpp"
 #include "emulator/utils/types.hpp"
@@ -86,11 +87,15 @@ public:
     bool isWritableAddress(Address address) const override;
     bool isExecutableAddress(Address address) const override;
     
+    // Boot ROM access
+    BootROM* getBootROM() const { return boot_rom_.get(); }
+    
     // Bulk operations inherited from MemoryInterface
 
 private:
     // Internal helper methods
     Result<SharedPtr<MemoryRegion>> find_memory_region(Address address) const;
+    Result<void> initialize_boot_rom_region();
     Result<void> initialize_flash_region(size_t size);
     Result<void> initialize_psram_region(size_t size);
     Result<void> initialize_sram_region(size_t size);
@@ -119,6 +124,9 @@ private:
     std::unordered_map<Address, CacheLine> cache_lines_;
     size_t cache_line_size_ = 32;
     CacheStatistics cache_stats_;
+    
+    // Boot ROM emulation
+    std::unique_ptr<BootROM> boot_rom_;
     
     // Memory Management Unit (TODO: Implement MemoryMappingUnit)
     // std::unique_ptr<MemoryMappingUnit> mmu_;

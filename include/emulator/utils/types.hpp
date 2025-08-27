@@ -77,9 +77,19 @@ struct MemoryLayout {
     }
 };
 
+// Boot ROM region (32KB, read-only, executable)
+constexpr MemoryLayout BOOT_ROM_LAYOUT{
+    .start_address = 0x40000000,
+    .size = 32 * 1024,  // 32KB
+    .writable = false,
+    .executable = true,
+    .cacheable = false
+};
+
+// Flash XIP region via MMU (128MB virtual)
 constexpr MemoryLayout FLASH_LAYOUT{
-    .start_address = 0x10000000,
-    .size = 16 * 1024 * 1024,  // 16MB
+    .start_address = 0x42000000,
+    .size = 128 * 1024 * 1024,  // 128MB virtual
     .writable = false,
     .executable = true,
     .cacheable = true
@@ -93,33 +103,56 @@ constexpr MemoryLayout PSRAM_LAYOUT{
     .cacheable = true
 };
 
+// Internal TCM (Tightly Coupled Memory) - 12MB
 constexpr MemoryLayout SRAM_LAYOUT{
-    .start_address = 0x30000000,
-    .size = 768 * 1024,  // 768KB
+    .start_address = 0x4FF00000,
+    .size = 768 * 1024,  // 768KB (main SRAM)
     .writable = true,
     .executable = true,
     .cacheable = true
 };
 
+// Extended TCM region
+constexpr MemoryLayout TCM_LAYOUT{
+    .start_address = 0x4FF00000,
+    .size = 12 * 1024 * 1024,  // 12MB total TCM
+    .writable = true,
+    .executable = true,
+    .cacheable = false  // Zero-latency access
+};
+
+// MMIO region starts after Boot ROM
 constexpr MemoryLayout MMIO_LAYOUT{
-    .start_address = 0x40000000,
-    .size = 256 * 1024 * 1024,  // 256MB
+    .start_address = 0x40008000,  // After Boot ROM
+    .size = 248 * 1024 * 1024,  // 248MB (reduced by Boot ROM)
     .writable = true,
     .executable = false,
     .cacheable = false
 };
 
-// Communication Interface Base Addresses
+// ESP32-P4 Boot ROM constants
+constexpr Address BOOT_ROM_BASE = 0x40000000;
+constexpr Address BOOT_ROM_SIZE = 32 * 1024;  // 32KB
+constexpr Address BOOT_ROM_RESET_VECTOR = 0x40000080;
+constexpr Address BOOT_ROM_PARAM_BASE = 0x40005F00;
+constexpr Address BOOT_ROM_PARAM_SIZE = 0x100;  // 256 bytes
+
+// Flash mapping constants
+constexpr Address FLASH_XIP_BASE = 0x42000000;
+constexpr Address FLASH_BOOTLOADER_BASE = 0x42000000;
+constexpr Address FLASH_APP_BASE = 0x42001000;
+
+// Communication Interface Base Addresses (adjusted for Boot ROM)
 constexpr Address I2C0_BASE_ADDR = 0x40013000;
 constexpr Address I2C1_BASE_ADDR = 0x40014000;
 constexpr Address SPI0_BASE_ADDR = 0x40008000;
 constexpr Address SPI1_BASE_ADDR = 0x40009000;
 constexpr Address SPI2_BASE_ADDR = 0x4000A000;
-constexpr Address UART0_BASE_ADDR = 0x40000000;
-constexpr Address UART1_BASE_ADDR = 0x40001000;
-constexpr Address UART2_BASE_ADDR = 0x40002000;
-constexpr Address UART3_BASE_ADDR = 0x40003000;
-constexpr Address UART4_BASE_ADDR = 0x40004000;
+constexpr Address UART0_BASE_ADDR = 0x4000C000;  // Moved after Boot ROM
+constexpr Address UART1_BASE_ADDR = 0x4000C400;
+constexpr Address UART2_BASE_ADDR = 0x4000C800;
+constexpr Address UART3_BASE_ADDR = 0x4000CC00;
+constexpr Address UART4_BASE_ADDR = 0x4000D000;
 
 // PWM and Timer Base Addresses
 constexpr Address PWM0_BASE_ADDR = 0x40010000;

@@ -430,7 +430,6 @@ Result<DecodedInstruction> InstructionDecoder::decode_atomic_instruction(u32 ins
 Result<DecodedInstruction> InstructionDecoder::decode_compressed_instruction(u16 instruction) {
     // RV32C compressed instruction decoding
     u8 opcode = instruction & 0x3;
-    u8 funct3 = (instruction >> 13) & 0x7;
     
     DecodedInstruction decoded{};
     decoded.raw_instruction = instruction;
@@ -438,14 +437,353 @@ Result<DecodedInstruction> InstructionDecoder::decode_compressed_instruction(u16
     
     switch (opcode) {
         case 0x0:  // C0 - Stack pointer based loads/stores and arithmetic
+            return decode_compressed_quadrant_0(instruction);
         case 0x1:  // C1 - Control flow and integer computation
+            return decode_compressed_quadrant_1(instruction);
         case 0x2:  // C2 - Stack pointer based loads/stores and register moves
-            return unexpected(MAKE_ERROR(NOT_IMPLEMENTED,
-                "Compressed instructions not yet implemented"));
+            return decode_compressed_quadrant_2(instruction);
         default:
             return unexpected(MAKE_ERROR(CPU_INVALID_INSTRUCTION,
                 "Invalid compressed instruction opcode: " + std::to_string(opcode)));
     }
+}
+
+Result<DecodedInstruction> InstructionDecoder::decode_compressed_quadrant_0(u16 instruction) {
+    u8 funct3 = (instruction >> 13) & 0x7;
+    DecodedInstruction decoded{};
+    decoded.raw_instruction = instruction;
+    decoded.compressed = true;
+    decoded.valid = true;
+    decoded.format = InstructionFormat::COMPRESSED;
+    decoded.opcode = instruction & 0x3;
+    
+    switch (funct3) {
+        case 0x0: {  // C.ADDI4SPN - Add immediate to stack pointer
+            u16 imm = ((instruction >> 7) & 0x30) |   // imm[5:4]
+                      ((instruction >> 1) & 0x3C0) |  // imm[9:6]
+                      ((instruction << 4) & 0x4) |    // imm[2]
+                      ((instruction << 1) & 0x8);     // imm[3]
+            if (imm == 0) {
+                return unexpected(MAKE_ERROR(CPU_INVALID_INSTRUCTION,
+                    "C.ADDI4SPN with zero immediate is reserved"));
+            }
+            decoded.type = InstructionType::ADDI;
+            decoded.rd = ((instruction >> 2) & 0x7) + 8;  // rd' + 8
+            decoded.rs1 = 2;  // sp
+            decoded.immediate = imm;
+            break;
+        }
+        case 0x2: {  // C.LW - Load word
+            u16 imm = ((instruction << 1) & 0x40) |    // imm[6]
+                      ((instruction >> 7) & 0x38) |   // imm[5:3]
+                      ((instruction << 4) & 0x4);     // imm[2]
+            decoded.type = InstructionType::LW;
+            decoded.rd = ((instruction >> 2) & 0x7) + 8;   // rd' + 8
+            decoded.rs1 = ((instruction >> 7) & 0x7) + 8;  // rs1' + 8
+            decoded.immediate = imm;
+            break;
+        }
+        case 0x6: {  // C.SW - Store word
+            u16 imm = ((instruction << 1) & 0x40) |    // imm[6]
+                      ((instruction >> 7) & 0x38) |   // imm[5:3]
+                      ((instruction << 4) & 0x4);     // imm[2]
+            decoded.type = InstructionType::SW;
+            decoded.rs1 = ((instruction >> 7) & 0x7) + 8;  // rs1' + 8
+            decoded.rs2 = ((instruction >> 2) & 0x7) + 8;  // rs2' + 8
+            decoded.immediate = imm;
+            break;
+        }
+        default:
+            return unexpected(MAKE_ERROR(CPU_INVALID_INSTRUCTION,
+                "Invalid C0 quadrant instruction: funct3=" + std::to_string(funct3)));
+    }
+    
+    return decoded;
+}
+
+Result<DecodedInstruction> InstructionDecoder::decode_compressed_quadrant_1(u16 instruction) {
+    u8 funct3 = (instruction >> 13) & 0x7;
+    DecodedInstruction decoded{};
+    decoded.raw_instruction = instruction;
+    decoded.compressed = true;
+    decoded.valid = true;
+    decoded.format = InstructionFormat::COMPRESSED;
+    decoded.opcode = instruction & 0x3;
+    
+    switch (funct3) {
+        case 0x0: {  // C.ADDI - Add immediate
+            i32 imm = ((instruction >> 7) & 0x20) |   // imm[5]
+                      ((instruction >> 2) & 0x1F);    // imm[4:0]
+            // Sign extend
+            if (imm & 0x20) imm |= 0xFFFFFFC0;
+            decoded.type = InstructionType::ADDI;
+            decoded.rd = (instruction >> 7) & 0x1F;
+            decoded.rs1 = decoded.rd;  // Same as rd
+            decoded.immediate = imm;
+            break;
+        }
+        case 0x1: {  // C.JAL - Jump and link (RV32 only)
+            i32 imm = ((instruction << 3) & 0x800) |    // imm[11]
+                      ((instruction >> 7) & 0x10) |     // imm[4]
+                      ((instruction >> 1) & 0x300) |    // imm[9:8]
+                      ((instruction << 1) & 0x400) |    // imm[10]
+                      ((instruction >> 1) & 0x40) |     // imm[6]
+                      ((instruction << 3) & 0x80) |     // imm[7]
+                      ((instruction >> 2) & 0xE) |      // imm[3:1]
+                      ((instruction << 2) & 0x20);      // imm[5]
+            // Sign extend
+            if (imm & 0x800) imm |= 0xFFFFF000;
+            decoded.type = InstructionType::JAL;
+            decoded.rd = 1;  // ra
+            decoded.immediate = imm;
+            break;
+        }
+        case 0x2: {  // C.LI - Load immediate
+            i32 imm = ((instruction >> 7) & 0x20) |   // imm[5]
+                      ((instruction >> 2) & 0x1F);    // imm[4:0]
+            // Sign extend
+            if (imm & 0x20) imm |= 0xFFFFFFC0;
+            decoded.type = InstructionType::ADDI;
+            decoded.rd = (instruction >> 7) & 0x1F;
+            decoded.rs1 = 0;  // x0
+            decoded.immediate = imm;
+            break;
+        }
+        case 0x3: {  // C.LUI / C.ADDI16SP
+            u8 rd = (instruction >> 7) & 0x1F;
+            if (rd == 2) {  // C.ADDI16SP
+                i32 imm = ((instruction << 3) & 0x200) |    // imm[9]
+                          ((instruction << 1) & 0x40) |     // imm[6]
+                          ((instruction << 4) & 0x180) |    // imm[8:7]
+                          ((instruction >> 2) & 0x10) |     // imm[4]
+                          ((instruction << 3) & 0x20);      // imm[5]
+                // Sign extend
+                if (imm & 0x200) imm |= 0xFFFFFE00;
+                if (imm == 0) {
+                    return unexpected(MAKE_ERROR(CPU_INVALID_INSTRUCTION,
+                        "C.ADDI16SP with zero immediate is reserved"));
+                }
+                decoded.type = InstructionType::ADDI;
+                decoded.rd = 2;  // sp
+                decoded.rs1 = 2;  // sp
+                decoded.immediate = imm;
+            } else {  // C.LUI
+                i32 imm = ((instruction << 5) & 0x20000) |  // imm[17]
+                          ((instruction << 10) & 0x1F000);  // imm[16:12]
+                // Sign extend
+                if (imm & 0x20000) imm |= 0xFFFC0000;
+                if (imm == 0 || rd == 0) {
+                    return unexpected(MAKE_ERROR(CPU_INVALID_INSTRUCTION,
+                        "C.LUI with zero immediate or rd=x0 is reserved"));
+                }
+                decoded.type = InstructionType::LUI;
+                decoded.rd = rd;
+                decoded.immediate = imm;
+            }
+            break;
+        }
+        case 0x4: {  // Misc-ALU operations
+            u8 funct2 = (instruction >> 10) & 0x3;
+            u8 rd_rs1_p = ((instruction >> 7) & 0x7) + 8;
+            
+            switch (funct2) {
+                case 0x0: {  // C.SRLI
+                    u8 shamt = (instruction >> 2) & 0x1F;
+                    decoded.type = InstructionType::SRLI;
+                    decoded.rd = rd_rs1_p;
+                    decoded.rs1 = rd_rs1_p;
+                    decoded.immediate = shamt;
+                    break;
+                }
+                case 0x1: {  // C.SRAI
+                    u8 shamt = (instruction >> 2) & 0x1F;
+                    decoded.type = InstructionType::SRAI;
+                    decoded.rd = rd_rs1_p;
+                    decoded.rs1 = rd_rs1_p;
+                    decoded.immediate = shamt;
+                    break;
+                }
+                case 0x2: {  // C.ANDI
+                    i32 imm = ((instruction >> 7) & 0x20) |   // imm[5]
+                              ((instruction >> 2) & 0x1F);    // imm[4:0]
+                    // Sign extend
+                    if (imm & 0x20) imm |= 0xFFFFFFC0;
+                    decoded.type = InstructionType::ANDI;
+                    decoded.rd = rd_rs1_p;
+                    decoded.rs1 = rd_rs1_p;
+                    decoded.immediate = imm;
+                    break;
+                }
+                case 0x3: {  // Register-register operations
+                    u8 funct2_low = (instruction >> 5) & 0x3;
+                    u8 rs2_p = ((instruction >> 2) & 0x7) + 8;
+                    
+                    switch (funct2_low) {
+                        case 0x0:  // C.SUB
+                            decoded.type = InstructionType::SUB;
+                            break;
+                        case 0x1:  // C.XOR
+                            decoded.type = InstructionType::XOR;
+                            break;
+                        case 0x2:  // C.OR
+                            decoded.type = InstructionType::OR;
+                            break;
+                        case 0x3:  // C.AND
+                            decoded.type = InstructionType::AND;
+                            break;
+                    }
+                    decoded.rd = rd_rs1_p;
+                    decoded.rs1 = rd_rs1_p;
+                    decoded.rs2 = rs2_p;
+                    break;
+                }
+            }
+            break;
+        }
+        case 0x5: {  // C.J - Jump
+            i32 imm = ((instruction << 3) & 0x800) |    // imm[11]
+                      ((instruction >> 7) & 0x10) |     // imm[4]
+                      ((instruction >> 1) & 0x300) |    // imm[9:8]
+                      ((instruction << 1) & 0x400) |    // imm[10]
+                      ((instruction >> 1) & 0x40) |     // imm[6]
+                      ((instruction << 3) & 0x80) |     // imm[7]
+                      ((instruction >> 2) & 0xE) |      // imm[3:1]
+                      ((instruction << 2) & 0x20);      // imm[5]
+            // Sign extend
+            if (imm & 0x800) imm |= 0xFFFFF000;
+            decoded.type = InstructionType::JAL;
+            decoded.rd = 0;  // x0
+            decoded.immediate = imm;
+            break;
+        }
+        case 0x6: {  // C.BEQZ - Branch if equal to zero
+            i32 imm = ((instruction >> 4) & 0x100) |    // imm[8]
+                      ((instruction << 1) & 0xC0) |     // imm[7:6]
+                      ((instruction << 3) & 0x20) |     // imm[5]
+                      ((instruction >> 7) & 0x18) |     // imm[4:3]
+                      ((instruction >> 2) & 0x6);       // imm[2:1]
+            // Sign extend
+            if (imm & 0x100) imm |= 0xFFFFFE00;
+            decoded.type = InstructionType::BEQ;
+            decoded.rs1 = ((instruction >> 7) & 0x7) + 8;  // rs1' + 8
+            decoded.rs2 = 0;  // x0
+            decoded.immediate = imm;
+            break;
+        }
+        case 0x7: {  // C.BNEZ - Branch if not equal to zero
+            i32 imm = ((instruction >> 4) & 0x100) |    // imm[8]
+                      ((instruction << 1) & 0xC0) |     // imm[7:6]
+                      ((instruction << 3) & 0x20) |     // imm[5]
+                      ((instruction >> 7) & 0x18) |     // imm[4:3]
+                      ((instruction >> 2) & 0x6);       // imm[2:1]
+            // Sign extend
+            if (imm & 0x100) imm |= 0xFFFFFE00;
+            decoded.type = InstructionType::BNE;
+            decoded.rs1 = ((instruction >> 7) & 0x7) + 8;  // rs1' + 8
+            decoded.rs2 = 0;  // x0
+            decoded.immediate = imm;
+            break;
+        }
+        default:
+            return unexpected(MAKE_ERROR(CPU_INVALID_INSTRUCTION,
+                "Invalid C1 quadrant instruction: funct3=" + std::to_string(funct3)));
+    }
+    
+    return decoded;
+}
+
+Result<DecodedInstruction> InstructionDecoder::decode_compressed_quadrant_2(u16 instruction) {
+    u8 funct3 = (instruction >> 13) & 0x7;
+    DecodedInstruction decoded{};
+    decoded.raw_instruction = instruction;
+    decoded.compressed = true;
+    decoded.valid = true;
+    decoded.format = InstructionFormat::COMPRESSED;
+    decoded.opcode = instruction & 0x3;
+    
+    switch (funct3) {
+        case 0x0: {  // C.SLLI - Shift left logical immediate
+            u8 shamt = (instruction >> 2) & 0x1F;
+            u8 rd = (instruction >> 7) & 0x1F;
+            if (rd == 0) {
+                return unexpected(MAKE_ERROR(CPU_INVALID_INSTRUCTION,
+                    "C.SLLI with rd=x0 is reserved"));
+            }
+            decoded.type = InstructionType::SLLI;
+            decoded.rd = rd;
+            decoded.rs1 = rd;
+            decoded.immediate = shamt;
+            break;
+        }
+        case 0x2: {  // C.LWSP - Load word from stack pointer
+            u16 imm = ((instruction << 4) & 0xC0) |    // imm[7:6]
+                      ((instruction >> 7) & 0x20) |    // imm[5]
+                      ((instruction >> 2) & 0x1C);     // imm[4:2]
+            u8 rd = (instruction >> 7) & 0x1F;
+            if (rd == 0) {
+                return unexpected(MAKE_ERROR(CPU_INVALID_INSTRUCTION,
+                    "C.LWSP with rd=x0 is reserved"));
+            }
+            decoded.type = InstructionType::LW;
+            decoded.rd = rd;
+            decoded.rs1 = 2;  // sp
+            decoded.immediate = imm;
+            break;
+        }
+        case 0x4: {  // C.JR / C.MV / C.EBREAK / C.JALR / C.ADD
+            u8 rs1 = (instruction >> 7) & 0x1F;
+            u8 rs2 = (instruction >> 2) & 0x1F;
+            
+            if ((instruction >> 12) & 0x1) {  // bit 12 = 1
+                if (rs2 == 0) {
+                    if (rs1 == 0) {  // C.EBREAK
+                        decoded.type = InstructionType::EBREAK;
+                    } else {  // C.JALR
+                        decoded.type = InstructionType::JALR;
+                        decoded.rd = 1;  // ra
+                        decoded.rs1 = rs1;
+                        decoded.immediate = 0;
+                    }
+                } else {  // C.ADD
+                    decoded.type = InstructionType::ADD;
+                    decoded.rd = rs1;
+                    decoded.rs1 = rs1;
+                    decoded.rs2 = rs2;
+                }
+            } else {  // bit 12 = 0
+                if (rs2 == 0) {  // C.JR
+                    if (rs1 == 0) {
+                        return unexpected(MAKE_ERROR(CPU_INVALID_INSTRUCTION,
+                            "C.JR with rs1=x0 is reserved"));
+                    }
+                    decoded.type = InstructionType::JALR;
+                    decoded.rd = 0;  // x0
+                    decoded.rs1 = rs1;
+                    decoded.immediate = 0;
+                } else {  // C.MV
+                    decoded.type = InstructionType::ADD;
+                    decoded.rd = rs1;
+                    decoded.rs1 = 0;  // x0
+                    decoded.rs2 = rs2;
+                }
+            }
+            break;
+        }
+        case 0x6: {  // C.SWSP - Store word to stack pointer
+            u16 imm = ((instruction >> 1) & 0xC0) |    // imm[7:6]
+                      ((instruction >> 7) & 0x3C);     // imm[5:2]
+            decoded.type = InstructionType::SW;
+            decoded.rs1 = 2;  // sp
+            decoded.rs2 = (instruction >> 2) & 0x1F;
+            decoded.immediate = imm;
+            break;
+        }
+        default:
+            return unexpected(MAKE_ERROR(CPU_INVALID_INSTRUCTION,
+                "Invalid C2 quadrant instruction: funct3=" + std::to_string(funct3)));
+    }
+    
+    return decoded;
 }
 
 }  // namespace m5tab5::emulator

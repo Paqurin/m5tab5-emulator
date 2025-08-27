@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "esp_types.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -16,23 +17,7 @@
 extern "C" {
 #endif
 
-/**
- * @brief ESP error codes
- */
-#define ESP_OK                 (0)      ///< No error
-#define ESP_FAIL              (-1)      ///< Generic error
-#define ESP_ERR_NO_MEM        (0x101)   ///< Out of memory
-#define ESP_ERR_INVALID_ARG   (0x102)   ///< Invalid argument
-#define ESP_ERR_INVALID_STATE (0x103)   ///< Invalid state
-#define ESP_ERR_INVALID_SIZE  (0x104)   ///< Invalid size
-#define ESP_ERR_NOT_FOUND     (0x105)   ///< Component not found
-#define ESP_ERR_NOT_SUPPORTED (0x106)   ///< Operation not supported
-#define ESP_ERR_TIMEOUT       (0x107)   ///< Operation timed out
-
-/**
- * @brief ESP error type
- */
-typedef int esp_err_t;
+// Error codes and types are now defined in esp_types.h
 
 /**
  * @brief Reset reasons
