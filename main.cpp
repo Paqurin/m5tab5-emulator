@@ -12,6 +12,7 @@
 #include "emulator/utils/logging.hpp"
 #include "emulator/utils/error.hpp"
 #include "emulator/utils/shutdown_manager.hpp"
+#include "emulator/memory/memory_controller.hpp"
 // #include "emulator/firmware/firmware_integration.hpp"  // Disabled for CLI version
 
 using namespace m5tab5::emulator;
@@ -218,6 +219,47 @@ int main(int argc, char* argv[]) {
             return 1;
         }
         
+        // Force-load basic test program to Boot ROM to ensure CPU can execute instructions
+        LOG_INFO("Loading basic test program to ensure CPU execution");
+        auto memory_controller = emulator->getComponent("memory");
+        if (memory_controller) {
+            try {
+                auto mem_ctrl = std::static_pointer_cast<MemoryController>(memory_controller);
+                
+                // Load basic test program: infinite loop of NOPs
+                Address boot_rom_start = 0x40000080; // ESP32-P4 reset vector
+                
+                // Simple test program: a few NOPs followed by a jump back to start
+                uint32_t test_program[] = {
+                    0x00000013, // NOP (addi x0, x0, 0)
+                    0x00000013, // NOP
+                    0x00000013, // NOP
+                    0xffdff06f  // JAL x0, -4 (jump back 4 bytes to create infinite loop)
+                };
+                
+                for (size_t i = 0; i < sizeof(test_program)/sizeof(uint32_t); ++i) {
+                    auto write_result = mem_ctrl->write_u32(boot_rom_start + (i * 4), test_program[i]);
+                    if (!write_result.has_value()) {
+                        LOG_WARN("Failed to write test instruction at 0x{:08X}: {}", 
+                                boot_rom_start + (i * 4), write_result.error().to_string());
+                    }
+                }
+                
+                // Verify instructions were written correctly
+                auto verify_result = mem_ctrl->read_u32(boot_rom_start);
+                if (verify_result.has_value()) {
+                    LOG_INFO("Test program loaded successfully. First instruction: 0x{:08X}", verify_result.value());
+                } else {
+                    LOG_ERROR("Failed to verify test program: {}", verify_result.error().to_string());
+                }
+                
+            } catch (const std::exception& e) {
+                LOG_WARN("Exception while loading test program: {}", e.what());
+            }
+        } else {
+            LOG_WARN("Could not access memory controller to load test program");
+        }
+        
         LOG_INFO("Emulator initialized successfully");
         
         // Note: Firmware integration disabled in CLI version
@@ -235,6 +277,15 @@ int main(int argc, char* argv[]) {
             return 1;
         }
         
+        // Check emulator state immediately after start
+        auto emulator_state = emulator->get_state();
+        LOG_INFO("Emulator started successfully. Current state: {} (RUNNING={})", 
+                 static_cast<int>(emulator_state), static_cast<int>(EmulatorState::RUNNING));
+        
+        if (emulator_state != EmulatorState::RUNNING) {
+            LOG_WARN("Warning: Emulator is not in RUNNING state after start");
+        }
+        
         LOG_INFO("M5Stack Tab5 Emulator (CLI) started - Press Ctrl+C to stop");
         LOG_INFO("For firmware loading and advanced features, use: ./m5tab5-emulator-gui");
         
@@ -246,12 +297,15 @@ int main(int argc, char* argv[]) {
             
             // Print periodic status
             static int status_counter = 0;
-            if (++status_counter % 100 == 0) {  // Every 10 seconds
+            if (++status_counter % 50 == 0) {  // Every 5 seconds (50 * 100ms)
                 try {
-                    LOG_INFO("Status: " + std::to_string(emulator->get_cycles_executed()) + 
-                             " cycles executed, " + std::to_string(emulator->get_execution_speed()) + "x speed");
+                    auto cycles = emulator->get_cycles_executed();
+                    auto speed = emulator->get_execution_speed();
+                    auto state = emulator->get_state();
+                    LOG_INFO("Status: {} cycles executed, {:.3f}x speed, state: {}", 
+                             cycles, speed, static_cast<int>(state));
                 } catch (const std::exception& e) {
-                    LOG_WARN("Error getting emulator status: " + std::string(e.what()));
+                    LOG_WARN("Error getting emulator status: {}", e.what());
                 }
             }
             

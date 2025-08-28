@@ -476,6 +476,8 @@ Result<void> MemoryController::setup_memory_mappings() {
                            region->is_executable() ? "X" : "-");
     }
     
+    COMPONENT_LOG_INFO("Memory layout setup completed with {} regions", memory_regions_.size());
+    
     return {};
 }
 

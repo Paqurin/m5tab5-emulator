@@ -178,6 +178,7 @@ private:
     Result<DecodedInstruction> decode_immediate_instruction(u32 instruction);
     Result<DecodedInstruction> decode_system_instruction(u32 instruction);
     Result<DecodedInstruction> decode_atomic_instruction(u32 instruction);
+    Result<DecodedInstruction> decode_multiply_instruction(u32 instruction);
     
     // Immediate extraction helpers
     i32 extract_i_immediate(u32 instruction);
@@ -194,6 +195,9 @@ private:
     // Instruction classification
     InstructionType classify_instruction(u32 opcode, u32 funct3, u32 funct7);
     const char* get_mnemonic(u32 opcode, u32 funct3, u32 funct7);
+    
+    // ESP32-P4 CSR validation
+    bool is_valid_csr_address(u32 csr_addr);
     
     // Lookup tables for fast decoding
     static const std::unordered_map<u32, const char*> opcode_names_;

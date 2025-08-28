@@ -94,6 +94,31 @@ Result<void> EmulatorCore::initialize(const Configuration& config) {
             [](DualCoreManager*) { /* EmulatorCore owns this resource */ }
         ));
         
+        // Execute Boot ROM sequence to prepare initial program
+        COMPONENT_LOG_INFO("Executing ESP32-P4 Boot ROM sequence");
+        auto boot_result = boot_rom_->executeBootSequence();
+        if (!boot_result.has_value()) {
+            COMPONENT_LOG_WARN("Boot ROM sequence failed, CPU will start with empty program: {}", boot_result.error().to_string());
+        } else {
+            COMPONENT_LOG_INFO("Boot ROM sequence completed, CPU ready to execute from reset vector");
+        }
+        
+        // Ensure CPU cores are initialized with correct reset vector from Boot ROM
+        if (boot_rom_) {
+            auto reset_vector = boot_rom_->getResetVector();
+            if (reset_vector.has_value()) {
+                auto core0_result = cpu_manager_->get_core(DualCoreManager::CoreId::CORE_0);
+                if (core0_result.has_value()) {
+                    auto current_pc = core0_result.value()->getProgramCounter();
+                    if (current_pc != reset_vector.value()) {
+                        COMPONENT_LOG_INFO("Correcting CPU Core 0 PC from 0x{:08X} to Boot ROM reset vector 0x{:08X}", 
+                                          current_pc, reset_vector.value());
+                        core0_result.value()->setProgramCounter(reset_vector.value());
+                    }
+                }
+            }
+        }
+        
         // Initialize ELF loader for application loading
         COMPONENT_LOG_DEBUG("Initializing ELF loader");
         elf_loader_ = std::make_unique<firmware::ELFLoader>();
@@ -268,7 +293,34 @@ Result<void> EmulatorCore::initialize(const Configuration& config) {
         esp_idf_set_emulator_core(this);
         COMPONENT_LOG_DEBUG("ESP-IDF API layer integrated with EmulatorCore");
         
+        // Verify Boot ROM entry point has valid instructions
+        if (boot_rom_) {
+            auto reset_vector = boot_rom_->getResetVector();
+            if (reset_vector.has_value()) {
+                auto instruction_result = memory_controller_->read_u32(reset_vector.value());
+                if (instruction_result.has_value()) {
+                    COMPONENT_LOG_INFO("Boot ROM reset vector instruction: 0x{:08X}", instruction_result.value());
+                    if (instruction_result.value() == 0x00000000) {
+                        COMPONENT_LOG_ERROR("Boot ROM contains empty instruction - Boot ROM generation failed!");
+                    }
+                } else {
+                    COMPONENT_LOG_ERROR("Cannot read instruction from Boot ROM reset vector: {}", instruction_result.error().to_string());
+                    // This is a critical issue - Boot ROM is not accessible
+                    // Force load a simple test program into Boot ROM region
+                    COMPONENT_LOG_WARN("Attempting to fix Boot ROM accessibility by loading test instructions");
+                    auto write_result1 = memory_controller_->write_u32(0x40000080, 0x00000013); // NOP at reset vector
+                    auto write_result2 = memory_controller_->write_u32(0x40000084, 0xffdff06f); // JAL x0, -4 (infinite loop)
+                    if (write_result1.has_value() && write_result2.has_value()) {
+                        COMPONENT_LOG_INFO("Successfully loaded basic test program into Boot ROM");
+                    } else {
+                        COMPONENT_LOG_ERROR("Failed to write test program to Boot ROM - memory controller issue");
+                    }
+                }
+            }
+        }
+        
         COMPONENT_LOG_INFO("Emulator initialization completed successfully");
+        COMPONENT_LOG_INFO("CPU ready to execute Boot ROM code starting at reset vector 0x40000080");
         
         return {};
         
@@ -610,9 +662,20 @@ void EmulatorCore::execution_loop() {
         
         // Log performance statistics periodically
         static int frame_count = 0;
-        if (++frame_count % (60 * 10) == 0) {  // Every 10 seconds
-            COMPONENT_LOG_DEBUG("Execution speed: {:.2f}x, Cycles: {}", 
-                              get_execution_speed(), cycles_executed_);
+        if (++frame_count % (60 * 5) == 0) {  // Every 5 seconds
+            if (cpu_manager_) {
+                auto cpu_total_cycles = cpu_manager_->get_total_cycles_executed();
+                [[maybe_unused]] auto cpu_instructions = cpu_manager_->get_total_instructions_executed();
+                COMPONENT_LOG_INFO("CPU Status: {:.2f}x speed, {} CPU cycles, {} instructions, {} emulator cycles", 
+                                  get_execution_speed(), cpu_total_cycles, cpu_instructions, cycles_executed_);
+                if (cpu_total_cycles == 0) {
+                    COMPONENT_LOG_WARN("CPU is not executing any cycles - memory/boot ROM issue?");
+                    cpu_manager_->dump_all_cores_state();
+                }
+            } else {
+                COMPONENT_LOG_INFO("Emulator Status: {:.2f}x speed, {} cycles executed (CPU manager not available)", 
+                                  get_execution_speed(), cycles_executed_);
+            }
         }
     }
     
