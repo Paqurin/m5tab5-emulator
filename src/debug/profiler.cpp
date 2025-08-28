@@ -86,7 +86,7 @@ Result<std::unique_ptr<Profiler>> Profiler::create() {
         return unexpected(MAKE_ERROR(OPERATION_FAILED, "Failed to create profiler"));
     }
     
-    return std::move(profiler);
+    return profiler;
 }
 
 Result<void> Profiler::initialize() {
@@ -477,6 +477,186 @@ void Profiler::process_completed_entries() {
         profile_entries_.push_back(entry);
     }
     active_samples_.clear();
+}
+
+Result<void> Profiler::start_continuous_monitoring() {
+    if (continuous_monitoring_.load()) {
+        COMPONENT_LOG_WARN("Continuous monitoring is already running");
+        return {};
+    }
+    
+    continuous_monitoring_ = true;
+    
+    try {
+        monitoring_thread_ = std::thread([this]() {
+            COMPONENT_LOG_INFO("Started continuous monitoring thread");
+            
+            const auto update_interval = std::chrono::milliseconds(static_cast<int64_t>(1000.0 / sampling_rate_));
+            
+            while (continuous_monitoring_.load()) {
+                try {
+                    update_metrics();
+                    
+                    // Call performance callback if set
+                    if (performance_callback_) {
+                        auto metrics_result = get_performance_metrics();
+                        if (metrics_result.has_value()) {
+                            performance_callback_(metrics_result.value());
+                        }
+                    }
+                    
+                    std::this_thread::sleep_for(update_interval);
+                } catch (const std::exception& e) {
+                    COMPONENT_LOG_ERROR("Error in continuous monitoring: {}", e.what());
+                }
+            }
+            
+            COMPONENT_LOG_INFO("Stopped continuous monitoring thread");
+        });
+    } catch (const std::exception& e) {
+        continuous_monitoring_ = false;
+        return unexpected(MAKE_ERROR(OPERATION_FAILED, "Failed to start monitoring thread: " + std::string(e.what())));
+    }
+    
+    COMPONENT_LOG_INFO("Started continuous monitoring");
+    return {};
+}
+
+void Profiler::stop_continuous_monitoring() {
+    if (!continuous_monitoring_.load()) {
+        return;
+    }
+    
+    continuous_monitoring_ = false;
+    
+    if (monitoring_thread_.joinable()) {
+        monitoring_thread_.join();
+    }
+    
+    COMPONENT_LOG_INFO("Stopped continuous monitoring");
+}
+
+void Profiler::set_performance_callback(PerformanceCallback callback) {
+    performance_callback_ = std::move(callback);
+    COMPONENT_LOG_INFO("Performance callback set");
+}
+
+Result<void> Profiler::save_performance_report(const std::string& filename) const {
+    auto report_result = generate_performance_report();
+    if (!report_result.has_value()) {
+        return unexpected(report_result.error());
+    }
+    
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        return unexpected(MAKE_ERROR(FILE_ERROR, "Failed to save performance report"));
+    }
+    
+    file << report_result.value();
+    
+    COMPONENT_LOG_INFO("Performance report saved to: {}", filename);
+    return {};
+}
+
+Result<void> Profiler::import_profile_data(const std::string& filename) {
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        return unexpected(MAKE_ERROR(FILE_ERROR, "Failed to import profile data"));
+    }
+    
+    // This is a simplified JSON parser for the specific format we export
+    // A full JSON parser would be better for production use
+    std::string line;
+    std::vector<ProfileEntry> imported_entries;
+    
+    bool in_entries = false;
+    bool in_entry = false;
+    ProfileEntry current_entry;
+    
+    while (std::getline(file, line)) {
+        // Remove whitespace
+        line.erase(0, line.find_first_not_of(" \t"));
+        line.erase(line.find_last_not_of(" \t") + 1);
+        
+        if (line.find("\"entries\": [") != std::string::npos) {
+            in_entries = true;
+            continue;
+        }
+        
+        if (in_entries && line == "{") {
+            in_entry = true;
+            current_entry = ProfileEntry{};
+            continue;
+        }
+        
+        if (in_entry && (line == "}" || line == "},")) {
+            imported_entries.push_back(current_entry);
+            in_entry = false;
+            continue;
+        }
+        
+        if (in_entry) {
+            // Parse key-value pairs
+            auto colon_pos = line.find(":");
+            if (colon_pos != std::string::npos) {
+                std::string key = line.substr(0, colon_pos);
+                std::string value = line.substr(colon_pos + 1);
+                
+                // Remove quotes and whitespace
+                key.erase(std::remove(key.begin(), key.end(), '"'), key.end());
+                key.erase(std::remove(key.begin(), key.end(), ' '), key.end());
+                value.erase(std::remove(value.begin(), value.end(), '"'), value.end());
+                value.erase(std::remove(value.begin(), value.end(), ' '), value.end());
+                if (value.back() == ',') value.pop_back();
+                
+                if (key == "name") {
+                    current_entry.name = value;
+                } else if (key == "component") {
+                    current_entry.component = value;
+                } else if (key == "function") {
+                    current_entry.function = value;
+                } else if (key == "duration_ns") {
+                    current_entry.duration = std::chrono::nanoseconds(std::stoll(value));
+                } else if (key == "thread_id") {
+                    current_entry.thread_id = std::stoul(value);
+                } else if (key == "memory_allocated") {
+                    current_entry.memory_allocated = std::stoull(value);
+                } else if (key == "memory_freed") {
+                    current_entry.memory_freed = std::stoull(value);
+                }
+            }
+        }
+        
+        if (line == "]") {
+            break;
+        }
+    }
+    
+    // Merge imported entries with current ones
+    std::lock_guard<std::mutex> lock(entries_mutex_);
+    profile_entries_.insert(profile_entries_.end(), imported_entries.begin(), imported_entries.end());
+    
+    COMPONENT_LOG_INFO("Imported {} profile entries from: {}", imported_entries.size(), filename);
+    return {};
+}
+
+void Profiler::update_metrics() {
+    std::lock_guard<std::mutex> lock(metrics_mutex_);
+    
+    auto now = std::chrono::high_resolution_clock::now();
+    
+    // Only update if enough time has passed
+    auto time_since_update = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_metrics_update_);
+    if (time_since_update < std::chrono::milliseconds(100)) {  // Update at most every 100ms
+        return;
+    }
+    
+    // Update cached metrics
+    auto metrics_result = get_performance_metrics();
+    if (metrics_result.has_value()) {
+        cached_metrics_ = metrics_result.value();
+        last_metrics_update_ = now;
+    }
 }
 
 } // namespace m5tab5::emulator
