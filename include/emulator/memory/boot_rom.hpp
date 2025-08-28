@@ -7,10 +7,16 @@
 
 #include <array>
 #include <memory>
+#include <functional>
 
 namespace m5tab5::emulator {
 
 // Forward declarations
+namespace esp_idf {
+    class ESP32P4BootSequence;
+}
+class MemoryController;
+class DualCoreManager;
 
 /**
  * @brief ESP32-P4 Boot ROM emulation
@@ -69,6 +75,14 @@ public:
     Result<Address> getResetVector() const;
     Result<Address> getBootloaderEntryPoint() const;
     Result<Address> getApplicationEntryPoint() const;
+    
+    // ESP32-P4 boot sequence integration
+    Result<void> executeEsp32P4BootSequence();
+    void setBootSequenceCallback(std::function<Result<void>()> callback);
+    
+    // Component integration
+    void setMemoryController(std::shared_ptr<MemoryController> memory_controller);
+    void setDualCoreManager(std::shared_ptr<DualCoreManager> cpu_manager);
 
     // Boot parameters
     Result<void> setBootParameters(const BootParams& params);
@@ -87,11 +101,23 @@ public:
     Result<void> mapFlashRegion(Address virtual_base, Address physical_base, size_t size);
 
 private:
+    // Component dependencies for ESP32-P4 integration
+    std::shared_ptr<MemoryController> memory_controller_;
+    std::shared_ptr<DualCoreManager> cpu_manager_;
+    std::unique_ptr<esp_idf::ESP32P4BootSequence> esp32p4_boot_sequence_;
+    std::function<Result<void>()> boot_sequence_callback_;
+    
     // Boot ROM binary data generation
     Result<void> generateBootROMBinary();
     void generateResetHandler();
     void generateBootSequence();
     void generateParameterData();
+    
+    // ESP32-P4 specific boot ROM functions
+    Result<void> esp32p4_hardware_initialization();
+    Result<void> esp32p4_validate_flash_configuration();
+    Result<void> esp32p4_initialize_basic_peripherals();
+    Result<void> esp32p4_transfer_to_bootloader();
     
     // Boot sequence implementation
     Result<void> initializeClocks();

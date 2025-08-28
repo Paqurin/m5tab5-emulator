@@ -10,9 +10,9 @@
 namespace m5tab5::emulator {
 
 bool Logger::initialized_ = false;
-LogLevel Logger::current_level_ = LogLevel::INFO;
+Logger::LogLevel Logger::current_level_ = Logger::LogLevel::INFO;
 
-Result<void> Logger::initialize(LogLevel level, const std::string& log_file, bool enable_console) {
+Result<void> Logger::initialize(Logger::LogLevel level, const std::string& log_file, bool enable_console) {
     try {
         if (initialized_) {
             return unexpected(MAKE_ERROR(SYSTEM_ALREADY_RUNNING, 
@@ -93,7 +93,7 @@ std::shared_ptr<spdlog::logger> Logger::get_logger(const std::string& name) {
     return logger ? logger : spdlog::default_logger();
 }
 
-void Logger::set_level(LogLevel level) {
+void Logger::set_level(Logger::LogLevel level) {
     current_level_ = level;
     if (auto logger = get_logger()) {
         logger->set_level(to_spdlog_level(level));
@@ -102,42 +102,42 @@ void Logger::set_level(LogLevel level) {
     spdlog::set_level(to_spdlog_level(level));
 }
 
-LogLevel Logger::get_level() {
+Logger::LogLevel Logger::get_level() {
     return current_level_;
 }
 
-spdlog::level::level_enum Logger::to_spdlog_level(LogLevel level) {
+spdlog::level::level_enum Logger::to_spdlog_level(Logger::LogLevel level) {
     switch (level) {
-        case LogLevel::TRACE: return spdlog::level::trace;
-        case LogLevel::DEBUG_LEVEL: return spdlog::level::debug;
-        case LogLevel::INFO: return spdlog::level::info;
-        case LogLevel::WARN: return spdlog::level::warn;
-        case LogLevel::ERROR: return spdlog::level::err;
+        case Logger::LogLevel::TRACE: return spdlog::level::trace;
+        case Logger::LogLevel::DEBUG_LEVEL: return spdlog::level::debug;
+        case Logger::LogLevel::INFO: return spdlog::level::info;
+        case Logger::LogLevel::WARN: return spdlog::level::warn;
+        case Logger::LogLevel::ERROR_LEVEL: return spdlog::level::err;
         default: return spdlog::level::info;
     }
 }
 
-LogLevel Logger::from_spdlog_level(spdlog::level::level_enum level) {
+Logger::LogLevel Logger::from_spdlog_level(spdlog::level::level_enum level) {
     switch (level) {
-        case spdlog::level::trace: return LogLevel::TRACE;
-        case spdlog::level::debug: return LogLevel::DEBUG_LEVEL;
-        case spdlog::level::info: return LogLevel::INFO;
-        case spdlog::level::warn: return LogLevel::WARN;
-        case spdlog::level::err: return LogLevel::ERROR;
-        default: return LogLevel::INFO;
+        case spdlog::level::trace: return Logger::LogLevel::TRACE;
+        case spdlog::level::debug: return Logger::LogLevel::DEBUG_LEVEL;
+        case spdlog::level::info: return Logger::LogLevel::INFO;
+        case spdlog::level::warn: return Logger::LogLevel::WARN;
+        case spdlog::level::err: return Logger::LogLevel::ERROR_LEVEL;
+        default: return Logger::LogLevel::INFO;
     }
 }
 
-LogLevel Logger::from_string(const std::string& level_str) {
+Logger::LogLevel Logger::from_string(const std::string& level_str) {
     std::string lower = level_str;
     std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
     
-    if (lower == "trace") return LogLevel::TRACE;
-    else if (lower == "debug") return LogLevel::DEBUG_LEVEL;
-    else if (lower == "info") return LogLevel::INFO;
-    else if (lower == "warn" || lower == "warning") return LogLevel::WARN;
-    else if (lower == "error" || lower == "err") return LogLevel::ERROR;
-    else return LogLevel::INFO; // default fallback
+    if (lower == "trace") return Logger::LogLevel::TRACE;
+    else if (lower == "debug") return Logger::LogLevel::DEBUG_LEVEL;
+    else if (lower == "info") return Logger::LogLevel::INFO;
+    else if (lower == "warn" || lower == "warning") return Logger::LogLevel::WARN;
+    else if (lower == "error" || lower == "err") return Logger::LogLevel::ERROR_LEVEL;
+    else return Logger::LogLevel::INFO; // default fallback
 }
 
 }  // namespace m5tab5::emulator

@@ -1786,7 +1786,7 @@ int main(int argc, char* argv[]) {
     
     try {
         // Initialize logging
-        LogLevel log_level_enum = debug_mode ? LogLevel::DEBUG_LEVEL : LogLevel::INFO;
+        Logger::LogLevel log_level_enum = debug_mode ? Logger::LogLevel::DEBUG_LEVEL : Logger::LogLevel::INFO;
         auto log_result = Logger::initialize(log_level_enum, "", true);
         if (!log_result) {
             std::cerr << "Failed to initialize logger: " << log_result.error().to_string() << std::endl;

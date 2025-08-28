@@ -18,6 +18,13 @@
 #include "esp_timer.h"
 #include "esp_heap_caps.h"
 
+// NVS Storage
+#include "nvs.h"
+
+// System integration
+#include "esp_idf_integration.h"
+#include "esp_system_call_interface.h"
+
 // Driver APIs
 #include "driver/gpio.h"
 #include "driver/i2c.h"
@@ -27,19 +34,15 @@
 // #include "driver/ledc.h"
 
 // FreeRTOS integration
-// TODO: Add FreeRTOS headers when implemented
-// #include "freertos/FreeRTOS.h"
-// #include "freertos/task.h"
-// #include "freertos/queue.h"
-// #include "freertos/semphr.h"
+#include "freertos_api.hpp"
 
 // Networking APIs (when implemented)
 // #include "esp_wifi.h"
 // #include "esp_netif.h"
 // #include "lwip/lwip.h"
 
-// Storage APIs (when implemented)  
-// #include "nvs_flash.h"
+// Storage APIs
+// Additional storage APIs (when implemented)
 // #include "esp_partition.h"
 // #include "esp_vfs.h"
 
@@ -48,33 +51,54 @@ extern "C" {
 #endif
 
 /**
- * @brief Initialize all ESP-IDF subsystems for the emulator with EmulatorCore context
+ * @brief Initialize all ESP-IDF subsystems for the emulator
  * 
- * This function initializes all ESP-IDF compatible subsystems provided
- * by the emulator. Call this before using any ESP-IDF APIs.
+ * This is the primary initialization function that sets up the complete
+ * ESP-IDF compatibility layer including:
+ * - System management and heap
+ * - NVS storage
+ * - FreeRTOS emulation
+ * - Driver APIs (GPIO, I2C, SPI, UART)
+ * - System call interface
  * 
- * @param emulator_core Pointer to EmulatorCore instance for component access
+ * @return ESP_OK on success, error code if critical components fail
+ */
+esp_err_t esp_idf_init_all(void);
+
+/**
+ * @brief Initialize ESP-IDF with EmulatorCore context
+ * 
+ * Advanced initialization with access to emulator core for hardware integration.
+ * 
+ * @param emulator_core Pointer to EmulatorCore instance
  * @return ESP_OK on success
  */
 esp_err_t esp_idf_init_all_with_core(void* emulator_core);
 
 /**
- * @brief Initialize all ESP-IDF subsystems for the emulator (stub mode)
- * 
- * Version without EmulatorCore context. APIs will work in stub mode.
- * 
- * @return ESP_OK on success
- */
-esp_err_t esp_idf_init_all(void);
-
-/**
  * @brief Shutdown all ESP-IDF subsystems
  * 
- * Clean up all initialized ESP-IDF subsystems.
+ * Cleanly shuts down all ESP-IDF components in proper dependency order.
  * 
  * @return ESP_OK on success
  */
 esp_err_t esp_idf_deinit_all(void);
+
+/**
+ * @brief Check if ESP-IDF subsystems are ready
+ * 
+ * @return true if all critical components are initialized and ready
+ */
+bool esp_idf_is_ready(void);
+
+/**
+ * @brief Run comprehensive ESP-IDF integration test
+ * 
+ * Tests all major APIs to verify compatibility layer is working.
+ * 
+ * @return ESP_OK if all tests pass
+ */
+esp_err_t esp_idf_run_self_test(void);
 
 /**
  * @brief Get ESP-IDF emulation version information
@@ -82,6 +106,13 @@ esp_err_t esp_idf_deinit_all(void);
  * @return Version string describing the emulation layer
  */
 const char* esp_idf_get_emulation_version(void);
+
+/**
+ * @brief Print comprehensive ESP-IDF system status
+ * 
+ * Outputs status of all components, memory usage, and performance metrics.
+ */
+void esp_idf_print_system_info(void);
 
 /**
  * @brief Check if running in emulation mode
@@ -104,5 +135,12 @@ namespace m5tab5::emulator {
  * @return Pointer to EmulatorCore or nullptr if not initialized
  */
 m5tab5::emulator::EmulatorCore* esp_idf_get_emulator_core();
+
+/**
+ * @brief Set the EmulatorCore instance (C++ internal use)
+ * 
+ * @param core Pointer to EmulatorCore instance
+ */
+void set_emulator_core(m5tab5::emulator::EmulatorCore* core);
 
 #endif

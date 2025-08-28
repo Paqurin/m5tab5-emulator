@@ -3,6 +3,8 @@
 #include "emulator/memory/memory_controller.hpp"
 #include "emulator/cpu/dual_core_manager.hpp"
 #include "emulator/utils/logging.hpp"
+#include "emulator/esp_idf/esp_idf_integration.h"
+#include "emulator/esp_idf/esp_idf.h"
 
 #include <thread>
 #include <map>
@@ -377,14 +379,39 @@ Result<void> BootSequencer::execute_rtos_initialization(BootProgressCallback cal
     current_stage_ = BootStage::RTOS_INIT;
     start_stage_timer(current_stage_);
     
-    update_progress(callback, current_stage_, 0.0f, "Initializing FreeRTOS");
+    update_progress(callback, current_stage_, 0.0f, "Initializing ESP-IDF Runtime");
     
-    // Simulate FreeRTOS initialization
-    std::this_thread::sleep_for(boot_config_.boot_delay);
+    // Initialize ESP-IDF compatibility layer with EmulatorCore context
+    if (emulator_core_) {
+        esp_err_t esp_result = esp_idf_init_all_with_core(emulator_core_.get());
+        if (esp_result != ESP_OK) {
+            LOG_ERROR("Failed to initialize ESP-IDF compatibility layer: {}", esp_result);
+            return unexpected(MAKE_ERROR(PERIPHERAL_INIT_FAILED, "ESP-IDF initialization failed"));
+        }
+    } else {
+        // Initialize without specific EmulatorCore context
+        esp_err_t esp_result = esp_idf_init_all();
+        if (esp_result != ESP_OK) {
+            LOG_ERROR("Failed to initialize ESP-IDF compatibility layer: {}", esp_result);
+            return unexpected(MAKE_ERROR(PERIPHERAL_INIT_FAILED, "ESP-IDF initialization failed"));
+        }
+    }
     
-    update_progress(callback, current_stage_, 1.0f, "FreeRTOS initialized");
+    update_progress(callback, current_stage_, 0.7f, "ESP-IDF APIs initialized");
+    
+    // Validate ESP-IDF integration
+    if (!esp_idf_is_ready()) {
+        LOG_ERROR("ESP-IDF compatibility layer not ready after initialization");
+        return unexpected(MAKE_ERROR(PERIPHERAL_INIT_FAILED, "ESP-IDF compatibility layer not ready"));
+    }
+    
+    // Print system information for verification
+    esp_idf_print_system_info();
+    
+    update_progress(callback, current_stage_, 1.0f, "ESP-IDF Runtime Ready");
     end_stage_timer(current_stage_);
     
+    LOG_INFO("ESP-IDF compatibility layer initialized successfully");
     return {};
 }
 

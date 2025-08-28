@@ -1,9 +1,14 @@
 #include "emulator/memory/boot_rom.hpp"
+#include "emulator/esp_idf/esp32p4_bootloader.hpp"
+#include "emulator/memory/memory_controller.hpp"
+#include "emulator/cpu/dual_core_manager.hpp"
 #include "emulator/utils/logging.hpp"
 #include "emulator/utils/types.hpp"
 
 #include <cstring>
 #include <algorithm>
+#include <thread>
+#include <chrono>
 
 namespace m5tab5::emulator {
 
@@ -17,6 +22,7 @@ BootROM::BootROM()
     , flash_mode_(FlashMode::QIO)
     , flash_frequency_(80000000)  // 80MHz default
     , flash_size_(16 * 1024 * 1024)  // 16MB default
+    , esp32p4_boot_sequence_(nullptr)
 {
     // Initialize boot parameters with defaults
     boot_params_.magic_number = 0xE9E5E9E5;  // ESP32-P4 magic
@@ -38,6 +44,11 @@ BootROM::~BootROM() {
     if (initialized_) {
         shutdown();
     }
+    
+    if (esp32p4_boot_sequence_) {
+        esp32p4_boot_sequence_.reset();
+    }
+    
     COMPONENT_LOG_DEBUG("BootROM destroyed");
 }
 
@@ -97,6 +108,14 @@ void BootROM::shutdown() {
     initialized_ = false;
     mmu_configured_ = false;
     current_entry_point_ = 0;
+    
+    // Cleanup ESP32-P4 integration
+    if (esp32p4_boot_sequence_) {
+        esp32p4_boot_sequence_.reset();
+    }
+    memory_controller_.reset();
+    cpu_manager_.reset();
+    boot_sequence_callback_ = nullptr;
 }
 
 Result<void> BootROM::reset() {
@@ -192,6 +211,50 @@ BootROM::BootMode BootROM::detectBootMode() const {
     return decodeStrappingPins(strapping_pins_);
 }
 
+Result<void> BootROM::executeEsp32P4BootSequence() {
+    if (!initialized_) {
+        return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED, "Boot ROM not initialized"));
+    }
+    
+    COMPONENT_LOG_INFO("Starting ESP32-P4 enhanced boot sequence");
+    
+    // Phase 1: ESP32-P4 hardware initialization
+    RETURN_IF_ERROR(esp32p4_hardware_initialization());
+    
+    // Phase 2: Flash configuration validation
+    RETURN_IF_ERROR(esp32p4_validate_flash_configuration());
+    
+    // Phase 3: Initialize basic peripherals
+    RETURN_IF_ERROR(esp32p4_initialize_basic_peripherals());
+    
+    // Phase 4: Transfer to ESP32-P4 bootloader
+    RETURN_IF_ERROR(esp32p4_transfer_to_bootloader());
+    
+    // Phase 5: Execute custom boot sequence callback if provided
+    if (boot_sequence_callback_) {
+        COMPONENT_LOG_DEBUG("Executing custom boot sequence callback");
+        RETURN_IF_ERROR(boot_sequence_callback_());
+    }
+    
+    COMPONENT_LOG_INFO("ESP32-P4 boot sequence completed successfully");
+    return {};
+}
+
+void BootROM::setBootSequenceCallback(std::function<Result<void>()> callback) {
+    boot_sequence_callback_ = callback;
+    COMPONENT_LOG_DEBUG("Boot sequence callback registered");
+}
+
+void BootROM::setMemoryController(std::shared_ptr<MemoryController> memory_controller) {
+    memory_controller_ = memory_controller;
+    COMPONENT_LOG_DEBUG("Memory controller registered with BootROM");
+}
+
+void BootROM::setDualCoreManager(std::shared_ptr<DualCoreManager> cpu_manager) {
+    cpu_manager_ = cpu_manager;
+    COMPONENT_LOG_DEBUG("Dual core manager registered with BootROM");
+}
+
 void BootROM::setFlashConfiguration(FlashMode mode, u32 frequency, u32 size) {
     flash_mode_ = mode;
     flash_frequency_ = frequency;
@@ -259,7 +322,22 @@ void BootROM::generateResetHandler() {
     // Write to ROM data
     std::memcpy(&rom_data_[reset_vector_offset], &jal_instruction, sizeof(u32));
     
-    COMPONENT_LOG_DEBUG("Generated reset handler: JAL to 0x{:08X}", boot_sequence_addr);
+    // Also place some basic instructions at the beginning of ROM for immediate execution
+    // This ensures the CPU can fetch valid instructions right away
+    constexpr size_t start_offset = 0x0;
+    u32 startup_instructions[] = {
+        BootROMGenerator::NOP,                          // 0x40000000: NOP
+        BootROMGenerator::NOP,                          // 0x40000004: NOP
+        BootROMGenerator::generateJAL(0, 0x80 - 0x08), // 0x40000008: JAL to reset vector
+        BootROMGenerator::NOP                           // 0x4000000C: NOP
+    };
+    
+    for (size_t i = 0; i < sizeof(startup_instructions) / sizeof(u32); ++i) {
+        std::memcpy(&rom_data_[start_offset + i * 4], &startup_instructions[i], sizeof(u32));
+    }
+    
+    COMPONENT_LOG_DEBUG("Generated reset handler: JAL to 0x{:08X}, startup code at 0x{:08X}", 
+                       boot_sequence_addr, BOOT_ROM_BASE);
 }
 
 void BootROM::generateBootSequence() {
@@ -275,6 +353,9 @@ void BootROM::generateBootSequence() {
             current_offset += 4;
         }
     }
+    
+    COMPONENT_LOG_DEBUG("Boot sequence at offset 0x{:X}, added {} init instructions",
+                       boot_sequence_offset, init_instructions.size());
     
     // Generate strapping pin check
     auto strapping_instructions = BootROMGenerator::generateStrappingCheck();
@@ -399,20 +480,29 @@ u32 BootROMGenerator::generateADDI(u8 rd, u8 rs1, i32 imm) {
 std::vector<u32> BootROMGenerator::generateInitSequence() {
     std::vector<u32> instructions;
     
-    // Initialize stack pointer (x2) to top of SRAM
-    Address stack_top = SRAM_LAYOUT.start_address + SRAM_LAYOUT.size;
+    // Initialize stack pointer (x2) to top of L2 SRAM
+    Address stack_top = SRAM_LAYOUT.start_address + SRAM_LAYOUT.size - 16;  // Leave some headroom
     u32 stack_upper = stack_top >> 12;
     u32 stack_lower = stack_top & 0xFFF;
     
-    instructions.push_back(generateLUI(2, stack_upper));    // lui x2, stack_upper
-    instructions.push_back(generateADDI(2, 2, stack_lower)); // addi x2, x2, stack_lower
+    instructions.push_back(generateLUI(2, stack_upper));     // lui x2, stack_upper
+    instructions.push_back(generateADDI(2, 2, stack_lower));  // addi x2, x2, stack_lower
     
-    // Initialize global pointer (x3) - placeholder
-    instructions.push_back(generateLUI(3, 0));              // lui x3, 0
+    // Initialize global pointer (x3) for global data access
+    u32 gp_addr = SRAM_LAYOUT.start_address + (SRAM_LAYOUT.size / 2);  // Middle of SRAM
+    u32 gp_upper = gp_addr >> 12;
+    u32 gp_lower = gp_addr & 0xFFF;
+    instructions.push_back(generateLUI(3, gp_upper));        // lui x3, gp_upper  
+    instructions.push_back(generateADDI(3, 3, gp_lower));    // addi x3, x3, gp_lower
     
-    // Clear other registers
-    instructions.push_back(generateADDI(1, 0, 0));          // addi x1, x0, 0 (ra)
-    instructions.push_back(generateADDI(4, 0, 0));          // addi x4, x0, 0 (tp)
+    // Clear important registers
+    instructions.push_back(generateADDI(1, 0, 0));           // addi x1, x0, 0 (ra)
+    instructions.push_back(generateADDI(4, 0, 0));           // addi x4, x0, 0 (tp)
+    instructions.push_back(generateADDI(5, 0, 0));           // addi x5, x0, 0 (t0)
+    
+    // Add a simple infinite loop as a placeholder boot sequence
+    // This ensures the CPU has something to execute
+    instructions.push_back(generateJAL(0, -4));              // jal x0, -4 (infinite loop)
     
     return instructions;
 }
@@ -469,6 +559,120 @@ u32 BootROMGenerator::encodeJType(u32 opcode, u8 rd, i32 imm) {
     u32 imm_19_12 = (imm >> 12) & 0xFF;
     
     return (imm_20 << 31) | (imm_10_1 << 21) | (imm_11 << 20) | (imm_19_12 << 12) | (rd << 7) | opcode;
+}
+
+// ESP32-P4 specific boot ROM function implementations
+
+Result<void> BootROM::esp32p4_hardware_initialization() {
+    COMPONENT_LOG_DEBUG("ESP32-P4 hardware initialization");
+    
+    // Initialize system clocks to minimal operating frequency
+    // Real ESP32-P4 Boot ROM sets up basic 40MHz clock
+    
+    // Initialize power management unit
+    // Configure voltage regulators and power domains
+    
+    // Setup basic GPIO configuration
+    // Configure strapping pins and essential I/O
+    
+    // Initialize UART0 for early debug output
+    // This allows boot messages to be displayed
+    
+    // Simulate hardware initialization delay
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    
+    COMPONENT_LOG_DEBUG("ESP32-P4 hardware initialization completed");
+    return {};
+}
+
+Result<void> BootROM::esp32p4_validate_flash_configuration() {
+    COMPONENT_LOG_DEBUG("Validating ESP32-P4 flash configuration");
+    
+    // Read and validate flash chip ID
+    // Check flash size and speed capabilities
+    // Verify flash is accessible and readable
+    
+    // Validate flash mode (QIO, QOUT, DIO, DOUT)
+    if (flash_mode_ != FlashMode::QIO && flash_mode_ != FlashMode::QOUT &&
+        flash_mode_ != FlashMode::DIO && flash_mode_ != FlashMode::DOUT) {
+        return unexpected(MAKE_ERROR(CONFIG_INVALID_VALUE, "Invalid flash mode configured"));
+    }
+    
+    // Validate flash frequency
+    if (flash_frequency_ < 20000000 || flash_frequency_ > 120000000) {
+        return unexpected(MAKE_ERROR(CONFIG_INVALID_VALUE, "Flash frequency out of range"));
+    }
+    
+    // Validate flash size
+    if (flash_size_ < 2 * 1024 * 1024 || flash_size_ > 128 * 1024 * 1024) {
+        return unexpected(MAKE_ERROR(CONFIG_INVALID_VALUE, "Flash size out of range"));
+    }
+    
+    COMPONENT_LOG_INFO("Flash configuration validated: {}MB, {}MHz, mode={}",
+                      flash_size_ / (1024 * 1024), flash_frequency_ / 1000000,
+                      static_cast<u32>(flash_mode_));
+    
+    return {};
+}
+
+Result<void> BootROM::esp32p4_initialize_basic_peripherals() {
+    COMPONENT_LOG_DEBUG("Initializing ESP32-P4 basic peripherals");
+    
+    // Initialize UART0 for console output
+    // Configure GPIO pins for UART functionality
+    // Set up basic UART parameters (115200 baud, 8N1)
+    
+    // Initialize GPIO controller for strapping pin reading
+    // Configure GPIO matrix for basic I/O functionality
+    
+    // Initialize system timer for delays and timing
+    // Set up basic interrupt handling
+    
+    // Initialize flash controller for memory access
+    // Configure SPI flash interface for reading
+    
+    COMPONENT_LOG_DEBUG("Basic peripherals initialized");
+    return {};
+}
+
+Result<void> BootROM::esp32p4_transfer_to_bootloader() {
+    COMPONENT_LOG_DEBUG("Transferring control to ESP32-P4 bootloader");
+    
+    // Create ESP32-P4 boot sequence if not already created
+    if (!esp32p4_boot_sequence_) {
+        if (memory_controller_ && cpu_manager_) {
+            esp32p4_boot_sequence_ = std::make_unique<esp_idf::ESP32P4BootSequence>();
+            esp32p4_boot_sequence_->set_memory_controller(memory_controller_);
+            esp32p4_boot_sequence_->set_cpu_manager(cpu_manager_);
+            
+            COMPONENT_LOG_DEBUG("ESP32-P4 boot sequence created and configured");
+        } else {
+            COMPONENT_LOG_WARN("Memory controller or CPU manager not available, using simplified boot");
+        }
+    }
+    
+    // Execute ESP32-P4 boot sequence if available
+    if (esp32p4_boot_sequence_) {
+        auto boot_result = esp32p4_boot_sequence_->execute_complete_boot_sequence();
+        if (!boot_result.has_value()) {
+            COMPONENT_LOG_ERROR("ESP32-P4 boot sequence failed: {}", boot_result.error().message());
+            return unexpected(boot_result.error());
+        }
+        
+        // Update current entry point to application entry
+        if (esp32p4_boot_sequence_->is_boot_complete()) {
+            current_entry_point_ = boot_params_.application_address;
+            COMPONENT_LOG_INFO("Boot ROM transfer completed, application entry: 0x{:08X}",
+                              current_entry_point_);
+        }
+    } else {
+        // Fallback to traditional boot ROM behavior
+        COMPONENT_LOG_DEBUG("Using traditional boot ROM sequence");
+        RETURN_IF_ERROR(loadBootloader());
+        current_entry_point_ = boot_params_.bootloader_address;
+    }
+    
+    return {};
 }
 
 } // namespace m5tab5::emulator

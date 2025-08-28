@@ -10,6 +10,8 @@
 #include "emulator/plugin/plugin_manager.hpp"
 #include "emulator/debug/debugger.hpp"
 #include "emulator/config/configuration.hpp"
+#include "emulator/memory/boot_rom.hpp"
+#include "emulator/firmware/elf_loader.hpp"
 
 #include <memory>
 #include <thread>
@@ -53,6 +55,19 @@ public:
     Result<void> stop();
     Result<void> shutdown();
     Result<void> reset();
+    
+    // ESP32-P4 boot sequence
+    Result<void> cold_boot();
+    Result<void> warm_restart();
+    Result<void> execute_complete_boot_sequence();
+    
+    // Firmware loading and execution
+    Result<firmware::ELFLoader::LoadingResult> load_elf_application(const std::string& file_path,
+                                                                    firmware::ELFLoader::ProgressCallback progress_callback = nullptr);
+    Result<firmware::ELFLoader::LoadingResult> load_esp_application_image(const std::string& file_path,
+                                                                          firmware::ELFLoader::ProgressCallback progress_callback = nullptr);
+    Result<void> set_application_entry_point(Address entry_point);
+    Result<void> start_application_execution();
 
     // State management
     EmulatorState get_state() const;
@@ -98,6 +113,8 @@ private:
     std::unique_ptr<GraphicsEngine> graphics_engine_;
     std::unique_ptr<PluginManager> plugin_manager_;
     std::unique_ptr<Debugger> debugger_;
+    std::unique_ptr<BootROM> boot_rom_;
+    std::unique_ptr<firmware::ELFLoader> elf_loader_;
     
     // Execution threads
     std::thread execution_thread_;

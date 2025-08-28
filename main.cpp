@@ -152,12 +152,12 @@ int main(int argc, char* argv[]) {
     
     try {
         // Initialize logging first
-        LogLevel log_level_enum = LogLevel::INFO;
-        if (log_level == "trace") log_level_enum = LogLevel::TRACE;
-        else if (log_level == "debug") log_level_enum = LogLevel::DEBUG_LEVEL;
-        else if (log_level == "info") log_level_enum = LogLevel::INFO;
-        else if (log_level == "warn") log_level_enum = LogLevel::WARN;
-        else if (log_level == "error") log_level_enum = LogLevel::ERROR;
+        Logger::LogLevel log_level_enum = Logger::LogLevel::INFO;
+        if (log_level == "trace") log_level_enum = Logger::LogLevel::TRACE;
+        else if (log_level == "debug") log_level_enum = Logger::LogLevel::DEBUG_LEVEL;
+        else if (log_level == "info") log_level_enum = Logger::LogLevel::INFO;
+        else if (log_level == "warn") log_level_enum = Logger::LogLevel::WARN;
+        else if (log_level == "error") log_level_enum = Logger::LogLevel::ERROR_LEVEL;
         else {
             std::cerr << "Error: Invalid log level '" << log_level << "'" << std::endl;
             return 1;

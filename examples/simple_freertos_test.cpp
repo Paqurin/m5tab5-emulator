@@ -83,7 +83,7 @@ int main() {
     
     try {
         // Initialize minimal logging
-        Logger::initialize(LogLevel::INFO);
+        Logger::initialize(Logger::LogLevel::INFO);
         
         // Create a minimal configuration
         Configuration minimal_config;

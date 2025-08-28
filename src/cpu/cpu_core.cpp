@@ -29,11 +29,12 @@ EmulatorError CpuCore::initialize() {
     // Initialize register file
     registers_.reset();
     
-    // Set initial PC based on core type
+    // Set initial PC to ESP32-P4 authentic addresses
     if (config_.type == CoreType::LPCore) {
         pc_ = 0x50000000;  // LP core reset vector
     } else {
-        pc_ = 0x10000000;  // Main core reset vector (Flash start)
+        // ESP32-P4 main cores start from Boot ROM reset vector
+        pc_ = 0x40000080;  // ESP32-P4 Boot ROM reset vector
     }
     
     cycle_count_ = 0;
@@ -49,7 +50,7 @@ EmulatorError CpuCore::reset() {
     // Reset register file
     registers_.reset();
     
-    // Set initial PC to ESP32-P4 Boot ROM reset vector
+    // Set PC to ESP32-P4 Boot ROM reset vector for authentic startup
     if (config_.type == CoreType::LPCore) {
         pc_ = 0x50000000;  // LP Core starts at different address
     } else {

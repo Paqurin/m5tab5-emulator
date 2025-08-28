@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 #include <variant>
+#include "emulator/utils/error.hpp"
 
 namespace m5tab5::emulator {
 
@@ -40,6 +41,9 @@ public:
     bool saveToFile(const std::string& filename) const;
     bool loadFromString(const std::string& config_data);
     std::string saveToString() const;
+    
+    // Factory methods for creating Configuration from JSON
+    static Result<Configuration> from_json_string(const std::string& json_data);
 
     // Value access
     template<typename T>

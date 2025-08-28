@@ -266,7 +266,7 @@ void PerformanceMonitor::dump_statistics() const {
     
     // Cache statistics
     if (global_counters_.total_accesses > 0) {
-        double hit_rate = static_cast<double>(global_counters_.cache_hits) / 
+        [[maybe_unused]] double hit_rate = static_cast<double>(global_counters_.cache_hits) / 
                          global_counters_.total_accesses * 100.0;
         COMPONENT_LOG_INFO("  Cache hits: {} ({:.2f}%)", global_counters_.cache_hits, hit_rate);
         COMPONENT_LOG_INFO("  Cache misses: {}", global_counters_.cache_misses);
@@ -274,7 +274,7 @@ void PerformanceMonitor::dump_statistics() const {
     
     // Average metrics
     if (global_counters_.total_accesses > 0) {
-        double avg_cycles = static_cast<double>(global_counters_.total_cycles) / 
+        [[maybe_unused]] double avg_cycles = static_cast<double>(global_counters_.total_cycles) / 
                            global_counters_.total_accesses;
         COMPONENT_LOG_INFO("  Average cycles per access: {:.2f}", avg_cycles);
     }
@@ -293,7 +293,7 @@ void PerformanceMonitor::dump_statistics() const {
         COMPONENT_LOG_INFO("    Writes: {} ({} bytes)", stats.write_count, stats.write_bytes);
         
         if (stats.access_count > 0) {
-            double avg_cycles = static_cast<double>(stats.total_cycles) / stats.access_count;
+            [[maybe_unused]] double avg_cycles = static_cast<double>(stats.total_cycles) / stats.access_count;
             COMPONENT_LOG_INFO("    Average cycles: {:.2f}", avg_cycles);
         }
     }

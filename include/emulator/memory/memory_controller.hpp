@@ -102,6 +102,7 @@ private:
     Result<void> initialize_mmio_region();
     Result<void> initialize_cache();
     Result<void> setup_memory_mappings();
+    Result<void> validate_memory_layout();
     
     // Cache management
     Result<std::vector<u8>> try_cache_read(Address address, size_t count);

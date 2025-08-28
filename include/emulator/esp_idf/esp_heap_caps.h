@@ -158,7 +158,7 @@ size_t heap_caps_get_total_size(uint32_t caps);
  * @param ptr Pointer to allocated memory
  * @return Size of the block, or 0 if invalid
  */
-size_t heap_caps_get_allocated_size(const void* ptr);
+size_t heap_caps_get_allocated_size(void* ptr);
 
 // ============================================================================
 // Multi-heap Information Functions
@@ -200,15 +200,16 @@ bool heap_caps_check_integrity_all(bool print_errors);
  * @brief Dump heap information in detail
  * 
  * @param caps Capabilities flags
+ * @return ESP_OK on success
  */
-void heap_caps_dump(uint32_t caps);
+esp_err_t heap_caps_dump(uint32_t caps);
 
 /**
  * @brief Dump all heap regions information
  * 
- * @param caps Capabilities flags
+ * @return ESP_OK on success
  */
-void heap_caps_dump_all(void);
+esp_err_t heap_caps_dump_all(void);
 
 // ============================================================================
 // Region Management Functions

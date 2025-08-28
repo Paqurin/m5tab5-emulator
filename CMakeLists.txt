@@ -21,6 +21,11 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_G
     message(STATUS "Applied -Wno-dangling-reference fix for fmt v9/spdlog usage with GCC ${CMAKE_CXX_COMPILER_VERSION}")
 endif()
 
+# Fix spdlog/fmt deprecation warnings being treated as errors
+# Suppress deprecation warnings from external libraries (spdlog, fmt)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
+message(STATUS "Applied -Wno-deprecated-declarations fix for spdlog/fmt library usage")
+
 # Platform-specific settings
 if(UNIX AND NOT APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
@@ -154,7 +159,11 @@ file(GLOB_RECURSE DEBUG_SOURCES "src/debug/*.cpp")
 file(GLOB_RECURSE PLUGIN_SOURCES "src/plugin/*.cpp")
 file(GLOB_RECURSE UTILS_SOURCES "src/utils/*.cpp")
 file(GLOB_RECURSE FREERTOS_SOURCES "src/freertos/*.cpp")
+# Temporarily exclude ESP-IDF driver sources due to header conflicts
 file(GLOB_RECURSE ESP_IDF_SOURCES "src/esp_idf/*.cpp")
+# Remove problematic driver files for now
+list(FILTER ESP_IDF_SOURCES EXCLUDE REGEX "src/esp_idf/driver/.*\\.cpp$")
+message(STATUS "ESP-IDF sources (excluding drivers): ${ESP_IDF_SOURCES}")
 file(GLOB_RECURSE FIRMWARE_SOURCES "src/firmware/*.cpp")
 file(GLOB_RECURSE STORAGE_SOURCES "src/storage/*.cpp")
 file(GLOB_RECURSE GUI_SOURCES "src/gui/*.cpp")
@@ -315,6 +324,26 @@ add_executable(test_nvs_simple
     test_nvs_simple.cpp
 )
 
+# ESP32-P4 Boot Sequence Test
+add_executable(test_esp32p4_boot_sequence
+    test_esp32p4_boot_sequence.cpp
+)
+
+# ESP32-P4 Boot Sequence Simple Test (without ESP-IDF dependencies)
+add_executable(test_esp32p4_boot_simple
+    test_esp32p4_boot_simple.cpp
+)
+
+# ELF Loader Test
+add_executable(test_elf_loader
+    test_elf_loader.cpp
+)
+
+# Comprehensive ELF Loader Test
+add_executable(test_elf_loader_comprehensive
+    test_elf_loader_comprehensive.cpp
+)
+
 # Link test with core library
 target_link_libraries(test_display_connection
     PRIVATE m5tab5-emulator-core
@@ -333,9 +362,37 @@ target_link_libraries(test_nvs_simple
     PRIVATE Threads::Threads
 )
 
+# Link ESP32-P4 boot sequence test with core library
+target_link_libraries(test_esp32p4_boot_sequence
+    PRIVATE m5tab5-emulator-core
+    PRIVATE Threads::Threads
+)
+
+# Link ESP32-P4 boot simple test with core library (excluding problematic ESP-IDF APIs)
+target_link_libraries(test_esp32p4_boot_simple
+    PRIVATE m5tab5-emulator-core
+    PRIVATE Threads::Threads
+)
+
+# Link ELF loader test with core library
+target_link_libraries(test_elf_loader
+    PRIVATE m5tab5-emulator-core
+    PRIVATE Threads::Threads
+)
+
+# Link comprehensive ELF loader test with core library
+target_link_libraries(test_elf_loader_comprehensive
+    PRIVATE m5tab5-emulator-core
+    PRIVATE Threads::Threads
+)
+
 # Set C++ standard for NVS tests
 target_compile_features(test_nvs_persistence PRIVATE cxx_std_20)
 target_compile_features(test_nvs_simple PRIVATE cxx_std_20)
+target_compile_features(test_esp32p4_boot_sequence PRIVATE cxx_std_20)
+target_compile_features(test_esp32p4_boot_simple PRIVATE cxx_std_20)
+target_compile_features(test_elf_loader PRIVATE cxx_std_20)
+target_compile_features(test_elf_loader_comprehensive PRIVATE cxx_std_20)
 
 # Set C++ standard and properties for test
 target_compile_features(test_display_connection PRIVATE cxx_std_20)
@@ -358,6 +415,12 @@ if(BUILD_EXAMPLES)
     add_executable(simple-freertos-test examples/simple_freertos_test.cpp)
     target_link_libraries(simple-freertos-test m5tab5-emulator-core)
     message(STATUS "Building simple FreeRTOS test example")
+    
+    # ELF Loading demonstration example
+    add_executable(elf-loading-demo examples/elf_loading_demo.cpp)
+    target_link_libraries(elf-loading-demo m5tab5-emulator-core)
+    target_compile_features(elf-loading-demo PRIVATE cxx_std_20)
+    message(STATUS "Building ELF loading demo example")
 endif()
 
 # Documentation

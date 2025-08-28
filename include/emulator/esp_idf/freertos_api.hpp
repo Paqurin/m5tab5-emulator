@@ -9,14 +9,21 @@
  */
 
 #include "emulator/core/types.hpp"
+#include "freertos/FreeRTOS.h"
 #include <cstdint>
 #include <cstddef>
 
-// FreeRTOS type definitions (compatible with ESP-IDF)
-using BaseType_t = int32_t;
-using UBaseType_t = uint32_t;
+// FreeRTOS type definitions are handled by our FreeRTOS.h header
+// which defines BaseType_t as long and UBaseType_t as unsigned long
+// We don't redefine them here to avoid conflicts
+
+// Add missing types that aren't in our FreeRTOS.h
+#ifndef TickType_t
 using TickType_t = uint32_t;
+#endif
+#ifndef StackType_t
 using StackType_t = uint8_t;
+#endif
 
 // Handle types
 using TaskHandle_t = void*;
@@ -28,11 +35,19 @@ using TimerHandle_t = void*;
 using TaskFunction_t = void(*)(void*);
 using TimerCallbackFunction_t = void(*)(TimerHandle_t);
 
-// FreeRTOS constants
+// FreeRTOS constants - only define if not already defined
+#ifndef pdTRUE
 #define pdTRUE                          1
+#endif
+#ifndef pdFALSE
 #define pdFALSE                         0
+#endif
+#ifndef pdPASS
 #define pdPASS                          1  
+#endif
+#ifndef pdFAIL
 #define pdFAIL                          0
+#endif
 
 #define errQUEUE_EMPTY                  0
 #define errQUEUE_FULL                   0
@@ -42,9 +57,13 @@ using TimerCallbackFunction_t = void(*)(TimerHandle_t);
 #define configMAX_PRIORITIES           25
 #define configMINIMAL_STACK_SIZE      512
 
-// Timing
+// Timing - only define if not already defined
+#ifndef portTICK_PERIOD_MS
 #define portTICK_PERIOD_MS              1
+#endif
+#ifndef portMAX_DELAY
 #define portMAX_DELAY                   0xFFFFFFFF
+#endif
 
 // ESP32 specific
 #define configNUM_CORES                 2
@@ -54,8 +73,10 @@ using TimerCallbackFunction_t = void(*)(TimerHandle_t);
 #define portNUM_PROCESSORS              2
 #define configTICK_RATE_HZ              1000
 
-// Timing conversion macros
+// Timing conversion macros - only define if not already defined
+#ifndef pdMS_TO_TICKS
 #define pdMS_TO_TICKS(xTimeInMs)        ((TickType_t)((xTimeInMs) * configTICK_RATE_HZ / 1000))
+#endif
 
 // Include guard to prevent conflicts with real FreeRTOS
 #ifndef INC_FREERTOS_H
@@ -114,15 +135,25 @@ SemaphoreHandle_t xSemaphoreCreateMutex(void);
 
 BaseType_t xSemaphoreTake(SemaphoreHandle_t xSemaphore, TickType_t xTicksToWait);
 BaseType_t xSemaphoreGive(SemaphoreHandle_t xSemaphore);
+// Only declare ISR functions if not already defined as macros  
+#ifndef xSemaphoreTakeFromISR
 BaseType_t xSemaphoreTakeFromISR(SemaphoreHandle_t xSemaphore, BaseType_t *pxHigherPriorityTaskWoken);
+#endif
+#ifndef xSemaphoreGiveFromISR
 BaseType_t xSemaphoreGiveFromISR(SemaphoreHandle_t xSemaphore, BaseType_t *pxHigherPriorityTaskWoken);
+#endif
 
 // Queue Management
 QueueHandle_t xQueueCreate(const UBaseType_t uxQueueLength, const UBaseType_t uxItemSize);
 BaseType_t xQueueSend(QueueHandle_t xQueue, const void *pvItemToQueue, TickType_t xTicksToWait);
 BaseType_t xQueueReceive(QueueHandle_t xQueue, void *pvBuffer, TickType_t xTicksToWait);
+// Only declare ISR functions if not already defined as macros
+#ifndef xQueueSendFromISR
 BaseType_t xQueueSendFromISR(QueueHandle_t xQueue, const void *pvItemToQueue, BaseType_t *pxHigherPriorityTaskWoken);
+#endif
+#ifndef xQueueReceiveFromISR
 BaseType_t xQueueReceiveFromISR(QueueHandle_t xQueue, void *pvBuffer, BaseType_t *pxHigherPriorityTaskWoken);
+#endif
 UBaseType_t uxQueueMessagesWaiting(const QueueHandle_t xQueue);
 
 // Core Information
@@ -140,18 +171,28 @@ void vTaskExitCritical(void);
 UBaseType_t taskENTER_CRITICAL_FROM_ISR(void);
 void taskEXIT_CRITICAL_FROM_ISR(UBaseType_t uxSavedInterruptStatus);
 
-// Task Yield
+// Task Yield - only declare if not already defined as macro
+#ifndef taskYIELD
 void taskYIELD(void);
+#endif
 
 } // extern "C"
 
 #endif // INC_FREERTOS_H
 
-// Convenience macros for common operations
+// Convenience macros for common operations - only define if not already defined
+#ifndef taskENTER_CRITICAL
 #define taskENTER_CRITICAL()            vTaskEnterCritical()
+#endif
+#ifndef taskEXIT_CRITICAL
 #define taskEXIT_CRITICAL()             vTaskExitCritical()
+#endif
+#ifndef portYIELD
 #define portYIELD()                     taskYIELD()
+#endif
+#ifndef portYIELD_FROM_ISR
 #define portYIELD_FROM_ISR(x)           do { if(x) taskYIELD(); } while(0)
+#endif
 
 // Semaphore macros
 #define xSemaphoreCreateBinary()        xSemaphoreCreateBinary()

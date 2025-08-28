@@ -37,21 +37,21 @@ namespace {
     /**
      * @brief Convert ESP log level to emulator log level
      */
-    m5tab5::emulator::LogLevel convert_log_level(esp_log_level_t esp_level) {
+    m5tab5::emulator::Logger::LogLevel convert_log_level(esp_log_level_t esp_level) {
         switch (esp_level) {
             case ESP_LOG_ERROR:
-                return m5tab5::emulator::LogLevel::ERROR;
+                return m5tab5::emulator::Logger::LogLevel::ERROR_LEVEL;
             case ESP_LOG_WARN:
-                return m5tab5::emulator::LogLevel::WARN;
+                return m5tab5::emulator::Logger::LogLevel::WARN;
             case ESP_LOG_INFO:
-                return m5tab5::emulator::LogLevel::INFO;
+                return m5tab5::emulator::Logger::LogLevel::INFO;
             case ESP_LOG_DEBUG:
-                return m5tab5::emulator::LogLevel::DEBUG_LEVEL;
+                return m5tab5::emulator::Logger::LogLevel::DEBUG_LEVEL;
             case ESP_LOG_VERBOSE:
-                return m5tab5::emulator::LogLevel::TRACE;
+                return m5tab5::emulator::Logger::LogLevel::TRACE;
             case ESP_LOG_NONE:
             default:
-                return m5tab5::emulator::LogLevel::ERROR;
+                return m5tab5::emulator::Logger::LogLevel::ERROR_LEVEL;
         }
     }
     
@@ -100,22 +100,22 @@ namespace {
         } else {
             // Use emulator's logging system
             auto emulator_level = convert_log_level(level);
-            if (emulator_level != m5tab5::emulator::LogLevel::ERROR) {
+            if (emulator_level != m5tab5::emulator::Logger::LogLevel::ERROR_LEVEL) {
                 // Use the appropriate logging based on level
                 switch (emulator_level) {
-                    case m5tab5::emulator::LogLevel::TRACE:
+                    case m5tab5::emulator::Logger::LogLevel::TRACE:
                         LOG_TRACE("[{}] {}", tag, buffer);
                         break;
-                    case m5tab5::emulator::LogLevel::DEBUG_LEVEL:
+                    case m5tab5::emulator::Logger::LogLevel::DEBUG_LEVEL:
                         LOG_DEBUG("[{}] {}", tag, buffer);
                         break;
-                    case m5tab5::emulator::LogLevel::INFO:
+                    case m5tab5::emulator::Logger::LogLevel::INFO:
                         LOG_INFO("[{}] {}", tag, buffer);
                         break;
-                    case m5tab5::emulator::LogLevel::WARN:
+                    case m5tab5::emulator::Logger::LogLevel::WARN:
                         LOG_WARN("[{}] {}", tag, buffer);
                         break;
-                    case m5tab5::emulator::LogLevel::ERROR:
+                    case m5tab5::emulator::Logger::LogLevel::ERROR_LEVEL:
                         LOG_ERROR("[{}] {}", tag, buffer);
                         break;
                 }

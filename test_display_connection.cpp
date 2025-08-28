@@ -327,7 +327,7 @@ int main() {
 
     try {
         // Initialize logging
-        auto log_result = Logger::initialize(LogLevel::INFO, "", true);
+        auto log_result = Logger::initialize(Logger::LogLevel::INFO, "", true);
         if (!log_result.has_value()) {
             std::cerr << "Failed to initialize logging: " << log_result.error().to_string() << std::endl;
             return 1;

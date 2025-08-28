@@ -10,16 +10,15 @@
 
 namespace m5tab5::emulator {
 
-enum class LogLevel {
-    TRACE = 0,
-    DEBUG_LEVEL = 1,
-    INFO = 2,
-    WARN = 3,
-    ERROR = 4
-};
-
 class Logger {
 public:
+    enum class LogLevel {
+        TRACE = 0,
+        DEBUG_LEVEL = 1,
+        INFO = 2,
+        WARN = 3,
+        ERROR_LEVEL = 4
+    };
     static Result<void> initialize(LogLevel level = LogLevel::INFO,
                                    const std::string& log_file = "",
                                    bool enable_console = true);

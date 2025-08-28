@@ -339,4 +339,16 @@ int64_t Configuration::convertValue<int64_t>(const ConfigValue& value) const {
 
 // Note: long and int64_t are the same type on this platform, so we don't need separate specialization
 
+// Static factory method implementation
+Result<Configuration> Configuration::from_json_string(const std::string& json_data) {
+    Configuration config;
+    
+    if (!config.loadFromString(json_data)) {
+        return unexpected(MAKE_ERROR(CONFIG_INVALID_FORMAT,
+            "Failed to parse configuration from JSON string"));
+    }
+    
+    return config;
+}
+
 } // namespace m5tab5::emulator

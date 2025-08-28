@@ -95,18 +95,19 @@ constexpr MemoryLayout FLASH_LAYOUT{
     .cacheable = true
 };
 
+// ESP32-P4 External PSRAM (via cache)
 constexpr MemoryLayout PSRAM_LAYOUT{
-    .start_address = 0x20000000,
+    .start_address = 0x48000000,
     .size = 32 * 1024 * 1024,  // 32MB
     .writable = true,
     .executable = false,
     .cacheable = true
 };
 
-// Internal TCM (Tightly Coupled Memory) - 12MB
+// ESP32-P4 Internal L2 Memory (main SRAM)
 constexpr MemoryLayout SRAM_LAYOUT{
     .start_address = 0x4FF00000,
-    .size = 768 * 1024,  // 768KB (main SRAM)
+    .size = 768 * 1024,  // 768KB L2 memory
     .writable = true,
     .executable = true,
     .cacheable = true

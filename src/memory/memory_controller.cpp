@@ -31,12 +31,20 @@ Result<void> MemoryController::initialize(const Configuration& config) {
         // Initialize memory regions based on configuration
         auto memory_config = config.getMemoryConfig();
         
-        // Initialize Boot ROM first (required for CPU reset)
+        // Initialize ESP32-P4 memory regions in proper order
+        // Boot ROM must be initialized first as CPU starts from reset vector
         RETURN_IF_ERROR(initialize_boot_rom_region());
         
+        // Flash XIP region (execute-in-place via MMU)
         RETURN_IF_ERROR(initialize_flash_region(memory_config.flash_size));
+        
+        // External PSRAM (cached via L2 cache)
         RETURN_IF_ERROR(initialize_psram_region(memory_config.psram_size));
+        
+        // Internal L2 memory (high-speed SRAM)
         RETURN_IF_ERROR(initialize_sram_region(memory_config.sram_size));
+        
+        // Memory-mapped I/O peripherals
         RETURN_IF_ERROR(initialize_mmio_region());
         
         // Initialize cache
@@ -50,8 +58,11 @@ Result<void> MemoryController::initialize(const Configuration& config) {
         // Set up memory region mappings
         RETURN_IF_ERROR(setup_memory_mappings());
         
+        // Validate memory layout
+        RETURN_IF_ERROR(validate_memory_layout());
+        
         initialized_ = true;
-        COMPONENT_LOG_INFO("Memory controller initialized successfully");
+        COMPONENT_LOG_INFO("Memory controller initialized successfully with {} regions", memory_regions_.size());
         
         return {};
         
@@ -272,7 +283,7 @@ void MemoryController::clear_cache_statistics() {
 }
 
 Result<void> MemoryController::initialize_boot_rom_region() {
-    COMPONENT_LOG_DEBUG("Initializing Boot ROM region");
+    COMPONENT_LOG_DEBUG("Initializing ESP32-P4 Boot ROM region");
     
     boot_rom_ = std::make_unique<BootROM>();
     RETURN_IF_ERROR(boot_rom_->initialize());
@@ -281,7 +292,15 @@ Result<void> MemoryController::initialize_boot_rom_region() {
     auto boot_rom_memory = boot_rom_->getMemoryRegion();
     memory_regions_["BootROM"] = boot_rom_memory;
     
-    COMPONENT_LOG_INFO("Boot ROM initialized: 32KB at 0x40000000");
+    // Log the reset vector for CPU initialization
+    auto reset_vector_result = boot_rom_->getResetVector();
+    if (reset_vector_result.has_value()) {
+        COMPONENT_LOG_INFO("Boot ROM initialized: 32KB at 0x{:08X}, reset vector at 0x{:08X}",
+                          BOOT_ROM_BASE, reset_vector_result.value());
+    } else {
+        COMPONENT_LOG_INFO("Boot ROM initialized: 32KB at 0x{:08X}", BOOT_ROM_BASE);
+    }
+    
     return {};
 }
 
@@ -297,44 +316,70 @@ Result<SharedPtr<MemoryRegion>> MemoryController::find_memory_region(Address add
 }
 
 Result<void> MemoryController::initialize_flash_region(size_t size) {
-    COMPONENT_LOG_DEBUG("Initializing Flash region: {} bytes", size);
+    COMPONENT_LOG_DEBUG("Initializing Flash XIP region: {} MB at 0x{:08X}", 
+                       size / (1024 * 1024), FLASH_LAYOUT.start_address);
+    
+    // Use the actual requested size, but at least 16MB for ESP32-P4
+    size_t flash_size = std::max(size, static_cast<size_t>(16 * 1024 * 1024));
     
     auto flash_region = std::make_shared<MemoryRegion>(
-        "Flash", FLASH_LAYOUT.start_address, size, MemoryType::Flash,
+        "Flash_XIP", FLASH_LAYOUT.start_address, flash_size, MemoryType::Flash,
         FLASH_LAYOUT.writable, FLASH_LAYOUT.executable, FLASH_LAYOUT.cacheable
     );
     
     RETURN_IF_ERROR(flash_region->initialize());
     memory_regions_["Flash"] = flash_region;
     
+    COMPONENT_LOG_INFO("Flash XIP region initialized: {} MB at 0x{:08X}-0x{:08X}",
+                      flash_size / (1024 * 1024),
+                      FLASH_LAYOUT.start_address,
+                      FLASH_LAYOUT.start_address + flash_size - 1);
+    
     return {};
 }
 
 Result<void> MemoryController::initialize_psram_region(size_t size) {
-    COMPONENT_LOG_DEBUG("Initializing PSRAM region: {} bytes", size);
+    COMPONENT_LOG_DEBUG("Initializing ESP32-P4 PSRAM region: {} MB at 0x{:08X}", 
+                       size / (1024 * 1024), PSRAM_LAYOUT.start_address);
+    
+    // Use the actual requested size, but at least 8MB for basic operation
+    size_t psram_size = std::max(size, static_cast<size_t>(8 * 1024 * 1024));
     
     auto psram_region = std::make_shared<MemoryRegion>(
-        "PSRAM", PSRAM_LAYOUT.start_address, size, MemoryType::PSRAM,
+        "PSRAM", PSRAM_LAYOUT.start_address, psram_size, MemoryType::PSRAM,
         PSRAM_LAYOUT.writable, PSRAM_LAYOUT.executable, PSRAM_LAYOUT.cacheable
     );
     
     RETURN_IF_ERROR(psram_region->initialize());
     memory_regions_["PSRAM"] = psram_region;
     
+    COMPONENT_LOG_INFO("PSRAM region initialized: {} MB at 0x{:08X}-0x{:08X}",
+                      psram_size / (1024 * 1024),
+                      PSRAM_LAYOUT.start_address,
+                      PSRAM_LAYOUT.start_address + psram_size - 1);
+    
     return {};
 }
 
 Result<void> MemoryController::initialize_sram_region(size_t size) {
-    COMPONENT_LOG_DEBUG("Initializing SRAM region: {} bytes", size);
+    COMPONENT_LOG_DEBUG("Initializing ESP32-P4 L2 SRAM region: {} KB at 0x{:08X}", 
+                       size / 1024, SRAM_LAYOUT.start_address);
     
-    // Use TCM layout for ESP32-P4 internal memory
+    // Use actual ESP32-P4 SRAM layout (768KB L2 memory)
+    size_t sram_size = std::max(size, static_cast<size_t>(768 * 1024));
+    
     auto sram_region = std::make_shared<MemoryRegion>(
-        "SRAM", TCM_LAYOUT.start_address, size, MemoryType::SRAM,
-        TCM_LAYOUT.writable, TCM_LAYOUT.executable, TCM_LAYOUT.cacheable
+        "L2_SRAM", SRAM_LAYOUT.start_address, sram_size, MemoryType::SRAM,
+        SRAM_LAYOUT.writable, SRAM_LAYOUT.executable, SRAM_LAYOUT.cacheable
     );
     
     RETURN_IF_ERROR(sram_region->initialize());
     memory_regions_["SRAM"] = sram_region;
+    
+    COMPONENT_LOG_INFO("L2 SRAM region initialized: {} KB at 0x{:08X}-0x{:08X}",
+                      sram_size / 1024,
+                      SRAM_LAYOUT.start_address,
+                      SRAM_LAYOUT.start_address + sram_size - 1);
     
     return {};
 }
@@ -366,12 +411,67 @@ Result<void> MemoryController::initialize_cache() {
 }
 
 Result<void> MemoryController::setup_memory_mappings() {
-    COMPONENT_LOG_DEBUG("Setting up memory mappings");
+    COMPONENT_LOG_DEBUG("Setting up ESP32-P4 memory mappings");
     
     // Set up standard ESP32-P4 memory mappings
     // This is where we would configure virtual-to-physical address translations
     // For now, we use direct mapping (virtual == physical)
     
+    // Log all mapped regions for debugging
+    for (const auto& [name, region] : memory_regions_) {
+        COMPONENT_LOG_DEBUG("Mapped region '{}': 0x{:08X}-0x{:08X} ({}KB) - R{} W{} X{}",
+                           name,
+                           region->get_start_address(),
+                           region->get_end_address(),
+                           region->get_size() / 1024,
+                           "R",  // Always readable
+                           region->is_writable() ? "W" : "-",
+                           region->is_executable() ? "X" : "-");
+    }
+    
+    return {};
+}
+
+// Validate that all essential ESP32-P4 memory regions are properly mapped
+Result<void> MemoryController::validate_memory_layout() {
+    COMPONENT_LOG_DEBUG("Validating ESP32-P4 memory layout");
+    
+    // Check Boot ROM is mapped at correct address
+    auto boot_rom_valid = is_valid_address(BOOT_ROM_BASE);
+    if (!boot_rom_valid.has_value() || !boot_rom_valid.value()) {
+        return unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
+            "Boot ROM not mapped at 0x40000000"));
+    }
+    
+    // Check Boot ROM reset vector is accessible
+    auto reset_vector_valid = is_valid_address(BOOT_ROM_RESET_VECTOR);
+    if (!reset_vector_valid.has_value() || !reset_vector_valid.value()) {
+        return unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
+            "Boot ROM reset vector not accessible at 0x40000080"));
+    }
+    
+    // Check Flash XIP region is mapped
+    auto flash_valid = is_valid_address(FLASH_LAYOUT.start_address);
+    if (!flash_valid.has_value() || !flash_valid.value()) {
+        return unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
+            "Flash XIP region not mapped at 0x42000000"));
+    }
+    
+    // Check L2 SRAM is mapped
+    auto sram_valid = is_valid_address(SRAM_LAYOUT.start_address);
+    if (!sram_valid.has_value() || !sram_valid.value()) {
+        return unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
+            "L2 SRAM not mapped at 0x4FF00000"));
+    }
+    
+    // Check PSRAM is mapped
+    auto psram_valid = is_valid_address(PSRAM_LAYOUT.start_address);
+    if (!psram_valid.has_value() || !psram_valid.value()) {
+        return unexpected(MAKE_ERROR(MEMORY_INVALID_ADDRESS,
+            "PSRAM not mapped at 0x48000000"));
+    }
+    
+    COMPONENT_LOG_INFO("ESP32-P4 memory layout validation successful");
     return {};
 }
 
