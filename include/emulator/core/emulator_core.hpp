@@ -12,6 +12,10 @@
 #include "emulator/config/configuration.hpp"
 #include "emulator/memory/boot_rom.hpp"
 #include "emulator/firmware/elf_loader.hpp"
+#include "emulator/storage/flash_controller.hpp"
+#include "emulator/storage/spiffs_filesystem.hpp"
+#include "emulator/storage/vfs_manager.hpp"
+#include "emulator/storage/ota_manager.hpp"
 
 #include <memory>
 #include <thread>
@@ -115,6 +119,12 @@ private:
     std::unique_ptr<Debugger> debugger_;
     std::unique_ptr<BootROM> boot_rom_;
     std::unique_ptr<firmware::ELFLoader> elf_loader_;
+    
+    // Storage subsystem components
+    std::unique_ptr<storage::FlashController> flash_controller_;
+    std::unique_ptr<storage::SPIFFSFileSystem> spiffs_filesystem_;
+    std::unique_ptr<storage::VFSManager> vfs_manager_;
+    std::unique_ptr<storage::OTAManager> ota_manager_;
     
     // Execution threads
     std::thread execution_thread_;

@@ -158,6 +158,17 @@ Configuration Configuration::createPerformanceConfig() {
     return config;
 }
 
+Result<Configuration> Configuration::create_default() {
+    try {
+        Configuration config(DeviceVariant::Standard);
+        config.setDefaults();
+        return Result<Configuration>(std::move(config));
+    } catch (const std::exception& e) {
+        return Result<Configuration>(unexpected<Error>(Error(ErrorCode::CONFIG_INVALID_FORMAT, 
+            "Failed to create default configuration: " + std::string(e.what()))));
+    }
+}
+
 void Configuration::setDefaults() {
     config_tree_.clear();
     

@@ -64,31 +64,71 @@ enum class ErrorCode {
     SYSTEM_BUSY = 6004,
     SYSTEM_SHUTDOWN = 6005,
     
+    // Storage/Flash errors
+    STORAGE_INIT_FAILED = 7000,
+    STORAGE_NOT_INITIALIZED = 7001,
+    STORAGE_NOT_MOUNTED = 7002,
+    STORAGE_ALREADY_MOUNTED = 7003,
+    STORAGE_INSUFFICIENT_SPACE = 7004,
+    STORAGE_INVALID_FORMAT = 7005,
+    STORAGE_CORRUPTION_DETECTED = 7006,
+    STORAGE_FILE_NOT_FOUND = 7007,
+    STORAGE_FILE_EXISTS = 7008,
+    STORAGE_INVALID_NAME = 7009,
+    STORAGE_ACCESS_DENIED = 7010,
+    STORAGE_INVALID_HANDLE = 7011,
+    STORAGE_TOO_MANY_FILES = 7012,
+    STORAGE_INVALID_SIZE = 7013,
+    STORAGE_ALIGNMENT_ERROR = 7014,
+    STORAGE_CONTROLLER_ERROR = 7015,
+    STORAGE_INVALID_PARAMETER = 7016,
+    STORAGE_TIMEOUT = 7017,
+    
+    // VFS errors
+    VFS_NOT_INITIALIZED = 7100,
+    VFS_INVALID_PARAMETER = 7101,
+    VFS_MOUNT_POINT_EXISTS = 7102,
+    VFS_MOUNT_POINT_NOT_FOUND = 7103,
+    VFS_INVALID_FD = 7104,
+    VFS_INVALID_DIR = 7105,
+    
     // Plugin errors
-    PLUGIN_NOT_FOUND = 7000,
-    PLUGIN_LOAD_FAILED = 7001,
-    PLUGIN_INVALID_INTERFACE = 7002,
-    PLUGIN_VERSION_MISMATCH = 7003,
+    PLUGIN_NOT_FOUND = 8000,
+    PLUGIN_LOAD_FAILED = 8001,
+    PLUGIN_INVALID_INTERFACE = 8002,
+    PLUGIN_VERSION_MISMATCH = 8003,
     
     // Generic errors
-    INVALID_PARAMETER = 8000,
-    NOT_IMPLEMENTED = 8001,
-    OPERATION_FAILED = 8002,
-    TIMEOUT = 8003,
-    ABORTED = 8004,
-    INVALID_OPERATION = 8005,
-    INVALID_STATE = 8006,
-    BUFFER_OVERFLOW = 8007,
-    INSUFFICIENT_DATA = 8008,
-    TIMEOUT_ERROR = 8009,
-    FILE_ERROR = 8010,
-    ALREADY_INITIALIZED = 8011,
-    INVALID_ARGUMENT = 8012,
-    DEVICE_ERROR = 8013,
-    NOT_INITIALIZED = 8014,
-    NO_DATA_AVAILABLE = 8015,
-    OPERATION_ABORTED = 8016,
-    PROCESSING_ERROR = 8017
+    INVALID_PARAMETER = 9000,
+    NOT_IMPLEMENTED = 9001,
+    OPERATION_FAILED = 9002,
+    TIMEOUT = 9003,
+    ABORTED = 9004,
+    INVALID_OPERATION = 9005,
+    INVALID_STATE = 9006,
+    BUFFER_OVERFLOW = 9007,
+    INSUFFICIENT_DATA = 9008,
+    TIMEOUT_ERROR = 9009,
+    FILE_ERROR = 9010,
+    ALREADY_INITIALIZED = 9011,
+    INVALID_ARGUMENT = 9012,
+    DEVICE_ERROR = 9013,
+    NOT_INITIALIZED = 9014,
+    NO_DATA_AVAILABLE = 9015,
+    OPERATION_ABORTED = 9016,
+    PROCESSING_ERROR = 9017,
+    
+    // Partition table specific errors
+    INVALID_FILE_FORMAT = 9018,
+    DUPLICATE_ENTRY = 9019,
+    NOT_FOUND = 9020,
+    CHECKSUM_MISMATCH = 9021,
+    INVALID_CONFIGURATION = 9022,
+    ALIGNMENT_ERROR = 9023,
+    ADDRESS_OUT_OF_BOUNDS = 9024,
+    ADDRESS_OVERLAP = 9025,
+    BUFFER_TOO_SMALL = 9026,
+    END_OF_DATA = 9027
 };
 
 class Error {
@@ -256,6 +296,31 @@ using VoidResult = Result<void>;
 // Helper function for making errors
 inline Error make_error(ErrorCode code, const std::string& message) {
     return Error(code, message);
+}
+
+// Helper functions for Result<T> creation
+template<typename T = void>
+inline Result<T> success() {
+    if constexpr (std::is_void_v<T>) {
+        return Result<void>();
+    } else {
+        return Result<T>(T{});
+    }
+}
+
+template<typename T>
+inline Result<T> success(T&& value) {
+    return Result<T>(std::forward<T>(value));
+}
+
+template<typename T = void>
+inline Result<T> error(ErrorCode code) {
+    return Result<T>(unexpected<Error>(Error(code)));
+}
+
+template<typename T = void>
+inline Result<T> error(ErrorCode code, const std::string& message) {
+    return Result<T>(unexpected<Error>(Error(code, message)));
 }
 
 const char* error_code_to_string(ErrorCode code) noexcept;

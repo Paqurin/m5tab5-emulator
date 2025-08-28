@@ -181,6 +181,56 @@ Result<void> EmulatorCore::initialize(const Configuration& config) {
             }
         }
         
+        // Initialize storage subsystem
+        COMPONENT_LOG_DEBUG("Initializing storage subsystem");
+        
+        // Initialize flash controller
+        flash_controller_ = std::make_unique<storage::FlashController>();
+        RETURN_IF_ERROR(flash_controller_->initialize());
+        COMPONENT_LOG_DEBUG("Flash controller initialized");
+        
+        // Initialize SPIFFS filesystem
+        spiffs_filesystem_ = std::make_unique<storage::SPIFFSFileSystem>(flash_controller_.get());
+        // Find SPIFFS partition and mount it
+        auto partition_table = flash_controller_->get_partition_table();
+        if (partition_table) {
+            auto spiffs_partition_result = partition_table->find_partition_by_type(
+                storage::PartitionTable::PartitionType::DATA, 
+                storage::PartitionTable::PartitionSubtype::DATA_SPIFFS);
+            if (spiffs_partition_result) {
+                auto partition = spiffs_partition_result.value();
+                RETURN_IF_ERROR(spiffs_filesystem_->initialize(partition.offset, partition.size));
+                RETURN_IF_ERROR(spiffs_filesystem_->mount());
+                COMPONENT_LOG_DEBUG("SPIFFS filesystem mounted on partition at 0x{:08X}", partition.offset);
+            } else {
+                // Create default SPIFFS partition (4MB) if not found
+                constexpr Address SPIFFS_DEFAULT_OFFSET = 0x40400000;  // 4MB offset within flash range
+                constexpr size_t SPIFFS_DEFAULT_SIZE = 4 * 1024 * 1024; // 4MB size
+                RETURN_IF_ERROR(spiffs_filesystem_->initialize(SPIFFS_DEFAULT_OFFSET, SPIFFS_DEFAULT_SIZE));
+                RETURN_IF_ERROR(spiffs_filesystem_->format()); // Format new partition
+                RETURN_IF_ERROR(spiffs_filesystem_->mount());
+                COMPONENT_LOG_INFO("Created and mounted default SPIFFS partition (4MB)");
+            }
+        }
+        
+        // Initialize VFS manager
+        vfs_manager_ = std::make_unique<storage::VFSManager>();
+        RETURN_IF_ERROR(vfs_manager_->initialize());
+        // Create shared_ptr for SPIFFS filesystem
+        auto shared_spiffs = std::shared_ptr<storage::SPIFFSFileSystem>(
+            spiffs_filesystem_.get(),
+            [](storage::SPIFFSFileSystem*) { /* EmulatorCore owns this resource */ }
+        );
+        RETURN_IF_ERROR(vfs_manager_->mount_spiffs("/spiffs", shared_spiffs));
+        COMPONENT_LOG_DEBUG("VFS manager initialized with SPIFFS mounted at /spiffs");
+        
+        // Initialize OTA manager
+        ota_manager_ = std::make_unique<storage::OTAManager>(flash_controller_.get());
+        RETURN_IF_ERROR(ota_manager_->initialize());
+        COMPONENT_LOG_DEBUG("OTA manager initialized");
+        
+        COMPONENT_LOG_INFO("Storage subsystem initialization completed");
+        
         // Register all components in the registry for external access
         RETURN_IF_ERROR(initializeComponents());
         
@@ -325,6 +375,45 @@ Result<void> EmulatorCore::shutdown() {
     shutdownComponents();
     
     // Shutdown components in reverse order of initialization
+    
+    // Shutdown storage subsystem first
+    if (ota_manager_) {
+        auto shutdown_result = ota_manager_->shutdown();
+        if (!shutdown_result) {
+            COMPONENT_LOG_WARN("Failed to shutdown OTA manager: {}", 
+                             shutdown_result.error().to_string());
+        }
+        ota_manager_.reset();
+    }
+    
+    if (vfs_manager_) {
+        auto shutdown_result = vfs_manager_->shutdown();
+        if (!shutdown_result) {
+            COMPONENT_LOG_WARN("Failed to shutdown VFS manager: {}", 
+                             shutdown_result.error().to_string());
+        }
+        vfs_manager_.reset();
+    }
+    
+    if (spiffs_filesystem_) {
+        // Unmount SPIFFS
+        auto unmount_result = spiffs_filesystem_->unmount();
+        if (!unmount_result) {
+            COMPONENT_LOG_WARN("Failed to unmount SPIFFS: {}", 
+                             unmount_result.error().to_string());
+        }
+        spiffs_filesystem_.reset();
+    }
+    
+    if (flash_controller_) {
+        auto shutdown_result = flash_controller_->shutdown();
+        if (!shutdown_result) {
+            COMPONENT_LOG_WARN("Failed to shutdown flash controller: {}", 
+                             shutdown_result.error().to_string());
+        }
+        flash_controller_.reset();
+    }
+    
     if (debugger_) {
         debugger_->shutdown();
         debugger_.reset();
@@ -641,6 +730,43 @@ Result<void> EmulatorCore::initializeComponents() {
             [](Debugger*) { /* EmulatorCore owns this resource */ }
         );
         registerComponent<Debugger>("debugger", shared_debugger);
+    }
+    
+    // Register storage components
+    if (flash_controller_) {
+        auto shared_flash = std::shared_ptr<storage::FlashController>(
+            flash_controller_.get(),
+            [](storage::FlashController*) { /* EmulatorCore owns this resource */ }
+        );
+        registerComponent<storage::FlashController>("flash", shared_flash);
+        registerComponent<storage::FlashController>("flash_controller", shared_flash);
+    }
+    
+    if (spiffs_filesystem_) {
+        auto shared_spiffs = std::shared_ptr<storage::SPIFFSFileSystem>(
+            spiffs_filesystem_.get(),
+            [](storage::SPIFFSFileSystem*) { /* EmulatorCore owns this resource */ }
+        );
+        registerComponent<storage::SPIFFSFileSystem>("spiffs", shared_spiffs);
+        registerComponent<storage::SPIFFSFileSystem>("filesystem", shared_spiffs);
+    }
+    
+    if (vfs_manager_) {
+        auto shared_vfs = std::shared_ptr<storage::VFSManager>(
+            vfs_manager_.get(),
+            [](storage::VFSManager*) { /* EmulatorCore owns this resource */ }
+        );
+        registerComponent<storage::VFSManager>("vfs", shared_vfs);
+        registerComponent<storage::VFSManager>("vfs_manager", shared_vfs);
+    }
+    
+    if (ota_manager_) {
+        auto shared_ota = std::shared_ptr<storage::OTAManager>(
+            ota_manager_.get(),
+            [](storage::OTAManager*) { /* EmulatorCore owns this resource */ }
+        );
+        registerComponent<storage::OTAManager>("ota", shared_ota);
+        registerComponent<storage::OTAManager>("ota_manager", shared_ota);
     }
     
     COMPONENT_LOG_DEBUG("Component registry initialized with {} components", 

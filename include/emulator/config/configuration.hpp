@@ -84,6 +84,7 @@ public:
     static Configuration createProductionConfig();
     static Configuration createDebugConfig();
     static Configuration createPerformanceConfig();
+    static Result<Configuration> create_default();
 
     // Default configurations
     void setDefaults();

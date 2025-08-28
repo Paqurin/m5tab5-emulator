@@ -1,0 +1,1190 @@
+#include "emulator/storage/flash_controller.hpp"
+#include "emulator/utils/logging.hpp"
+
+#include <fstream>
+#include <filesystem>
+#include <chrono>
+#include <algorithm>
+#include <cstring>
+#include <cstdlib>
+
+namespace m5tab5::emulator::storage {
+
+namespace fs = std::filesystem;
+using namespace std::chrono;
+
+FlashController::FlashController() 
+    : FlashController(Config{}) {
+}
+
+FlashController::FlashController(const Config& config)
+    : config_(config),
+      flash_data_(std::make_unique<FlashData>()),
+      flash_state_(std::make_unique<FlashState>()),
+      partition_table_(std::make_unique<PartitionTable>()),
+      last_save_time_(steady_clock::now()) {
+    
+    LOG_DEBUG("FlashController created with flash size: {}MB", FLASH_SIZE / (1024 * 1024));
+}
+
+FlashController::~FlashController() {
+    if (initialized_) {
+        shutdown();
+    }
+}
+
+Result<void> FlashController::initialize() {
+    if (initialized_) {
+        return success();
+    }
+    
+    LOG_INFO("Initializing Flash Controller");
+    
+    // Initialize partition table
+    auto pt_result = partition_table_->initialize();
+    if (!pt_result.has_value()) {
+        LOG_ERROR("Failed to initialize partition table: {}", static_cast<int>(pt_result.error()));
+        return pt_result.error();
+    }
+    
+    // Load flash image if it exists
+    auto load_result = load_flash_image();
+    if (!load_result.has_value()) {
+        LOG_WARN("Could not load flash image, starting with empty flash: {}", 
+                 static_cast<int>(load_result.error()));
+        // Continue with empty flash - this is not a critical error
+    }
+    
+    // Load partition table from flash
+    auto pt_load_result = load_partition_table();
+    if (!pt_load_result.has_value()) {
+        LOG_WARN("Could not load partition table from flash, creating default: {}", 
+                 static_cast<int>(pt_load_result.error()));
+        
+        // Create default partition table
+        auto default_table = PartitionTable::create_default_table();
+        if (default_table.has_value()) {
+            partition_table_ = std::make_unique<PartitionTable>(std::move(default_table.value()));
+            
+            // Save the default partition table to flash
+            auto save_result = save_partition_table(*partition_table_);
+            if (!save_result.has_value()) {
+                LOG_WARN("Failed to save default partition table: {}", 
+                         static_cast<int>(save_result.error()));
+            }
+        }
+    }
+    
+    // Start background save thread if enabled
+    if (config_.enable_persistence && config_.auto_save_on_write) {
+        auto bg_result = start_background_save();
+        if (!bg_result.has_value()) {
+            LOG_WARN("Failed to start background save thread: {}", 
+                     static_cast<int>(bg_result.error()));
+        }
+    }
+    
+    // Reset statistics
+    auto stats_result = reset_statistics();
+    if (!stats_result.has_value()) {
+        LOG_WARN("Failed to reset statistics: {}", static_cast<int>(stats_result.error()));
+    }
+    
+    // Set initial flash state
+    flash_state_->status_register.store(0x00);
+    flash_state_->write_enabled.store(false);
+    flash_state_->busy.store(false);
+    flash_state_->erase_suspended.store(false);
+    flash_state_->initialized.store(true);
+    
+    initialized_.store(true);
+    
+    LOG_INFO("Flash Controller initialized successfully");
+    LOG_DEBUG("Flash image path: {}", config_.flash_image_path);
+    LOG_DEBUG("Flash size: {}MB, sectors: {}, blocks: {}", 
+              FLASH_SIZE / (1024 * 1024), 
+              FLASH_SIZE / SECTOR_SIZE,
+              FLASH_SIZE / BLOCK_SIZE);
+    
+    return success();
+}
+
+Result<void> FlashController::shutdown() {
+    if (!initialized_) {
+        return success();
+    }
+    
+    LOG_INFO("Shutting down Flash Controller");
+    
+    // Stop background save thread
+    auto bg_result = stop_background_save();
+    if (!bg_result.has_value()) {
+        LOG_WARN("Failed to stop background save thread: {}", static_cast<int>(bg_result.error()));
+    }
+    
+    // Save flash image if persistence enabled
+    if (config_.enable_persistence) {
+        auto save_result = save_flash_image();
+        if (!save_result.has_value()) {
+            LOG_ERROR("Failed to save flash image on shutdown: {}", 
+                     static_cast<int>(save_result.error()));
+        }
+    }
+    
+    // Reset state
+    flash_state_->initialized.store(false);
+    initialized_.store(false);
+    
+    LOG_INFO("Flash Controller shutdown complete");
+    return success();
+}
+
+Result<void> FlashController::read(Address address, void* buffer, size_t size) {
+    if (!initialized_) {
+        return error(ErrorCode::NOT_INITIALIZED);
+    }
+    
+    // Validate parameters
+    if (buffer == nullptr || size == 0) {
+        return error(ErrorCode::INVALID_PARAMETER);
+    }
+    
+    auto addr_result = validate_address_range(address, size);
+    if (!addr_result.has_value()) {
+        return addr_result.error();
+    }
+    
+    // Convert to physical address
+    Address phys_addr = address - FLASH_BASE_ADDRESS;
+    
+    // Perform read with timing simulation
+    if (config_.simulate_timing) {
+        // Fast read has minimal delay
+        auto timing_result = perform_timing_delay(1);  // 1us for fast read
+        if (!timing_result.has_value()) {
+            return timing_result.error();
+        }
+    }
+    
+    // Execute internal read
+    auto read_result = internal_read(phys_addr, buffer, size);
+    if (!read_result.has_value()) {
+        return read_result.error();
+    }
+    
+    // Update statistics
+    if (config_.enable_statistics) {
+        update_read_stats(size);
+    }
+    
+    return success();
+}
+
+Result<void> FlashController::write(Address address, const void* data, size_t size) {
+    if (!initialized_) {
+        return error(ErrorCode::NOT_INITIALIZED);
+    }
+    
+    // Validate parameters
+    if (data == nullptr || size == 0) {
+        return error(ErrorCode::INVALID_PARAMETER);
+    }
+    
+    auto addr_result = validate_address_range(address, size);
+    if (!addr_result.has_value()) {
+        return addr_result.error();
+    }
+    
+    auto write_result = validate_write_operation(address, size);
+    if (!write_result.has_value()) {
+        return write_result.error();
+    }
+    
+    // Check write enable
+    if (!flash_state_->write_enabled.load()) {
+        LOG_WARN("Write attempted without write enable at address 0x{:08X}", address);
+        return error(ErrorCode::WRITE_PROTECTED);
+    }
+    
+    // Convert to physical address
+    Address phys_addr = address - FLASH_BASE_ADDRESS;
+    
+    // Set busy flag
+    flash_state_->busy.store(true);
+    
+    auto start_time = steady_clock::now();
+    
+    // Perform write with timing simulation
+    if (config_.simulate_timing) {
+        uint32_t delay = (size / PAGE_SIZE + 1) * config_.timing.page_program_us;
+        auto timing_result = perform_timing_delay(delay);
+        if (!timing_result.has_value()) {
+            flash_state_->busy.store(false);
+            return timing_result.error();
+        }
+    }
+    
+    // Execute internal write
+    auto write_internal_result = internal_write(phys_addr, data, size);
+    if (!write_internal_result.has_value()) {
+        flash_state_->busy.store(false);
+        return write_internal_result.error();
+    }
+    
+    // Clear write enable after write
+    flash_state_->write_enabled.store(false);
+    flash_state_->busy.store(false);
+    
+    // Update statistics
+    if (config_.enable_statistics) {
+        auto end_time = steady_clock::now();
+        double elapsed_us = duration_cast<microseconds>(end_time - start_time).count();
+        update_write_stats(size, elapsed_us);
+    }
+    
+    // Auto-save if enabled
+    if (config_.auto_save_on_write) {
+        auto save_result = auto_save_if_needed();
+        if (!save_result.has_value()) {
+            LOG_WARN("Auto-save failed: {}", static_cast<int>(save_result.error()));
+        }
+    }
+    
+    return success();
+}
+
+Result<void> FlashController::erase_sector(Address address) {
+    if (!initialized_) {
+        return error(ErrorCode::NOT_INITIALIZED);
+    }
+    
+    auto erase_result = validate_erase_operation(address);
+    if (!erase_result.has_value()) {
+        return erase_result.error();
+    }
+    
+    // Check write enable
+    if (!flash_state_->write_enabled.load()) {
+        LOG_WARN("Erase attempted without write enable at address 0x{:08X}", address);
+        return error(ErrorCode::WRITE_PROTECTED);
+    }
+    
+    // Convert to physical address and get sector
+    Address phys_addr = address - FLASH_BASE_ADDRESS;
+    size_t sector = phys_addr / SECTOR_SIZE;
+    
+    // Set busy flag
+    flash_state_->busy.store(true);
+    
+    auto start_time = steady_clock::now();
+    
+    // Perform erase with timing simulation
+    if (config_.simulate_timing) {
+        auto timing_result = perform_timing_delay(config_.timing.sector_erase_us);
+        if (!timing_result.has_value()) {
+            flash_state_->busy.store(false);
+            return timing_result.error();
+        }
+    }
+    
+    // Execute internal erase
+    auto internal_result = internal_erase_sector(sector);
+    if (!internal_result.has_value()) {
+        flash_state_->busy.store(false);
+        return internal_result.error();
+    }
+    
+    // Update wear leveling
+    if (config_.enable_wear_leveling) {
+        auto wear_result = update_erase_count(sector);
+        if (!wear_result.has_value()) {
+            LOG_WARN("Failed to update erase count for sector {}: {}", 
+                     sector, static_cast<int>(wear_result.error()));
+        }
+    }
+    
+    // Clear write enable after erase
+    flash_state_->write_enabled.store(false);
+    flash_state_->busy.store(false);
+    
+    // Update statistics
+    if (config_.enable_statistics) {
+        auto end_time = steady_clock::now();
+        double elapsed_us = duration_cast<microseconds>(end_time - start_time).count();
+        update_erase_stats(elapsed_us);
+        std::lock_guard<std::mutex> lock(stats_mutex_);
+        stats_.sectors_erased++;
+    }
+    
+    LOG_DEBUG("Erased sector {} at address 0x{:08X}", sector, address);
+    
+    return success();
+}
+
+Result<void> FlashController::load_flash_image() {
+    if (!config_.enable_persistence) {
+        return success();
+    }
+    
+    auto load_result = load_from_file();
+    if (!load_result.has_value()) {
+        LOG_DEBUG("Flash image not found or invalid, starting with empty flash");
+        return success();  // Not an error - new flash image
+    }
+    
+    LOG_INFO("Flash image loaded from: {}", config_.flash_image_path);
+    return success();
+}
+
+Result<void> FlashController::save_flash_image() {
+    if (!config_.enable_persistence) {
+        return success();
+    }
+    
+    auto save_result = save_to_file();
+    if (!save_result.has_value()) {
+        return save_result.error();
+    }
+    
+    last_save_time_ = steady_clock::now();
+    LOG_DEBUG("Flash image saved to: {}", config_.flash_image_path);
+    return success();
+}
+
+// Internal implementation methods
+
+Result<void> FlashController::validate_address_range(Address address, size_t size) const {
+    if (address < FLASH_BASE_ADDRESS || address >= FLASH_END_ADDRESS) {
+        LOG_WARN("Invalid flash address: 0x{:08X}", address);
+        return error(ErrorCode::INVALID_ADDRESS);
+    }
+    
+    if (address + size > FLASH_END_ADDRESS) {
+        LOG_WARN("Address range exceeds flash boundary: 0x{:08X} + {}", address, size);
+        return error(ErrorCode::ADDRESS_OUT_OF_BOUNDS);
+    }
+    
+    return success();
+}
+
+Result<void> FlashController::internal_read(Address address, void* buffer, size_t size) {
+    std::shared_lock<std::shared_mutex> lock(flash_data_->mutex);
+    
+    if (address + size > FLASH_SIZE) {
+        return error(ErrorCode::ADDRESS_OUT_OF_BOUNDS);
+    }
+    
+    std::memcpy(buffer, flash_data_->memory.data() + address, size);
+    return success();
+}
+
+Result<void> FlashController::internal_write(Address address, const void* data, size_t size) {
+    std::unique_lock<std::shared_mutex> lock(flash_data_->mutex);
+    
+    if (address + size > FLASH_SIZE) {
+        return error(ErrorCode::ADDRESS_OUT_OF_BOUNDS);
+    }
+    
+    // Check sector write protection
+    size_t start_sector = address / SECTOR_SIZE;
+    size_t end_sector = (address + size - 1) / SECTOR_SIZE;
+    
+    for (size_t sector = start_sector; sector <= end_sector; ++sector) {
+        if (flash_data_->write_protected[sector]) {
+            LOG_WARN("Write to protected sector {} at address 0x{:08X}", sector, FLASH_BASE_ADDRESS + address);
+            return error(ErrorCode::WRITE_PROTECTED);
+        }
+    }
+    
+    // Perform write (flash can only change 1->0, not 0->1)
+    const uint8_t* src = static_cast<const uint8_t*>(data);
+    uint8_t* dest = flash_data_->memory.data() + address;
+    
+    for (size_t i = 0; i < size; ++i) {
+        dest[i] &= src[i];  // AND operation simulates flash write behavior
+    }
+    
+    return success();
+}
+
+Result<void> FlashController::internal_erase_sector(size_t sector) {
+    std::unique_lock<std::shared_mutex> lock(flash_data_->mutex);
+    
+    if (sector >= flash_data_->erase_counts.size()) {
+        return error(ErrorCode::INVALID_PARAMETER);
+    }
+    
+    // Check sector write protection
+    if (flash_data_->write_protected[sector]) {
+        LOG_WARN("Erase attempted on protected sector {}", sector);
+        return error(ErrorCode::WRITE_PROTECTED);
+    }
+    
+    // Erase sector (set all bytes to 0xFF)
+    size_t offset = sector * SECTOR_SIZE;
+    std::memset(flash_data_->memory.data() + offset, 0xFF, SECTOR_SIZE);
+    
+    return success();
+}
+
+Result<void> FlashController::perform_timing_delay(uint32_t delay_us) const {
+    if (!config_.simulate_timing || delay_us == 0) {
+        return success();
+    }
+    
+    std::this_thread::sleep_for(microseconds(delay_us));
+    return success();
+}
+
+Result<void> FlashController::update_erase_count(size_t sector) {
+    std::unique_lock<std::shared_mutex> lock(flash_data_->mutex);
+    
+    if (sector >= flash_data_->erase_counts.size()) {
+        return error(ErrorCode::INVALID_PARAMETER);
+    }
+    
+    flash_data_->erase_counts[sector]++;
+    
+    // Check wear limit
+    if (flash_data_->erase_counts[sector] > config_.max_erase_cycles) {
+        LOG_WARN("Sector {} has exceeded maximum erase cycles: {} > {}", 
+                 sector, flash_data_->erase_counts[sector], config_.max_erase_cycles);
+    }
+    
+    return success();
+}
+
+void FlashController::update_read_stats(size_t bytes) {
+    std::lock_guard<std::mutex> lock(stats_mutex_);
+    stats_.read_operations++;
+    stats_.bytes_read += bytes;
+    stats_.last_operation_time = steady_clock::now();
+}
+
+void FlashController::update_write_stats(size_t bytes, double time_us) {
+    std::lock_guard<std::mutex> lock(stats_mutex_);
+    stats_.write_operations++;
+    stats_.bytes_written += bytes;
+    
+    // Update average write time
+    if (stats_.write_operations == 1) {
+        stats_.average_write_time_us = time_us;
+    } else {
+        stats_.average_write_time_us = (stats_.average_write_time_us * (stats_.write_operations - 1) + time_us) / stats_.write_operations;
+    }
+    
+    stats_.last_operation_time = steady_clock::now();
+}
+
+void FlashController::update_erase_stats(double time_us) {
+    std::lock_guard<std::mutex> lock(stats_mutex_);
+    stats_.erase_operations++;
+    
+    // Update average erase time
+    if (stats_.erase_operations == 1) {
+        stats_.average_erase_time_us = time_us;
+    } else {
+        stats_.average_erase_time_us = (stats_.average_erase_time_us * (stats_.erase_operations - 1) + time_us) / stats_.erase_operations;
+    }
+    
+    stats_.last_operation_time = steady_clock::now();
+}
+
+Result<void> FlashController::load_from_file() {
+    std::string path = expand_path(config_.flash_image_path);
+    
+    if (!fs::exists(path)) {
+        return error(ErrorCode::FILE_NOT_FOUND);
+    }
+    
+    std::ifstream file(path, std::ios::binary);
+    if (!file.is_open()) {
+        LOG_ERROR("Failed to open flash image file: {}", path);
+        return error(ErrorCode::FILE_OPEN_ERROR);
+    }
+    
+    // Get file size
+    file.seekg(0, std::ios::end);
+    size_t file_size = file.tellg();
+    file.seekg(0, std::ios::beg);
+    
+    if (file_size != FLASH_SIZE) {
+        LOG_WARN("Flash image size mismatch: {} != {}, creating new image", file_size, FLASH_SIZE);
+        return error(ErrorCode::INVALID_FILE_FORMAT);
+    }
+    
+    // Read flash data
+    std::unique_lock<std::shared_mutex> lock(flash_data_->mutex);
+    file.read(reinterpret_cast<char*>(flash_data_->memory.data()), FLASH_SIZE);
+    
+    if (!file.good()) {
+        LOG_ERROR("Failed to read flash image file: {}", path);
+        return error(ErrorCode::FILE_READ_ERROR);
+    }
+    
+    return success();
+}
+
+Result<void> FlashController::save_to_file() {
+    auto dir_result = ensure_flash_directory();
+    if (!dir_result.has_value()) {
+        return dir_result.error();
+    }
+    
+    std::string path = expand_path(config_.flash_image_path);
+    
+    std::ofstream file(path, std::ios::binary | std::ios::trunc);
+    if (!file.is_open()) {
+        LOG_ERROR("Failed to create flash image file: {}", path);
+        return error(ErrorCode::FILE_OPEN_ERROR);
+    }
+    
+    // Write flash data
+    std::shared_lock<std::shared_mutex> lock(flash_data_->mutex);
+    file.write(reinterpret_cast<const char*>(flash_data_->memory.data()), FLASH_SIZE);
+    
+    if (!file.good()) {
+        LOG_ERROR("Failed to write flash image file: {}", path);
+        return error(ErrorCode::FILE_WRITE_ERROR);
+    }
+    
+    return success();
+}
+
+Result<void> FlashController::ensure_flash_directory() {
+    std::string path = expand_path(config_.flash_image_path);
+    fs::path file_path(path);
+    fs::path dir_path = file_path.parent_path();
+    
+    if (!dir_path.empty() && !fs::exists(dir_path)) {
+        std::error_code ec;
+        fs::create_directories(dir_path, ec);
+        if (ec) {
+            LOG_ERROR("Failed to create directory: {}", dir_path.string());
+            return error(ErrorCode::FILE_SYSTEM_ERROR);
+        }
+    }
+    
+    return success();
+}
+
+std::string FlashController::expand_path(const std::string& path) const {
+    if (path.empty()) {
+        return path;
+    }
+    
+    if (path[0] == '~') {
+        const char* home = std::getenv("HOME");
+        if (home) {
+            return std::string(home) + path.substr(1);
+        }
+    }
+    
+    return path;
+}
+
+Result<void> FlashController::reset_statistics() {
+    std::lock_guard<std::mutex> lock(stats_mutex_);
+    stats_ = FlashStats{};
+    stats_.last_operation_time = steady_clock::now();
+    return success();
+}
+
+// Additional interface methods would be implemented here...
+// For brevity, I'm including the key methods needed for the Sprint 4 deliverable
+
+Result<void> FlashController::load_partition_table() {
+    // Read partition table from flash at standard offset
+    std::vector<uint8_t> pt_data(PARTITION_TABLE_SIZE);
+    
+    auto read_result = internal_read(PARTITION_TABLE_OFFSET, pt_data.data(), PARTITION_TABLE_SIZE);
+    if (!read_result.has_value()) {
+        return read_result.error();
+    }
+    
+    return partition_table_->load_from_flash(pt_data.data(), PARTITION_TABLE_SIZE);
+}
+
+Result<void> FlashController::save_partition_table(const PartitionTable& table) {
+    std::vector<uint8_t> pt_data(PARTITION_TABLE_SIZE, 0xFF);
+    
+    auto save_result = table.save_to_flash(pt_data.data(), PARTITION_TABLE_SIZE);
+    if (!save_result.has_value()) {
+        return save_result.error();
+    }
+    
+    return internal_write(PARTITION_TABLE_OFFSET, pt_data.data(), PARTITION_TABLE_SIZE);
+}
+
+Result<void> FlashController::start_background_save() {
+    if (save_thread_running_.load()) {
+        return success();
+    }
+    
+    save_thread_running_.store(true);
+    save_thread_ = std::make_unique<std::thread>(&FlashController::background_save_thread, this);
+    
+    return success();
+}
+
+Result<void> FlashController::stop_background_save() {
+    if (!save_thread_running_.load()) {
+        return success();
+    }
+    
+    save_thread_running_.store(false);
+    if (save_thread_ && save_thread_->joinable()) {
+        save_thread_->join();
+    }
+    save_thread_.reset();
+    
+    return success();
+}
+
+void FlashController::background_save_thread() {
+    while (save_thread_running_.load()) {
+        std::this_thread::sleep_for(milliseconds(config_.save_interval_ms));
+        
+        if (save_thread_running_.load()) {
+            auto save_result = auto_save_if_needed();
+            if (!save_result.has_value()) {
+                LOG_WARN("Background auto-save failed: {}", static_cast<int>(save_result.error()));
+            }
+        }
+    }
+}
+
+Result<void> FlashController::auto_save_if_needed() {
+    auto now = steady_clock::now();
+    auto elapsed = duration_cast<milliseconds>(now - last_save_time_).count();
+    
+    if (elapsed >= config_.save_interval_ms) {
+        return save_flash_image();
+    }
+    
+    return success();
+}
+
+// Additional missing methods implementation
+
+Result<void> FlashController::validate_write_operation(Address address, size_t size) const {
+    auto addr_result = validate_address_range(address, size);
+    if (!addr_result.has_value()) {
+        return addr_result.error();
+    }
+    
+    // Check if flash is busy
+    if (flash_state_->busy.load()) {
+        return error(ErrorCode::DEVICE_BUSY);
+    }
+    
+    return success();
+}
+
+Result<void> FlashController::validate_erase_operation(Address address) const {
+    auto addr_result = validate_address_range(address, SECTOR_SIZE);
+    if (!addr_result.has_value()) {
+        return addr_result.error();
+    }
+    
+    // Check if address is sector-aligned
+    Address phys_addr = address - FLASH_BASE_ADDRESS;
+    if (phys_addr % SECTOR_SIZE != 0) {
+        LOG_WARN("Erase address not sector-aligned: 0x{:08X}", address);
+        return error(ErrorCode::ALIGNMENT_ERROR);
+    }
+    
+    // Check if flash is busy
+    if (flash_state_->busy.load()) {
+        return error(ErrorCode::DEVICE_BUSY);
+    }
+    
+    return success();
+}
+
+Result<uint8_t> FlashController::read_byte_mapped(Address address) {
+    uint8_t value;
+    auto result = read(address, &value, sizeof(value));
+    if (!result.has_value()) {
+        return result.error();
+    }
+    return value;
+}
+
+Result<uint16_t> FlashController::read_word_mapped(Address address) {
+    uint16_t value;
+    auto result = read(address, &value, sizeof(value));
+    if (!result.has_value()) {
+        return result.error();
+    }
+    return value;
+}
+
+Result<uint32_t> FlashController::read_dword_mapped(Address address) {
+    uint32_t value;
+    auto result = read(address, &value, sizeof(value));
+    if (!result.has_value()) {
+        return result.error();
+    }
+    return value;
+}
+
+Result<std::vector<uint8_t>> FlashController::read_bytes_mapped(Address address, size_t size) {
+    std::vector<uint8_t> data(size);
+    auto result = read(address, data.data(), size);
+    if (!result.has_value()) {
+        return result.error();
+    }
+    return data;
+}
+
+Result<void> FlashController::write_enable() {
+    if (!initialized_) {
+        return error(ErrorCode::NOT_INITIALIZED);
+    }
+    
+    flash_state_->write_enabled.store(true);
+    uint8_t status = flash_state_->status_register.load();
+    status |= static_cast<uint8_t>(StatusBit::WEL);
+    flash_state_->status_register.store(status);
+    
+    return success();
+}
+
+Result<void> FlashController::write_disable() {
+    if (!initialized_) {
+        return error(ErrorCode::NOT_INITIALIZED);
+    }
+    
+    flash_state_->write_enabled.store(false);
+    uint8_t status = flash_state_->status_register.load();
+    status &= ~static_cast<uint8_t>(StatusBit::WEL);
+    flash_state_->status_register.store(status);
+    
+    return success();
+}
+
+Result<bool> FlashController::is_write_enabled() {
+    if (!initialized_) {
+        return error(ErrorCode::NOT_INITIALIZED);
+    }
+    
+    return flash_state_->write_enabled.load();
+}
+
+Result<uint8_t> FlashController::get_status_register() {
+    if (!initialized_) {
+        return error(ErrorCode::NOT_INITIALIZED);
+    }
+    
+    uint8_t status = flash_state_->status_register.load();
+    
+    // Update busy bit
+    if (flash_state_->busy.load()) {
+        status |= static_cast<uint8_t>(StatusBit::BUSY);
+    } else {
+        status &= ~static_cast<uint8_t>(StatusBit::BUSY);
+    }
+    
+    return status;
+}
+
+Result<bool> FlashController::is_busy() {
+    if (!initialized_) {
+        return error(ErrorCode::NOT_INITIALIZED);
+    }
+    
+    return flash_state_->busy.load();
+}
+
+Result<uint32_t> FlashController::get_flash_id() {
+    if (!initialized_) {
+        return error(ErrorCode::NOT_INITIALIZED);
+    }
+    
+    // Return a typical SPI flash ID (manufacturer + device)
+    // Winbond W25Q128JV: 0xEF7018 (manufacturer=0xEF, memory_type=0x70, capacity=0x18)
+    return 0xEF7018;
+}
+
+Result<bool> FlashController::is_valid_flash_address(Address address) const {
+    return address >= FLASH_BASE_ADDRESS && address < FLASH_END_ADDRESS;
+}
+
+Result<void> FlashController::wait_for_ready(uint32_t timeout_ms) {
+    if (!initialized_) {
+        return error(ErrorCode::NOT_INITIALIZED);
+    }
+    
+    auto start_time = steady_clock::now();
+    auto timeout_duration = milliseconds(timeout_ms);
+    
+    while (flash_state_->busy.load()) {
+        auto elapsed = steady_clock::now() - start_time;
+        if (elapsed > timeout_duration) {
+            return error(ErrorCode::TIMEOUT);
+        }
+        
+        std::this_thread::sleep_for(milliseconds(1));
+    }
+    
+    return success();
+}
+
+Result<void> FlashController::suspend_erase() {
+    if (!initialized_) {
+        return error(ErrorCode::NOT_INITIALIZED);
+    }
+    
+    if (!flash_state_->busy.load()) {
+        return error(ErrorCode::INVALID_STATE);
+    }
+    
+    flash_state_->erase_suspended.store(true);
+    LOG_DEBUG("Flash erase operation suspended");
+    
+    return success();
+}
+
+Result<void> FlashController::resume_erase() {
+    if (!initialized_) {
+        return error(ErrorCode::NOT_INITIALIZED);
+    }
+    
+    if (!flash_state_->erase_suspended.load()) {
+        return error(ErrorCode::INVALID_STATE);
+    }
+    
+    flash_state_->erase_suspended.store(false);
+    LOG_DEBUG("Flash erase operation resumed");
+    
+    return success();
+}
+
+Result<bool> FlashController::is_erase_suspended() {
+    if (!initialized_) {
+        return error(ErrorCode::NOT_INITIALIZED);
+    }
+    
+    return flash_state_->erase_suspended.load();
+}
+
+Result<void> FlashController::reset_device() {
+    if (!initialized_) {
+        return error(ErrorCode::NOT_INITIALIZED);
+    }
+    
+    // Simulate flash device reset
+    if (config_.simulate_timing) {
+        auto timing_result = perform_timing_delay(config_.timing.reset_us);
+        if (!timing_result.has_value()) {
+            return timing_result.error();
+        }
+    }
+    
+    // Reset flash state
+    flash_state_->status_register.store(0x00);
+    flash_state_->write_enabled.store(false);
+    flash_state_->busy.store(false);
+    flash_state_->erase_suspended.store(false);
+    
+    LOG_DEBUG("Flash device reset completed");
+    return success();
+}
+
+Result<void> FlashController::erase_block(Address address) {
+    if (!initialized_) {
+        return error(ErrorCode::NOT_INITIALIZED);
+    }
+    
+    auto erase_result = validate_erase_operation(address);
+    if (!erase_result.has_value()) {
+        return erase_result.error();
+    }
+    
+    // Check block alignment
+    Address phys_addr = address - FLASH_BASE_ADDRESS;
+    if (phys_addr % BLOCK_SIZE != 0) {
+        LOG_WARN("Erase address not block-aligned: 0x{:08X}", address);
+        return error(ErrorCode::ALIGNMENT_ERROR);
+    }
+    
+    // Check write enable
+    if (!flash_state_->write_enabled.load()) {
+        LOG_WARN("Block erase attempted without write enable at address 0x{:08X}", address);
+        return error(ErrorCode::WRITE_PROTECTED);
+    }
+    
+    size_t block = phys_addr / BLOCK_SIZE;
+    
+    // Set busy flag
+    flash_state_->busy.store(true);
+    
+    auto start_time = steady_clock::now();
+    
+    // Perform erase with timing simulation
+    if (config_.simulate_timing) {
+        auto timing_result = perform_timing_delay(config_.timing.block_erase_us);
+        if (!timing_result.has_value()) {
+            flash_state_->busy.store(false);
+            return timing_result.error();
+        }
+    }
+    
+    // Execute internal block erase
+    auto internal_result = internal_erase_block(block);
+    if (!internal_result.has_value()) {
+        flash_state_->busy.store(false);
+        return internal_result.error();
+    }
+    
+    // Update wear leveling for all sectors in the block
+    if (config_.enable_wear_leveling) {
+        size_t sectors_per_block = BLOCK_SIZE / SECTOR_SIZE;
+        size_t start_sector = block * sectors_per_block;
+        
+        for (size_t i = 0; i < sectors_per_block; ++i) {
+            auto wear_result = update_erase_count(start_sector + i);
+            if (!wear_result.has_value()) {
+                LOG_WARN("Failed to update erase count for sector {}: {}", 
+                         start_sector + i, static_cast<int>(wear_result.error()));
+            }
+        }
+    }
+    
+    // Clear write enable after erase
+    flash_state_->write_enabled.store(false);
+    flash_state_->busy.store(false);
+    
+    // Update statistics
+    if (config_.enable_statistics) {
+        auto end_time = steady_clock::now();
+        double elapsed_us = duration_cast<microseconds>(end_time - start_time).count();
+        update_erase_stats(elapsed_us);
+        std::lock_guard<std::mutex> lock(stats_mutex_);
+        stats_.blocks_erased++;
+    }
+    
+    LOG_DEBUG("Erased block {} at address 0x{:08X}", block, address);
+    
+    return success();
+}
+
+Result<void> FlashController::erase_chip() {
+    if (!initialized_) {
+        return error(ErrorCode::NOT_INITIALIZED);
+    }
+    
+    // Check write enable
+    if (!flash_state_->write_enabled.load()) {
+        LOG_WARN("Chip erase attempted without write enable");
+        return error(ErrorCode::WRITE_PROTECTED);
+    }
+    
+    // Set busy flag
+    flash_state_->busy.store(true);
+    
+    auto start_time = steady_clock::now();
+    
+    // Perform erase with timing simulation
+    if (config_.simulate_timing) {
+        auto timing_result = perform_timing_delay(config_.timing.chip_erase_us);
+        if (!timing_result.has_value()) {
+            flash_state_->busy.store(false);
+            return timing_result.error();
+        }
+    }
+    
+    // Execute internal chip erase
+    auto internal_result = internal_erase_chip();
+    if (!internal_result.has_value()) {
+        flash_state_->busy.store(false);
+        return internal_result.error();
+    }
+    
+    // Update wear leveling for all sectors
+    if (config_.enable_wear_leveling) {
+        size_t total_sectors = FLASH_SIZE / SECTOR_SIZE;
+        for (size_t sector = 0; sector < total_sectors; ++sector) {
+            auto wear_result = update_erase_count(sector);
+            if (!wear_result.has_value()) {
+                LOG_WARN("Failed to update erase count for sector {}: {}", 
+                         sector, static_cast<int>(wear_result.error()));
+            }
+        }
+    }
+    
+    // Clear write enable after erase
+    flash_state_->write_enabled.store(false);
+    flash_state_->busy.store(false);
+    
+    // Update statistics
+    if (config_.enable_statistics) {
+        auto end_time = steady_clock::now();
+        double elapsed_us = duration_cast<microseconds>(end_time - start_time).count();
+        update_erase_stats(elapsed_us);
+        std::lock_guard<std::mutex> lock(stats_mutex_);
+        stats_.chip_erases++;
+    }
+    
+    LOG_INFO("Chip erase completed");
+    
+    return success();
+}
+
+Result<void> FlashController::erase_range(Address start_address, size_t size) {
+    if (!initialized_) {
+        return error(ErrorCode::NOT_INITIALIZED);
+    }
+    
+    auto addr_result = validate_address_range(start_address, size);
+    if (!addr_result.has_value()) {
+        return addr_result.error();
+    }
+    
+    // Check write enable
+    if (!flash_state_->write_enabled.load()) {
+        LOG_WARN("Range erase attempted without write enable");
+        return error(ErrorCode::WRITE_PROTECTED);
+    }
+    
+    // Convert to physical addresses
+    Address phys_start = start_address - FLASH_BASE_ADDRESS;
+    Address phys_end = phys_start + size;
+    
+    // Align to sector boundaries
+    size_t start_sector = phys_start / SECTOR_SIZE;
+    size_t end_sector = (phys_end + SECTOR_SIZE - 1) / SECTOR_SIZE;
+    
+    LOG_DEBUG("Erasing range: 0x{:08X}-0x{:08X} (sectors {}-{})", 
+             start_address, start_address + size, start_sector, end_sector - 1);
+    
+    // Erase each sector in the range
+    for (size_t sector = start_sector; sector < end_sector; ++sector) {
+        Address sector_address = FLASH_BASE_ADDRESS + (sector * SECTOR_SIZE);
+        auto erase_result = erase_sector(sector_address);
+        if (!erase_result.has_value()) {
+            LOG_ERROR("Failed to erase sector {} at address 0x{:08X}: {}", 
+                     sector, sector_address, static_cast<int>(erase_result.error()));
+            return erase_result.error();
+        }
+    }
+    
+    return success();
+}
+
+Result<void> FlashController::internal_erase_block(size_t block) {
+    std::unique_lock<std::shared_mutex> lock(flash_data_->mutex);
+    
+    if (block >= (FLASH_SIZE / BLOCK_SIZE)) {
+        return error(ErrorCode::INVALID_PARAMETER);
+    }
+    
+    // Check block write protection (check all sectors in block)
+    size_t sectors_per_block = BLOCK_SIZE / SECTOR_SIZE;
+    size_t start_sector = block * sectors_per_block;
+    
+    for (size_t i = 0; i < sectors_per_block; ++i) {
+        if (flash_data_->write_protected[start_sector + i]) {
+            LOG_WARN("Erase attempted on protected block {} (sector {})", block, start_sector + i);
+            return error(ErrorCode::WRITE_PROTECTED);
+        }
+    }
+    
+    // Erase block (set all bytes to 0xFF)
+    size_t offset = block * BLOCK_SIZE;
+    std::memset(flash_data_->memory.data() + offset, 0xFF, BLOCK_SIZE);
+    
+    return success();
+}
+
+Result<void> FlashController::internal_erase_chip() {
+    std::unique_lock<std::shared_mutex> lock(flash_data_->mutex);
+    
+    // Check if any sectors are write protected
+    for (size_t sector = 0; sector < flash_data_->write_protected.size(); ++sector) {
+        if (flash_data_->write_protected[sector]) {
+            LOG_WARN("Chip erase blocked by protected sector {}", sector);
+            return error(ErrorCode::WRITE_PROTECTED);
+        }
+    }
+    
+    // Erase entire chip (set all bytes to 0xFF)
+    std::memset(flash_data_->memory.data(), 0xFF, FLASH_SIZE);
+    
+    return success();
+}
+
+// FlashMemoryRegion implementation
+
+FlashMemoryRegion::FlashMemoryRegion(FlashController* controller)
+    : controller_(controller) {
+}
+
+EmulatorError FlashMemoryRegion::read8(Address address, uint8_t& value) {
+    auto result = controller_->read_byte_mapped(address);
+    if (result.has_value()) {
+        value = result.value();
+        return EmulatorError::Success;
+    }
+    return EmulatorError::MemoryAccessError;
+}
+
+EmulatorError FlashMemoryRegion::read16(Address address, uint16_t& value) {
+    auto result = controller_->read_word_mapped(address);
+    if (result.has_value()) {
+        value = result.value();
+        return EmulatorError::Success;
+    }
+    return EmulatorError::MemoryAccessError;
+}
+
+EmulatorError FlashMemoryRegion::read32(Address address, uint32_t& value) {
+    auto result = controller_->read_dword_mapped(address);
+    if (result.has_value()) {
+        value = result.value();
+        return EmulatorError::Success;
+    }
+    return EmulatorError::MemoryAccessError;
+}
+
+EmulatorError FlashMemoryRegion::write8(Address address, uint8_t value) {
+    auto result = controller_->write(address, &value, sizeof(value));
+    return result.has_value() ? EmulatorError::Success : EmulatorError::MemoryAccessError;
+}
+
+EmulatorError FlashMemoryRegion::write16(Address address, uint16_t value) {
+    auto result = controller_->write(address, &value, sizeof(value));
+    return result.has_value() ? EmulatorError::Success : EmulatorError::MemoryAccessError;
+}
+
+EmulatorError FlashMemoryRegion::write32(Address address, uint32_t value) {
+    auto result = controller_->write(address, &value, sizeof(value));
+    return result.has_value() ? EmulatorError::Success : EmulatorError::MemoryAccessError;
+}
+
+bool FlashMemoryRegion::isValidAddress(Address address) const {
+    return address >= FlashController::FLASH_BASE_ADDRESS && 
+           address < FlashController::FLASH_END_ADDRESS;
+}
+
+bool FlashMemoryRegion::isWritableAddress(Address address) const {
+    return isValidAddress(address);  // Flash is writable (with proper commands)
+}
+
+bool FlashMemoryRegion::isExecutableAddress(Address address) const {
+    return isValidAddress(address);  // Flash memory is executable (XIP)
+}
+
+EmulatorError FlashMemoryRegion::readBlock(Address address, void* buffer, size_t size) {
+    auto result = controller_->read(address, buffer, size);
+    return result.has_value() ? EmulatorError::Success : EmulatorError::MemoryAccessError;
+}
+
+EmulatorError FlashMemoryRegion::writeBlock(Address address, const void* data, size_t size) {
+    auto result = controller_->write(address, data, size);
+    return result.has_value() ? EmulatorError::Success : EmulatorError::MemoryAccessError;
+}
+
+
+} // namespace m5tab5::emulator::storage
