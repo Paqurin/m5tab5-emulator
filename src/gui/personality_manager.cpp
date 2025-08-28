@@ -83,7 +83,7 @@ void PersonalityManager::update_boot_sequence() {
     }
     
     // Complete boot sequence
-    if (boot_stage_ >= boot_messages_.size() - 1 && elapsed > boot_messages_.size() * 800) {
+    if (boot_stage_ >= static_cast<long>(boot_messages_.size() - 1) && elapsed > static_cast<long>(boot_messages_.size() * 800)) {
         boot_complete_ = true;
         LOG_INFO("Boot sequence completed - M5Stack Tab5 Emulator ready for awesome development!");
         unlock_achievement(Achievement::FIRST_BOOT);
@@ -414,7 +414,7 @@ void PersonalityManager::update_particles() {
             
             // Fade out as life decreases
             if (particle.life < 0.5f) {
-                float alpha = particle.life / 0.5f;
+                [[maybe_unused]] float alpha = particle.life / 0.5f;
                 // In a real implementation, you'd modify the alpha channel of the color
             }
         }

@@ -273,4 +273,20 @@ uint32_t esp_random(void);
 
 #ifdef __cplusplus
 }
+
+// C++ specific functions for emulator integration
+namespace m5tab5::emulator {
+    class EmulatorCore;
+    
+    /**
+     * @brief Register EmulatorCore instance with ESP-IDF API layer
+     * 
+     * This function must be called during emulator initialization to enable
+     * ESP-IDF APIs to access emulator components.
+     * 
+     * @param core Pointer to the EmulatorCore instance
+     */
+    void esp_idf_set_emulator_core(EmulatorCore* core);
+}
+
 #endif

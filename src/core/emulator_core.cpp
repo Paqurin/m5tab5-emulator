@@ -1,6 +1,9 @@
 #include "emulator/core/emulator_core.hpp"
 #include "emulator/utils/logging.hpp"
 #include "emulator/firmware/elf_loader.hpp"
+#include "emulator/esp_idf/esp_system.h"
+#include "emulator/esp_idf/esp_system_call_interface.h"
+#include "emulator/cpu/syscall_interface.hpp"
 #include <thread>
 #include <chrono>
 #include <future>
@@ -111,6 +114,31 @@ Result<void> EmulatorCore::initialize(const Configuration& config) {
             boot_rom_.get(),
             [](BootROM*) { /* EmulatorCore owns this resource */ }
         ));
+        
+        // Initialize RISC-V system call interface for ESP-IDF compatibility
+        COMPONENT_LOG_DEBUG("Initializing RISC-V system call interface");
+        auto syscall_interface = std::make_shared<SystemCallInterface>(*this);
+        auto syscall_init_result = syscall_interface->initialize();
+        if (!syscall_init_result.has_value()) {
+            return unexpected(MAKE_ERROR(SYSTEM_NOT_INITIALIZED, "Failed to initialize system call interface"));
+        }
+        
+        // Integrate system call interface with CPU cores
+        auto core0_result = cpu_manager_->get_core(DualCoreManager::CoreId::CORE_0);
+        if (core0_result.has_value()) {
+            core0_result.value()->setSystemCallInterface(syscall_interface);
+            COMPONENT_LOG_DEBUG("System call interface integrated with CPU Core 0");
+        }
+        
+        auto core1_result = cpu_manager_->get_core(DualCoreManager::CoreId::CORE_1);
+        if (core1_result.has_value()) {
+            core1_result.value()->setSystemCallInterface(syscall_interface);
+            COMPONENT_LOG_DEBUG("System call interface integrated with CPU Core 1");
+        }
+        
+        // Note: ESP-IDF system call interface initialization is disabled pending complete integration
+        // esp_idf::initialize_system_call_interface();
+        COMPONENT_LOG_DEBUG("RISC-V system call interface ready for ESP-IDF applications");
         
         // Initialize peripheral manager
         COMPONENT_LOG_DEBUG("Initializing peripheral manager");
@@ -235,6 +263,11 @@ Result<void> EmulatorCore::initialize(const Configuration& config) {
         RETURN_IF_ERROR(initializeComponents());
         
         state_ = EmulatorState::INITIALIZED;
+        
+        // Register this EmulatorCore instance with ESP-IDF API layer
+        esp_idf_set_emulator_core(this);
+        COMPONENT_LOG_DEBUG("ESP-IDF API layer integrated with EmulatorCore");
+        
         COMPONENT_LOG_INFO("Emulator initialization completed successfully");
         
         return {};

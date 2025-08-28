@@ -421,7 +421,17 @@ if(BUILD_EXAMPLES)
     target_link_libraries(elf-loading-demo m5tab5-emulator-core)
     target_compile_features(elf-loading-demo PRIVATE cxx_std_20)
     message(STATUS "Building ELF loading demo example")
+    
+    # Storage comprehensive test example
+    add_executable(storage-comprehensive-test examples/storage_comprehensive_test.cpp)
+    target_link_libraries(storage-comprehensive-test m5tab5-emulator-core)
+    target_compile_features(storage-comprehensive-test PRIVATE cxx_std_20)
+    message(STATUS "Building storage comprehensive test example")
 endif()
+
+# Simple storage system test
+add_executable(test_storage_simple test_storage_simple.cpp)
+target_link_libraries(test_storage_simple m5tab5-emulator-core)
 
 # Documentation
 option(BUILD_DOCS "Build documentation" OFF)

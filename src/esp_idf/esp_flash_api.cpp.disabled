@@ -1,0 +1,346 @@
+#include "emulator/esp_idf/esp_flash.h"
+#include "emulator/esp_idf/esp_idf_integration.h"
+#include "emulator/storage/flash_controller.hpp"
+#include "emulator/core/emulator_core.hpp"
+#include "emulator/utils/logging.hpp"
+
+#include <memory>
+#include <cstring>
+
+using namespace m5tab5::emulator;
+using namespace m5tab5::emulator::storage;
+
+// Static flash chip instance
+static esp_flash_t default_flash_chip = {
+    .chip_id = 0xEF7018,    // Winbond W25Q128JV
+    .size = FlashController::FLASH_SIZE,
+    .block_size = FlashController::BLOCK_SIZE,
+    .sector_size = FlashController::SECTOR_SIZE,
+    .page_size = FlashController::PAGE_SIZE,
+    .read_only = false,
+    .driver_data = nullptr
+};
+
+// Global pointer to default chip
+esp_flash_t* esp_flash_default_chip = &default_flash_chip;
+
+// Helper function to get flash controller
+static FlashController* get_flash_controller() {
+    auto* core = esp_idf_get_emulator_core();
+    if (!core) {
+        LOG_ERROR("EmulatorCore not available for flash operations");
+        return nullptr;
+    }
+    
+    auto flash_controller = core->getComponent<FlashController>();
+    if (!flash_controller.has_value()) {
+        LOG_ERROR("FlashController not available in emulator core");
+        return nullptr;
+    }
+    
+    return flash_controller.value();
+}
+
+// Helper function to convert emulator error to ESP error
+static esp_err_t convert_error(const Result<void>& result) {
+    if (result.has_value()) {
+        return ESP_OK;
+    }
+    
+    switch (result.error()) {
+        case ErrorCode::SUCCESS:
+            return ESP_OK;
+        case ErrorCode::INVALID_PARAMETER:
+            return ESP_ERR_INVALID_ARG;
+        case ErrorCode::NOT_INITIALIZED:
+            return ESP_ERR_INVALID_STATE;
+        case ErrorCode::ADDRESS_OUT_OF_BOUNDS:
+        case ErrorCode::INVALID_ADDRESS:
+            return ESP_ERR_INVALID_SIZE;
+        case ErrorCode::WRITE_PROTECTED:
+            return ESP_ERR_NOT_ALLOWED;
+        case ErrorCode::DEVICE_BUSY:
+            return ESP_ERR_TIMEOUT;
+        case ErrorCode::NOT_FOUND:
+            return ESP_ERR_NOT_FOUND;
+        case ErrorCode::FILE_NOT_FOUND:
+            return ESP_ERR_NOT_FOUND;
+        case ErrorCode::CHECKSUM_MISMATCH:
+            return ESP_ERR_INVALID_CRC;
+        default:
+            return ESP_FAIL;
+    }
+}
+
+extern "C" {
+
+esp_err_t esp_flash_init_default_chip(void) {
+    LOG_DEBUG("Initializing default flash chip");
+    
+    auto* controller = get_flash_controller();
+    if (!controller) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    
+    if (!controller->is_initialized()) {
+        auto init_result = controller->initialize();
+        if (!init_result.has_value()) {
+            LOG_ERROR("Failed to initialize flash controller: {}", 
+                     static_cast<int>(init_result.error()));
+            return convert_error(init_result);
+        }
+    }
+    
+    // Update chip information
+    auto id_result = controller->get_flash_id();
+    if (id_result.has_value()) {
+        default_flash_chip.chip_id = id_result.value();
+    }
+    
+    LOG_INFO("Default flash chip initialized (ID: 0x{:06X}, Size: {}MB)", 
+             default_flash_chip.chip_id, default_flash_chip.size / (1024 * 1024));
+    
+    return ESP_OK;
+}
+
+esp_err_t esp_flash_read(esp_flash_t* chip, void* buffer, uint32_t address, uint32_t length) {
+    if (!chip || !buffer || length == 0) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_flash_controller();
+    if (!controller) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    
+    LOG_DEBUG("Flash read: addr=0x{:08X}, len={}", address, length);
+    
+    // Convert relative address to absolute flash address
+    uint32_t flash_addr = FlashController::FLASH_BASE_ADDRESS + address;
+    
+    auto result = controller->read(flash_addr, buffer, length);
+    return convert_error(result);
+}
+
+esp_err_t esp_flash_write(esp_flash_t* chip, const void* buffer, uint32_t address, uint32_t length) {
+    if (!chip || !buffer || length == 0) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    if (chip->read_only) {
+        return ESP_ERR_NOT_ALLOWED;
+    }
+    
+    auto* controller = get_flash_controller();
+    if (!controller) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    
+    LOG_DEBUG("Flash write: addr=0x{:08X}, len={}", address, length);
+    
+    // Convert relative address to absolute flash address  
+    uint32_t flash_addr = FlashController::FLASH_BASE_ADDRESS + address;
+    
+    // Enable write first
+    auto write_enable_result = controller->write_enable();
+    if (!write_enable_result.has_value()) {
+        return convert_error(write_enable_result);
+    }
+    
+    auto result = controller->write(flash_addr, buffer, length);
+    return convert_error(result);
+}
+
+esp_err_t esp_flash_erase_sector(esp_flash_t* chip, uint32_t start_address) {
+    if (!chip) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    if (chip->read_only) {
+        return ESP_ERR_NOT_ALLOWED;
+    }
+    
+    auto* controller = get_flash_controller();
+    if (!controller) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    
+    LOG_DEBUG("Flash erase sector: addr=0x{:08X}", start_address);
+    
+    // Convert relative address to absolute flash address
+    uint32_t flash_addr = FlashController::FLASH_BASE_ADDRESS + start_address;
+    
+    // Enable write first
+    auto write_enable_result = controller->write_enable();
+    if (!write_enable_result.has_value()) {
+        return convert_error(write_enable_result);
+    }
+    
+    auto result = controller->erase_sector(flash_addr);
+    return convert_error(result);
+}
+
+esp_err_t esp_flash_erase_range(esp_flash_t* chip, uint32_t start_address, uint32_t length) {
+    if (!chip || length == 0) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    if (chip->read_only) {
+        return ESP_ERR_NOT_ALLOWED;
+    }
+    
+    auto* controller = get_flash_controller();
+    if (!controller) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    
+    LOG_DEBUG("Flash erase range: addr=0x{:08X}, len={}", start_address, length);
+    
+    // Convert relative address to absolute flash address
+    uint32_t flash_addr = FlashController::FLASH_BASE_ADDRESS + start_address;
+    
+    // Enable write first
+    auto write_enable_result = controller->write_enable();
+    if (!write_enable_result.has_value()) {
+        return convert_error(write_enable_result);
+    }
+    
+    auto result = controller->erase_range(flash_addr, length);
+    return convert_error(result);
+}
+
+esp_err_t esp_flash_get_size(esp_flash_t* chip, uint32_t* out_size) {
+    if (!chip || !out_size) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    *out_size = chip->size;
+    return ESP_OK;
+}
+
+esp_err_t esp_flash_read_id(esp_flash_t* chip, uint32_t* out_id) {
+    if (!chip || !out_id) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_flash_controller();
+    if (!controller) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    
+    auto result = controller->get_flash_id();
+    if (!result.has_value()) {
+        return convert_error(Result<void>(result.error()));
+    }
+    
+    *out_id = result.value();
+    return ESP_OK;
+}
+
+bool esp_flash_is_write_protected(esp_flash_t* chip) {
+    if (!chip) {
+        return true;
+    }
+    
+    auto* controller = get_flash_controller();
+    if (!controller) {
+        return true;
+    }
+    
+    auto result = controller->is_write_enabled();
+    if (!result.has_value()) {
+        return true;  // Assume protected if we can't determine
+    }
+    
+    return !result.value();
+}
+
+esp_err_t esp_flash_wait_idle(esp_flash_t* chip, uint32_t timeout_ms) {
+    if (!chip) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_flash_controller();
+    if (!controller) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    
+    auto result = controller->wait_for_ready(timeout_ms);
+    return convert_error(result);
+}
+
+esp_err_t esp_flash_set_read_mode(esp_flash_t* chip, esp_flash_read_mode_t read_mode) {
+    if (!chip) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    // For emulation, we accept all read modes but don't actually change behavior
+    LOG_DEBUG("Set flash read mode: {}", static_cast<int>(read_mode));
+    return ESP_OK;
+}
+
+uint32_t esp_flash_get_physical_sector_size(esp_flash_t* chip) {
+    if (!chip) {
+        return 0;
+    }
+    
+    return chip->sector_size;
+}
+
+uint32_t esp_flash_get_physical_block_size(esp_flash_t* chip) {
+    if (!chip) {
+        return 0;
+    }
+    
+    return chip->block_size;
+}
+
+esp_err_t esp_flash_suspend(esp_flash_t* chip) {
+    if (!chip) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_flash_controller();
+    if (!controller) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    
+    auto result = controller->suspend_erase();
+    return convert_error(result);
+}
+
+esp_err_t esp_flash_resume(esp_flash_t* chip) {
+    if (!chip) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto* controller = get_flash_controller();
+    if (!controller) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    
+    auto result = controller->resume_erase();
+    return convert_error(result);
+}
+
+esp_err_t esp_flash_read_unique_id(esp_flash_t* chip, uint64_t* out_id) {
+    if (!chip || !out_id) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    // For emulation, generate a pseudo-unique ID based on chip ID
+    *out_id = (static_cast<uint64_t>(chip->chip_id) << 32) | 0x12345678UL;
+    return ESP_OK;
+}
+
+esp_err_t esp_flash_detect_size(esp_flash_t* chip, uint32_t* out_size) {
+    if (!chip || !out_size) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    // For emulation, return the configured flash size
+    *out_size = chip->size;
+    return ESP_OK;
+}
+
+} // extern "C"

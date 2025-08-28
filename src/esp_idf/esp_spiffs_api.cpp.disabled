@@ -1,0 +1,471 @@
+#include "emulator/esp_idf/esp_spiffs.h"
+#include "emulator/storage/spiffs_filesystem.hpp"
+#include "emulator/storage/vfs_manager.hpp"
+#include "emulator/storage/flash_controller.hpp"
+#include "emulator/utils/logging.hpp"
+
+#include <unordered_map>
+#include <memory>
+#include <mutex>
+#include <string>
+
+using namespace m5tab5::emulator::storage;
+
+namespace {
+    // Global registry for SPIFFS instances
+    struct SPIFFSInstance {
+        std::shared_ptr<SPIFFSFileSystem> filesystem;
+        std::string mount_point;
+        std::string partition_label;
+        bool mounted = false;
+    };
+    
+    std::unordered_map<std::string, std::shared_ptr<SPIFFSInstance>> spiffs_instances;
+    std::mutex spiffs_mutex;
+    
+    // Helper function to get SPIFFS instance by label
+    std::shared_ptr<SPIFFSInstance> get_spiffs_instance(const char* partition_label) {
+        std::lock_guard lock(spiffs_mutex);
+        
+        std::string label = partition_label ? partition_label : "spiffs";
+        auto it = spiffs_instances.find(label);
+        
+        if (it != spiffs_instances.end()) {
+            return it->second;
+        }
+        
+        return nullptr;
+    }
+    
+    // Helper function to translate SPIFFS access modes to ESP-IDF flags
+    SPIFFSFileSystem::AccessMode translate_open_flags(int flags) {
+        SPIFFSFileSystem::AccessMode mode = static_cast<SPIFFSFileSystem::AccessMode>(0);
+        
+        if (flags & O_RDONLY || flags & O_RDWR) {
+            mode = static_cast<SPIFFSFileSystem::AccessMode>(
+                static_cast<uint8_t>(mode) | static_cast<uint8_t>(SPIFFSFileSystem::AccessMode::READ));
+        }
+        
+        if (flags & O_WRONLY || flags & O_RDWR) {
+            mode = static_cast<SPIFFSFileSystem::AccessMode>(
+                static_cast<uint8_t>(mode) | static_cast<uint8_t>(SPIFFSFileSystem::AccessMode::WRITE));
+        }
+        
+        if (flags & O_CREAT) {
+            mode = static_cast<SPIFFSFileSystem::AccessMode>(
+                static_cast<uint8_t>(mode) | static_cast<uint8_t>(SPIFFSFileSystem::AccessMode::CREATE));
+        }
+        
+        if (flags & O_TRUNC) {
+            mode = static_cast<SPIFFSFileSystem::AccessMode>(
+                static_cast<uint8_t>(mode) | static_cast<uint8_t>(SPIFFSFileSystem::AccessMode::TRUNCATE));
+        }
+        
+        if (flags & O_APPEND) {
+            mode = static_cast<SPIFFSFileSystem::AccessMode>(
+                static_cast<uint8_t>(mode) | static_cast<uint8_t>(SPIFFSFileSystem::AccessMode::APPEND));
+        }
+        
+        if (flags & O_EXCL) {
+            mode = static_cast<SPIFFSFileSystem::AccessMode>(
+                static_cast<uint8_t>(mode) | static_cast<uint8_t>(SPIFFSFileSystem::AccessMode::EXCLUSIVE));
+        }
+        
+        return mode;
+    }
+    
+    // Helper function to translate emulator errors to ESP errors
+    esp_err_t translate_error(const ErrorCode& error) {
+        switch (error) {
+            case ErrorCode::SUCCESS:
+                return ESP_OK;
+            case ErrorCode::STORAGE_NOT_MOUNTED:
+                return ESP_ERR_SPIFFS_NOT_MOUNTED;
+            case ErrorCode::STORAGE_ALREADY_MOUNTED:
+                return ESP_ERR_SPIFFS_ALREADY_MOUNTED;
+            case ErrorCode::STORAGE_INSUFFICIENT_SPACE:
+                return ESP_ERR_SPIFFS_FULL;
+            case ErrorCode::STORAGE_INVALID_FORMAT:
+                return ESP_ERR_SPIFFS_NOT_FORMATTED;
+            case ErrorCode::STORAGE_CORRUPTION_DETECTED:
+                return ESP_ERR_SPIFFS_CORRUPTED;
+            case ErrorCode::STORAGE_FILE_NOT_FOUND:
+                return ESP_ERR_NOT_FOUND;
+            case ErrorCode::STORAGE_INVALID_PARAMETER:
+                return ESP_ERR_INVALID_ARG;
+            case ErrorCode::STORAGE_NOT_INITIALIZED:
+                return ESP_ERR_INVALID_STATE;
+            case ErrorCode::MEMORY_ALLOCATION_FAILED:
+                return ESP_ERR_NO_MEM;
+            case ErrorCode::STORAGE_TIMEOUT:
+                return ESP_ERR_TIMEOUT;
+            default:
+                return ESP_FAIL;
+        }
+    }
+}
+
+extern "C" {
+
+esp_err_t esp_vfs_spiffs_register(const esp_vfs_spiffs_conf_t* conf) {
+    if (!conf || !conf->base_path) {
+        LOG_ERROR("Invalid SPIFFS configuration");
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    LOG_INFO("Registering SPIFFS at path: {} partition: {}", 
+             conf->base_path, conf->partition_label ? conf->partition_label : "default");
+    
+    std::lock_guard lock(spiffs_mutex);
+    
+    std::string label = conf->partition_label ? conf->partition_label : "spiffs";
+    std::string mount_point = conf->base_path;
+    
+    // Check if already registered
+    if (spiffs_instances.find(label) != spiffs_instances.end()) {
+        LOG_ERROR("SPIFFS partition '{}' already registered", label);
+        return ESP_ERR_SPIFFS_ALREADY_MOUNTED;
+    }
+    
+    // Create SPIFFS instance
+    auto instance = std::make_shared<SPIFFSInstance>();
+    instance->partition_label = label;
+    instance->mount_point = mount_point;
+    
+    // TODO: Get FlashController instance from EmulatorCore
+    // For now, we'll create a placeholder
+    FlashController* flash_controller = nullptr;  // This would come from emulator core
+    
+    if (!flash_controller) {
+        LOG_ERROR("FlashController not available");
+        return ESP_FAIL;
+    }
+    
+    // Create SPIFFS filesystem
+    SPIFFSFileSystem::Config spiffs_config;
+    spiffs_config.max_open_files = conf->max_files;
+    
+    instance->filesystem = std::make_shared<SPIFFSFileSystem>(flash_controller, spiffs_config);
+    
+    // Initialize SPIFFS - for now use default partition location
+    // In production, this would read from partition table
+    Address partition_start = 0x40100000;  // Default SPIFFS partition start
+    size_t partition_size = 1024 * 1024;   // 1MB default
+    
+    auto init_result = instance->filesystem->initialize(partition_start, partition_size);
+    if (!init_result.has_value()) {
+        LOG_ERROR("Failed to initialize SPIFFS filesystem: {}", 
+                 static_cast<int>(init_result.error()));
+        return translate_error(init_result.error());
+    }
+    
+    // Mount the filesystem
+    auto mount_result = instance->filesystem->mount();
+    if (!mount_result.has_value()) {
+        if (conf->format_if_mount_failed) {
+            LOG_INFO("Mount failed, attempting to format SPIFFS partition");
+            
+            auto format_result = instance->filesystem->format();
+            if (!format_result.has_value()) {
+                LOG_ERROR("Failed to format SPIFFS partition: {}", 
+                         static_cast<int>(format_result.error()));
+                return translate_error(format_result.error());
+            }
+            
+            // Try mount again after format
+            mount_result = instance->filesystem->mount();
+            if (!mount_result.has_value()) {
+                LOG_ERROR("Failed to mount SPIFFS after format: {}", 
+                         static_cast<int>(mount_result.error()));
+                return translate_error(mount_result.error());
+            }
+        } else {
+            LOG_ERROR("Failed to mount SPIFFS filesystem: {}", 
+                     static_cast<int>(mount_result.error()));
+            return translate_error(mount_result.error());
+        }
+    }
+    
+    instance->mounted = true;
+    
+    // Register with VFS manager
+    auto& vfs_manager = VFSManager::get_instance();
+    auto vfs_result = vfs_manager.mount_spiffs(mount_point, instance->filesystem);
+    if (!vfs_result.has_value()) {
+        LOG_ERROR("Failed to register SPIFFS with VFS: {}", 
+                 static_cast<int>(vfs_result.error()));
+        instance->filesystem->unmount();
+        return ESP_FAIL;
+    }
+    
+    // Store instance
+    spiffs_instances[label] = instance;
+    
+    LOG_INFO("SPIFFS registered successfully at {} (partition: {})", mount_point, label);
+    return ESP_OK;
+}
+
+esp_err_t esp_vfs_spiffs_unregister(const char* partition_label) {
+    std::string label = partition_label ? partition_label : "spiffs";
+    
+    LOG_INFO("Unregistering SPIFFS partition: {}", label);
+    
+    auto instance = get_spiffs_instance(partition_label);
+    if (!instance) {
+        LOG_ERROR("SPIFFS partition '{}' not found", label);
+        return ESP_ERR_INVALID_STATE;
+    }
+    
+    // Unregister from VFS
+    auto& vfs_manager = VFSManager::get_instance();
+    auto vfs_result = vfs_manager.unmount_spiffs(instance->mount_point);
+    if (!vfs_result.has_value()) {
+        LOG_WARNING("Failed to unregister SPIFFS from VFS: {}", 
+                   static_cast<int>(vfs_result.error()));
+    }
+    
+    // Unmount filesystem
+    if (instance->mounted && instance->filesystem) {
+        auto unmount_result = instance->filesystem->unmount();
+        if (!unmount_result.has_value()) {
+            LOG_WARNING("Failed to unmount SPIFFS: {}", 
+                       static_cast<int>(unmount_result.error()));
+        }
+    }
+    
+    // Remove from registry
+    {
+        std::lock_guard lock(spiffs_mutex);
+        spiffs_instances.erase(label);
+    }
+    
+    LOG_INFO("SPIFFS partition '{}' unregistered successfully", label);
+    return ESP_OK;
+}
+
+bool esp_spiffs_mounted(const char* partition_label) {
+    auto instance = get_spiffs_instance(partition_label);
+    return instance && instance->mounted && instance->filesystem && instance->filesystem->is_mounted();
+}
+
+esp_err_t esp_spiffs_format(const char* partition_label) {
+    LOG_INFO("Formatting SPIFFS partition: {}", partition_label ? partition_label : "default");
+    
+    auto instance = get_spiffs_instance(partition_label);
+    if (!instance || !instance->filesystem) {
+        LOG_ERROR("SPIFFS partition not found or not initialized");
+        return ESP_ERR_INVALID_STATE;
+    }
+    
+    // Unmount if mounted
+    if (instance->mounted) {
+        auto unmount_result = instance->filesystem->unmount();
+        if (!unmount_result.has_value()) {
+            LOG_WARNING("Failed to unmount before format: {}", 
+                       static_cast<int>(unmount_result.error()));
+        }
+        instance->mounted = false;
+    }
+    
+    // Format the filesystem
+    auto format_result = instance->filesystem->format();
+    if (!format_result.has_value()) {
+        LOG_ERROR("Failed to format SPIFFS: {}", static_cast<int>(format_result.error()));
+        return translate_error(format_result.error());
+    }
+    
+    // Mount again
+    auto mount_result = instance->filesystem->mount();
+    if (!mount_result.has_value()) {
+        LOG_ERROR("Failed to mount SPIFFS after format: {}", 
+                 static_cast<int>(mount_result.error()));
+        return translate_error(mount_result.error());
+    }
+    
+    instance->mounted = true;
+    
+    LOG_INFO("SPIFFS partition formatted successfully");
+    return ESP_OK;
+}
+
+esp_err_t esp_spiffs_info(const char* partition_label, size_t* total_bytes, size_t* used_bytes) {
+    if (!total_bytes || !used_bytes) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto instance = get_spiffs_instance(partition_label);
+    if (!instance || !instance->filesystem || !instance->mounted) {
+        return ESP_ERR_SPIFFS_NOT_MOUNTED;
+    }
+    
+    auto stats = instance->filesystem->get_statistics();
+    *total_bytes = stats.total_bytes;
+    *used_bytes = stats.used_bytes;
+    
+    LOG_DEBUG("SPIFFS info: total={}, used={}, free={}", 
+             *total_bytes, *used_bytes, stats.free_bytes);
+    
+    return ESP_OK;
+}
+
+esp_err_t esp_spiffs_check(const char* partition_label) {
+    LOG_INFO("Checking SPIFFS integrity for partition: {}", 
+             partition_label ? partition_label : "default");
+    
+    auto instance = get_spiffs_instance(partition_label);
+    if (!instance || !instance->filesystem || !instance->mounted) {
+        return ESP_ERR_SPIFFS_NOT_MOUNTED;
+    }
+    
+    auto check_result = instance->filesystem->check_filesystem();
+    if (!check_result.has_value()) {
+        LOG_ERROR("SPIFFS integrity check failed: {}", 
+                 static_cast<int>(check_result.error()));
+        return translate_error(check_result.error());
+    }
+    
+    LOG_INFO("SPIFFS integrity check passed");
+    return ESP_OK;
+}
+
+esp_err_t esp_spiffs_get_used_size(const char* partition_label, size_t* total_bytes, size_t* used_bytes) {
+    // Deprecated function, redirect to esp_spiffs_info
+    return esp_spiffs_info(partition_label, total_bytes, used_bytes);
+}
+
+// Enhanced emulator-specific functions
+esp_err_t esp_spiffs_gc(const char* partition_label) {
+    LOG_INFO("Performing SPIFFS garbage collection for partition: {}", 
+             partition_label ? partition_label : "default");
+    
+    auto instance = get_spiffs_instance(partition_label);
+    if (!instance || !instance->filesystem || !instance->mounted) {
+        return ESP_ERR_SPIFFS_NOT_MOUNTED;
+    }
+    
+    auto gc_result = instance->filesystem->garbage_collect();
+    if (!gc_result.has_value()) {
+        LOG_ERROR("SPIFFS garbage collection failed: {}", 
+                 static_cast<int>(gc_result.error()));
+        return translate_error(gc_result.error());
+    }
+    
+    LOG_INFO("SPIFFS garbage collection completed successfully");
+    return ESP_OK;
+}
+
+esp_err_t esp_spiffs_get_fragmentation(const char* partition_label, float* fragmentation_ratio) {
+    if (!fragmentation_ratio) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto instance = get_spiffs_instance(partition_label);
+    if (!instance || !instance->filesystem || !instance->mounted) {
+        return ESP_ERR_SPIFFS_NOT_MOUNTED;
+    }
+    
+    auto frag_result = instance->filesystem->get_fragmentation_ratio();
+    if (!frag_result.has_value()) {
+        LOG_ERROR("Failed to get SPIFFS fragmentation ratio: {}", 
+                 static_cast<int>(frag_result.error()));
+        return translate_error(frag_result.error());
+    }
+    
+    *fragmentation_ratio = static_cast<float>(frag_result.value());
+    
+    LOG_DEBUG("SPIFFS fragmentation ratio: {:.2f}%", *fragmentation_ratio * 100.0f);
+    return ESP_OK;
+}
+
+esp_err_t esp_spiffs_defragment(const char* partition_label) {
+    LOG_INFO("Defragmenting SPIFFS partition: {}", 
+             partition_label ? partition_label : "default");
+    
+    auto instance = get_spiffs_instance(partition_label);
+    if (!instance || !instance->filesystem || !instance->mounted) {
+        return ESP_ERR_SPIFFS_NOT_MOUNTED;
+    }
+    
+    auto defrag_result = instance->filesystem->defragment();
+    if (!defrag_result.has_value()) {
+        LOG_ERROR("SPIFFS defragmentation failed: {}", 
+                 static_cast<int>(defrag_result.error()));
+        return translate_error(defrag_result.error());
+    }
+    
+    LOG_INFO("SPIFFS defragmentation completed successfully");
+    return ESP_OK;
+}
+
+esp_err_t esp_spiffs_get_stats(const char* partition_label,
+                               uint32_t* total_objects, uint32_t* used_objects, uint32_t* free_objects,
+                               uint32_t* total_pages, uint32_t* used_pages, uint32_t* free_pages) {
+    if (!total_objects || !used_objects || !free_objects || 
+        !total_pages || !used_pages || !free_pages) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    auto instance = get_spiffs_instance(partition_label);
+    if (!instance || !instance->filesystem || !instance->mounted) {
+        return ESP_ERR_SPIFFS_NOT_MOUNTED;
+    }
+    
+    auto stats = instance->filesystem->get_statistics();
+    
+    *total_objects = stats.total_objects;
+    *used_objects = stats.total_objects - stats.free_objects;
+    *free_objects = stats.free_objects;
+    *total_pages = stats.total_pages;
+    *used_pages = stats.used_pages;
+    *free_pages = stats.free_pages;
+    
+    LOG_DEBUG("SPIFFS stats: objects={}/{}/{}, pages={}/{}/{}", 
+             *total_objects, *used_objects, *free_objects,
+             *total_pages, *used_pages, *free_pages);
+    
+    return ESP_OK;
+}
+
+esp_err_t esp_spiffs_sync(const char* partition_label) {
+    LOG_DEBUG("Syncing SPIFFS partition: {}", partition_label ? partition_label : "default");
+    
+    auto instance = get_spiffs_instance(partition_label);
+    if (!instance || !instance->filesystem || !instance->mounted) {
+        return ESP_ERR_SPIFFS_NOT_MOUNTED;
+    }
+    
+    auto sync_result = instance->filesystem->sync_all();
+    if (!sync_result.has_value()) {
+        LOG_ERROR("SPIFFS sync failed: {}", static_cast<int>(sync_result.error()));
+        return translate_error(sync_result.error());
+    }
+    
+    return ESP_OK;
+}
+
+// VFS with file descriptor support
+esp_err_t esp_vfs_spiffs_register_fd(const esp_vfs_spiffs_conf_fd_t* conf) {
+    if (!conf || !conf->base_path || !conf->partition) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    // For now, redirect to label-based registration
+    esp_vfs_spiffs_conf_t label_conf;
+    label_conf.base_path = conf->base_path;
+    label_conf.partition_label = "spiffs_fd";  // Unique label for FD-based mount
+    label_conf.max_files = conf->max_files;
+    label_conf.format_if_mount_failed = conf->format_if_mount_failed;
+    
+    return esp_vfs_spiffs_register(&label_conf);
+}
+
+esp_err_t esp_vfs_spiffs_unregister_fd(const esp_partition_t* partition) {
+    if (!partition) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    // Use unique label for FD-based mount
+    return esp_vfs_spiffs_unregister("spiffs_fd");
+}
+
+} // extern "C"

@@ -261,7 +261,7 @@ private:
 
 int main() {
     // Initialize logging for demo output
-    Logger::initialize(Logger::Level::INFO, true, false);
+    Logger::initialize(Logger::LogLevel::INFO, true, false);
     
     try {
         FirmwareIntegrationDemo demo;

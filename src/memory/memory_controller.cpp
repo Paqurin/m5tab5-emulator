@@ -1,5 +1,7 @@
 #include "emulator/memory/memory_controller.hpp"
 #include "emulator/utils/logging.hpp"
+#include "emulator/storage/flash_controller.hpp"
+#include "emulator/storage/partition_table.hpp"
 #include <algorithm>
 #include <cstring>
 
@@ -78,6 +80,19 @@ Result<void> MemoryController::shutdown() {
     }
     
     COMPONENT_LOG_INFO("Shutting down memory controller");
+    
+    // Shutdown Flash Controller
+    if (flash_controller_) {
+        auto shutdown_result = flash_controller_->shutdown();
+        if (!shutdown_result.has_value()) {
+            COMPONENT_LOG_WARN("Flash controller shutdown failed: {}", 
+                              static_cast<int>(shutdown_result.error()));
+        }
+        flash_controller_.reset();
+    }
+    
+    // Clear flash memory region
+    flash_memory_region_.reset();
     
     // Shutdown Boot ROM
     if (boot_rom_) {
@@ -316,24 +331,56 @@ Result<SharedPtr<MemoryRegion>> MemoryController::find_memory_region(Address add
 }
 
 Result<void> MemoryController::initialize_flash_region(size_t size) {
-    COMPONENT_LOG_DEBUG("Initializing Flash XIP region: {} MB at 0x{:08X}", 
+    COMPONENT_LOG_DEBUG("Initializing Flash Controller and XIP region: {} MB at 0x{:08X}", 
                        size / (1024 * 1024), FLASH_LAYOUT.start_address);
     
     // Use the actual requested size, but at least 16MB for ESP32-P4
     size_t flash_size = std::max(size, static_cast<size_t>(16 * 1024 * 1024));
     
-    auto flash_region = std::make_shared<MemoryRegion>(
+    // Create flash controller with configuration
+    storage::FlashController::Config flash_config;
+    flash_config.enable_persistence = true;
+    flash_config.enable_statistics = true;
+    flash_config.simulate_timing = true;
+    
+    flash_controller_ = std::make_unique<storage::FlashController>(flash_config);
+    
+    // Initialize the flash controller
+    auto init_result = flash_controller_->initialize();
+    if (!init_result.has_value()) {
+        COMPONENT_LOG_ERROR("Failed to initialize flash controller: {}", 
+                           static_cast<int>(init_result.error()));
+        return unexpected(init_result.error());
+    }
+    
+    // Create flash memory region that wraps the flash controller
+    flash_memory_region_ = std::make_shared<storage::FlashMemoryRegion>(flash_controller_.get());
+    
+    // Register the flash region in the memory map (cast to MemoryInterface)
+    auto flash_memory_interface = std::static_pointer_cast<MemoryInterface>(flash_memory_region_);
+    
+    // For now, create a wrapper MemoryRegion for compatibility
+    auto flash_region_wrapper = std::make_shared<MemoryRegion>(
         "Flash_XIP", FLASH_LAYOUT.start_address, flash_size, MemoryType::Flash,
         FLASH_LAYOUT.writable, FLASH_LAYOUT.executable, FLASH_LAYOUT.cacheable
     );
     
-    RETURN_IF_ERROR(flash_region->initialize());
-    memory_regions_["Flash"] = flash_region;
+    RETURN_IF_ERROR(flash_region_wrapper->initialize());
+    memory_regions_["Flash"] = flash_region_wrapper;
+    memory_regions_["flash_xip"] = flash_region_wrapper;
+    memory_regions_["flash"] = flash_region_wrapper;
     
-    COMPONENT_LOG_INFO("Flash XIP region initialized: {} MB at 0x{:08X}-0x{:08X}",
+    COMPONENT_LOG_INFO("Flash Controller and XIP region initialized: {} MB at 0x{:08X}-0x{:08X}",
                       flash_size / (1024 * 1024),
                       FLASH_LAYOUT.start_address,
                       FLASH_LAYOUT.start_address + flash_size - 1);
+    
+    // Log partition table info if available
+    auto* partition_table = flash_controller_->get_partition_table();
+    if (partition_table && partition_table->get_partition_count() > 0) {
+        COMPONENT_LOG_INFO("Flash partition table loaded with {} partitions", 
+                          partition_table->get_partition_count());
+    }
     
     return {};
 }

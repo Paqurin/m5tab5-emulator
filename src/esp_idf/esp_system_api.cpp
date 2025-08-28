@@ -43,11 +43,18 @@ namespace {
     /**
      * @brief Get emulator core instance
      */
+    static m5tab5::emulator::EmulatorCore* g_emulator_core_instance = nullptr;
+    
     m5tab5::emulator::EmulatorCore* get_emulator_core() {
-        // TODO: Implement proper singleton access to EmulatorCore
-        // This would be set up during emulator initialization
-        static m5tab5::emulator::EmulatorCore* instance = nullptr;
-        return instance;
+        return g_emulator_core_instance;
+    }
+    
+    /**
+     * @brief Set emulator core instance (called during initialization)
+     */
+    void set_emulator_core(m5tab5::emulator::EmulatorCore* instance) {
+        g_emulator_core_instance = instance;
+        LOG_DEBUG("ESP-IDF API: EmulatorCore instance registered");
     }
     
     /**
@@ -113,11 +120,11 @@ esp_err_t esp_system_init(void) {
             LOG_DEBUG("esp_system_init: memory controller initialized");
         }
         
-        // TODO: Initialize FreeRTOS kernel when available
-        // auto freertos = get_freertos_kernel();
-        // if (freertos) {
-        //     LOG_DEBUG("esp_system_init: FreeRTOS kernel initialized");
-        // }
+        // Initialize additional emulator components
+        // Memory controller integration is already handled above
+        
+        // TODO: Initialize FreeRTOS kernel when full integration is complete
+        // This would provide task management and scheduling APIs
     } else {
         LOG_WARN("esp_system_init: emulator core not available, running in compatibility mode");
     }
@@ -460,3 +467,12 @@ uint32_t esp_random(void) {
 }
 
 } // extern "C"
+
+// C++ specific implementation
+namespace m5tab5::emulator {
+
+void esp_idf_set_emulator_core(EmulatorCore* core) {
+    set_emulator_core(core);
+}
+
+} // namespace m5tab5::emulator

@@ -42,9 +42,9 @@
 // #include "lwip/lwip.h"
 
 // Storage APIs
-// Additional storage APIs (when implemented)
-// #include "esp_partition.h"
-// #include "esp_vfs.h"
+#include "esp_flash.h"
+#include "esp_partition.h"
+// #include "esp_vfs.h"  // TODO: Implement VFS
 
 #ifdef __cplusplus
 extern "C" {

@@ -8,6 +8,12 @@
 #include "emulator/utils/error.hpp"
 #include "emulator/utils/types.hpp"
 
+// Forward declaration for storage components
+namespace m5tab5::emulator::storage {
+    class FlashController;
+    class FlashMemoryRegion;
+}
+
 #include <vector>
 #include <memory>
 #include <mutex>
@@ -90,6 +96,9 @@ public:
     // Boot ROM access
     BootROM* getBootROM() const { return boot_rom_.get(); }
     
+    // Flash controller access
+    storage::FlashController* getFlashController() const { return flash_controller_.get(); }
+    
     // Bulk operations inherited from MemoryInterface
 
 private:
@@ -128,6 +137,10 @@ private:
     
     // Boot ROM emulation
     std::unique_ptr<BootROM> boot_rom_;
+    
+    // Flash controller and integration
+    std::unique_ptr<storage::FlashController> flash_controller_;
+    std::shared_ptr<storage::FlashMemoryRegion> flash_memory_region_;
     
     // Memory Management Unit (TODO: Implement MemoryMappingUnit)
     // std::unique_ptr<MemoryMappingUnit> mmu_;

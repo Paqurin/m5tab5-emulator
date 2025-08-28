@@ -94,7 +94,7 @@ int main(int argc, char* argv[]) {
         
         // Initialize logging
         if (args.debug) {
-            utils::Logger::set_level(utils::Logger::Level::DEBUG);
+            utils::Logger::set_level(utils::Logger::LogLevel::DEBUG_LEVEL);
             std::cout << "Debug logging enabled" << std::endl;
         }
         
